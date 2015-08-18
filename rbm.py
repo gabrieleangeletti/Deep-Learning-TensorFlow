@@ -25,8 +25,8 @@ class RBM(AbstractRBM):
         if W is None:
             # Initialize the weight matrix, using
             # a Gaussian ddistribution with mean 0 and standard deviation 0.1
-            self.W = 0.1 * np.random.randn(self.num_visible, self.num_hidden)
-            self.h_bias = np.ones(self.num_hidden)
+            self.W = 0.01 * np.random.randn(self.num_visible, self.num_hidden)
+            self.h_bias = np.zeros(self.num_hidden)
             self.v_bias = np.ones(self.num_visible)
         else:
             self.W = W
