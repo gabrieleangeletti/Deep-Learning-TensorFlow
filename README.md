@@ -1,5 +1,7 @@
 Deep Belief Network and Restricted Boltzmann Machine Python Implementation, with MNIST dataset ready for training.
 
+The MNIST dataset and MNIST dataset loader script are taken from https://github.com/sorki/python-mnist
+
 Requirements:
 - numpy
 - scikitlearn
