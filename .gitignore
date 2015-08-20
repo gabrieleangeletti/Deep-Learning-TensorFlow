@@ -59,3 +59,4 @@ target/
 # Local data
 models/
 imagenet/
+cython/
