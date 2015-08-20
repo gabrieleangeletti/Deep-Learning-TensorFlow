@@ -1,16 +1,17 @@
 # Datasets sizes
-TRAIN_SET_SIZE = 1000
+TRAIN_SET_SIZE = 500
 TEST_SET_SIZE = 4000
 
 
-# Standard RBM configuration
-NV = 784 			# number of visible units
-NH = 50    		# number of hidden units
+
+
+
+# number of hidden units
 # Train parameters
-MAX_EPOCHS = 20   # number of training epochs
+MAX_EPOCHS = 250   # number of training epochs
 ALPHA = 0.12		# learning rate
 M = 0.0				# momentum parameter
-BATCH_SIZE = 1     # size of each batch
+BATCH_SIZE = 20     # size of each batch
 GIBBS_K = 1			# number of gibbs sampling steps
 VERBOSE = True  # if true, a progress bar and a reconstructed sample for each epoch will be shown
 OUTFILE = 'models/rbm.json'  # outfile to save the configuration of the rbm after training

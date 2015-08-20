@@ -11,6 +11,7 @@ import gaussian_rbm
 import rbm
 
 if __name__ == '__main__':
+    assert config.BATCH_SIZE <= config.TRAIN_SET_SIZE
     # load MNIST dataset
     print('Initializing MNIST dataset...')
     mndata = MNIST('mnist')
@@ -104,10 +105,9 @@ if __name__ == '__main__':
         cst.fit_logistic_cls(X_norm, y)
         # sample the test set
         print('Testing the accuracy of the classifier...')
-        (test_probs_st, test_states_st) = cst.rbm.sample_hidden_from_visible(X_norm_test,
-                                                                             config.GIBBS_K)
         # test the predictions of the LR layer
-        preds_st = cst.cls.predict(test_probs_st)
+        preds_st = cst.predict_logistic_cls(X_norm_test)
+
         accuracy_st = sum(preds_st == y_test) / float(config.TEST_SET_SIZE)
         # Now train a normal logistic regression classifier and test it
         print('Training standard Logistic Regression Classifier...')
