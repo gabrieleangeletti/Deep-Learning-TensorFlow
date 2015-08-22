@@ -1,32 +1,36 @@
 __author__ = 'blackecho'
 
-from pyprind import ProgPercent
 import numpy as np
-import click
 import json
+import math
 
-from abstract_rbm import AbstractRBM
 import util
 
+from pyprind import ProgPercent
 
-class RBM(AbstractRBM):
+from abstract_rbm import AbstractRBM
+
+
+class MultinomialRBM(AbstractRBM):
 
     """Restricted Boltzmann Machine implementation with
-    visible and hidden Bernoulli units.
+    visible and hidden Multinomial units, that can assume K different discrete values.
     """
 
-    def __init__(self, num_visible, num_hidden,
+    def __init__(self, num_visible, num_hidden, k_visible, k_hidden,
                  w=None, h_bias=None, v_bias=None):
         """
-        :param num_visible: number of visible units
-        :param num_hidden: number of hidden units
+        :param k_visible: max values that the visible units can take (the length is n. visible)
+        :param k_hidden: max values that the hidden units can take (the length is n. hidden)
         :param w: weights matrix
         :param h_bias: hidden units bias
         :param v_bias: visible units bias
         """
 
-        self.num_visible = num_visible
-        self.num_hidden = num_hidden
+        self.num_visible = num_visible * (k_visible + 1)
+        self.num_hidden = num_hidden * (k_hidden + 1)
+        self.k_visible = k_visible
+        self.k_hidden = k_hidden
 
         if w is None and any([h_bias, v_bias]) is None:
             raise Exception('If W is None, then also b and c must be None')
@@ -36,7 +40,7 @@ class RBM(AbstractRBM):
             # a Gaussian ddistribution with mean 0 and standard deviation 0.1
             self.W = 0.01 * np.random.randn(self.num_visible, self.num_hidden)
             self.h_bias = np.zeros(self.num_hidden)
-            self.v_bias = np.ones(self.num_visible)
+            self.v_bias = np.zeros(self.num_visible)
         else:
             self.W = w
             self.h_bias = h_bias
@@ -67,17 +71,6 @@ class RBM(AbstractRBM):
         # Total error per epoch
         total_error = 0
 
-        # Set the visible bias weights to the approximate probability
-        # of a neuron being activated in the training data.
-        # This is the logarithm of the 1 / (1 - neuron_mean), where neuron_mean
-        # is the proportion of training vectors in which unit i is
-        neuron_mean = data.mean(axis=0)
-        for i in xrange(neuron_mean.shape[0]):
-            if neuron_mean[i] == 1:
-                neuron_mean[i] = 0.99999
-        neuron_mean = 1 / (1 - neuron_mean)
-        self.v_bias = np.log(neuron_mean)
-
         # divide data into batches
         batches = util.generate_batches(data, batch_size)
         n_batches = len(batches)
@@ -85,16 +78,22 @@ class RBM(AbstractRBM):
         alpha_update = int(max_epochs / (alpha / 0.01)) + 1
         # Momentum parameter update rule
         m_update = int(max_epochs / ((0.9 - m) / 0.01)) + 1
+        # Convert the batch into binary visible states
+        binary_batches = [self._convert_visible_state_to_binary(b) for b in batches]
+        # Convert the validation into binary visible states
+        binary_validation = None
+        if validation is not None:
+            binary_validation = self._convert_visible_state_to_binary(validation)
 
         for epoch in xrange(max_epochs):
             if verbose:
                 prog_bar = ProgPercent(n_batches)
-            for batch in batches:
+            for batch in binary_batches:
                 if verbose:
                     prog_bar.update()
                 (associations_delta, h_bias_delta, v_probs,
                  h_probs) = self.gibbs_sampling(batch, gibbs_k)
-                # useful to compute the error
+                # Useful to compute the error
                 v_states = (v_probs > np.random.rand(
                     batch_size, self.num_visible)).astype(np.int)
 
@@ -119,47 +118,53 @@ class RBM(AbstractRBM):
             print("Epoch %s : error is %s" % (epoch, total_error))
             if epoch % 25 == 0 and epoch > 0:
                 self.train_free_energies.append(
-                    self.average_free_energy(batches[0]))
+                    self.average_free_energy(binary_batches[0]))
                 if validation is not None:
                     self.validation_free_energies.append(
-                        self.average_free_energy(validation))
-            if epoch % m_update == 0 and epoch > 0:
+                        self.average_free_energy(binary_validation))
+            if epoch % m_update == 0 and epoch > 0 and m < 0.9:
                 m += 0.01
             if epoch % alpha_update == 0 and epoch > 0 and alpha > 0.005:
                 alpha -= 0.01
             self.costs.append(total_error)
             total_error = 0
 
-    def gibbs_sampling(self, v_in_0, k):
+    def gibbs_sampling(self, v_in, k):
         """Performs k steps of Gibbs Sampling, starting from the visible units input.
         :param v_in_0: input of the visible units
         :param k: number of sampling steps
-        :return difference between positive associations and negative
+        :return: difference between positive associations and negative
         associations after k steps of gibbs sampling
         """
-        batch_size = v_in_0.shape[0]
 
         # Sample from the hidden units given the visible units - Positive
-        # Constrastive Divergence phase
-        h_activations_0 = np.dot(v_in_0, self.W) + self.h_bias
+        # Contrastive Divergence phase
+        h_activations_0 = np.dot(v_in, self.W) + self.h_bias
         h_probs_0 = self.hidden_act_func(h_activations_0)
-        h_states_0 = (h_probs_0 > np.random.rand(
-            batch_size, self.num_hidden)).astype(np.int)
-        pos_associations = np.dot(v_in_0.T, h_states_0)
+        h_states_0 = []
+        for ps in h_probs_0:
+            tmp = [0] * len(ps)
+            tmp[ps.tolist().index(max(ps))] = 1
+            h_states_0.append(tmp)
+        h_states_0 = np.array(h_states_0)
+        pos_associations = np.dot(v_in.T, h_states_0)
 
-        for gibbs_step in xrange(k):
-            if gibbs_step == 0:
+        for gibbs_steps in xrange(k):
+            if gibbs_steps == 0:
                 # first step: we have already computed the hidden things
                 h_states = h_states_0
             else:
                 # Not first step: sample hidden from new visible
                 # Sample from the hidden units given the visible units -
                 # Positive CD phase
-                h_activations = np.dot(v_in_0, self.W) + self.h_bias
+                h_activations = np.dot(v_in, self.W) + self.h_bias
                 h_probs = self.hidden_act_func(h_activations)
-                h_states = (
-                    h_probs > np.random.rand(batch_size, self.num_hidden)
-                ).astype(np.int)
+                h_states = []
+                for ps in h_probs:
+                    tmp = [0] * len(ps)
+                    tmp[ps.tolist().index(max(ps))] = 1
+                    h_states.append(tmp)
+                h_states = np.array(h_states)
 
             # Reconstruct the visible units
             # Negative Contrastive Divergence phase
@@ -168,17 +173,20 @@ class RBM(AbstractRBM):
             # Sampling again from the hidden units
             h_activations_new = np.dot(v_probs, self.W) + self.h_bias
             h_probs_new = self.hidden_act_func(h_activations_new)
-            h_states_new = (
-                h_probs_new > np.random.rand(batch_size, self.num_hidden)
-            ).astype(np.int)
-            # We are again using states but we could have used probabilities
+            h_states_new = []
+            for ps in h_probs_new:
+                tmp = [0] * len(ps)
+                tmp[ps.tolist().index(max(ps))] = 1
+                h_states_new.append(tmp)
+            h_states_new = np.array(h_states_new)
             neg_associations = np.dot(v_probs.T, h_states_new)
             # Use the new sampled visible units in the next step
-            v_in_0 = v_probs
+            v_in = v_probs
         return (pos_associations - neg_associations,
                 h_probs_0 - h_probs_new,
                 v_probs,
                 h_probs_new)
+
 
     def sample_visible_from_hidden(self, h_in, gibbs_k=1):
         """
@@ -189,7 +197,12 @@ class RBM(AbstractRBM):
         :return (visible units probabilities, visible units states)
         """
         (_, _, v_probs, _) = self.gibbs_sampling(h_in, gibbs_k)
-        v_states = (v_probs > np.random.rand(v_probs.shape[0], v_probs.shape[1])).astype(np.int)
+        v_states = []
+        for ps in v_probs:
+            tmp = [0] * len(ps)
+            tmp[ps.tolist().index(max(ps))] = 1
+            v_states.append(tmp)
+        v_states = np.array(v_states)
         return (v_probs, v_states)
 
     def sample_hidden_from_visible(self, v_in, gibbs_k=1):
@@ -200,21 +213,61 @@ class RBM(AbstractRBM):
         :param gibbs_k: number of gibbs sampling steps
         :return (hidden units probabilities, hidden units states)
         """
-        (_, _, _, h_probs) = self.gibbs_sampling(v_in, gibbs_k)
-        h_states = (h_probs > np.random.rand(h_probs.shape[0], h_probs.shape[1])).astype(np.int)
+        (_, _, h_probs, _) = self.gibbs_sampling(v_in, gibbs_k)
+        h_states = []
+        for ps in h_probs:
+            tmp = [0] * len(ps)
+            tmp[ps.tolist().index(max(ps))] = 1
+            h_states.append(tmp)
+        h_states = np.array(h_states)
         return (h_probs, h_states)
 
     def visible_act_func(self, x):
-        """Sigmoid function"""
-        return 1.0 / (1 + np.exp(-x))
+        """Softmax Activation Function (One of K multinomial states)
+        :param x: input to the Multinomial units, converted in binary states
+        :return: Softmax for the K states of the unit
+        """
+        out = []
+        for sample in x:
+            offset = 0 # offset through the units
+            probs = []
+            while offset + self.k_visible < len(sample):
+                den = 0.0
+                for i in sample[offset: offset + self.k_visible + 1]:
+                    val = np.exp(i)
+                    probs.append(val)
+                    den += val
+                offset += self.k_visible + 1
+            out.append(probs / den)
+        return np.array(out)
 
     def hidden_act_func(self, x):
-        """Sigmoid function"""
-        return 1.0 / (1 + np.exp(-x))
+        """Softmax Activation Function (One of K multinomial states)
+        :param x: input to the Multinomial units, converted in binary states
+        :return: Softmax for the K states of the unit
+        """
+        out = []
+        for sample in x:
+            offset = 0 # offset through the units
+            probs = []
+            while offset + self.k_hidden < len(sample):
+                den = 0.0
+                for i in sample[offset: offset + self.k_hidden + 1]:
+                    # ##################DEV
+                    if math.isnan(i):
+                        val = 0
+                    else:
+                        val = np.exp(i)
+                    # ##################DEV
+                    probs.append(val)
+                    den += val
+                offset += self.k_hidden + 1
+            out.append(probs / den)
+        return np.array(out)
 
     def average_free_energy(self, data):
         """Compute the average free energy over a representative sample
-        of the training set or the validation set.
+        of the training set or the validation set, already converted to binary.
         """
         wx_b = np.dot(data, self.W) + self.h_bias
         vbias_term = np.dot(data, self.v_bias)
@@ -231,6 +284,8 @@ class RBM(AbstractRBM):
                                 'v_bias': self.v_bias.tolist(),
                                 'num_hidden': self.num_hidden,
                                 'num_visible': self.num_visible,
+                                'k_visible': self.k_visible,
+                                'k_hidden': self.k_hidden,
                                 'costs': self.costs,
                                 'train_free_energies':
                                     self.train_free_energies,
@@ -248,38 +303,70 @@ class RBM(AbstractRBM):
             self.v_bias = np.array(data['v_bias'])
             self.num_hidden = data['num_hidden']
             self.num_visible = data['num_visible']
+            self.k_hidden = data['k_hidden']
+            self.k_visible = data['k_visible']
             self.costs = data['costs']
             self.train_free_energies = data['train_free_energies']
             self.validation_free_energies = data['validation_free_energies']
 
+    def _convert_visible_state_to_binary(self, x):
+        """Converts the Multinomial state x into binary units
+        :param x: Multinomial batch of the visible units
+        :return: binary states of the units
+        """
+        bin = []
+        for sample in x:
+            sample_multin = []
+            for i,u in enumerate(sample):
+                tmp = [0] * (self.k_visible + 1)
+                tmp[int(u)] = 1
+                sample_multin.append(tmp)
+            bin.append(np.array([item for sublist in sample_multin for item in sublist]))
+        return np.array(bin)
 
-@click.command()
-@click.option('--config', default='', help='json with the config of the rbm')
-def main(config):
-    with open(config, 'r') as f:
-        data = json.load(f)
-        num_visible = data['num_visible']
-        num_hidden = data['num_hidden']
-        act_func = data['act_func']
-        dataset = np.array(data['dataset'])
-        max_epochs = data['max_epochs']
-        alpha = data['alpha']
-        m = data['m']
-        batch_size = data['batch_size']
-        gibbs_k = data['gibbs_k']
-        verbose = data['verbose']
-        out = data['outfile']
-        # create rbm object
-        rbm = RBM(num_visible, num_hidden, act_func)
-        rbm.train(dataset,
-                  max_epochs=max_epochs,
-                  alpha=alpha,
-                  m=m,
-                  batch_size=batch_size,
-                  gibbs_k=gibbs_k,
-                  verbose=verbose)
-        rbm.save_configuration(out)
+    def _convert_hidden_state_to_binary(self, x):
+        """Converts the Multinomial state x into binary units
+        :param x: Multinomial batch of the hidden units
+        :return: binary states of the units
+        """
+        bin = []
+        for sample in x:
+            sample_multin = []
+            for i,u in enumerate(sample):
+                tmp = [0] * (self.k_hidden + 1)
+                tmp[int(u)] = 1
+                sample_multin.append(tmp)
+            bin.append(np.array([item for sublist in sample_multin for item in sublist]))
+        return np.array(bin)
 
 
-if __name__ == '__main__':
-    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -7,6 +7,7 @@ import config
 import util
 import classification_gaussian_rbm
 import classification_rbm
+import multinomial_rbm
 import gaussian_rbm
 import rbm
 
@@ -59,6 +60,28 @@ if __name__ == '__main__':
         print('Saving the RBM to outfile...')
         r.save_configuration(config.OUTFILE)
 
+    # ########################################
+    # Multinomial Restricted Boltzmann Machine
+    # ########################################
+    if type == 'multinomial':
+        # discretization of data
+        X_mu = util.discretize_dataset(X, config.MULTI_KV)
+        X_mu_test = util.discretize_dataset(X_test, config.MULTI_KV)
+        # create multinomial rbm
+        mr = multinomial_rbm.MultinomialRBM(config.MULTI_NV, config.MULTI_NH, config.MULTI_KV, config.MULTI_KN)
+        mr.train(X_mu,
+                validation=X_mu_test[0:config.M_BATCH_SIZE],
+                max_epochs=config.M_MAX_EPOCHS,
+                alpha=config.M_ALPHA,
+                m=config.M_M,
+                batch_size=config.M_BATCH_SIZE,
+                gibbs_k=config.M_GIBBS_K,
+                verbose=config.M_VERBOSE,
+                display=display)
+        # save the rbm to a file
+        print('Saving the Multinomial RBM to outfile...')
+        mr.save_configuration(config.M_OUTFILE)
+
     # ###############################################
     # Bernoulli Gaussian Restricted Boltzmann Machine
     # ###############################################
@@ -76,7 +99,7 @@ if __name__ == '__main__':
                  verbose=config.G_VERBOSE,
                  display=display)
         # save the rbm to a file
-        print('Saving the RBM to outfile...')
+        print('Saving the Gaussian RBM to outfile...')
         gr.save_configuration(config.G_OUTFILE)
 
     # #################################################
@@ -146,10 +169,9 @@ if __name__ == '__main__':
         csg.fit_logistic_cls(X, y)
         # sample the test set
         print('Testing the accuracy of the classifier...')
-        (test_probs_st, test_states_st) = csg.grbm.sample_hidden_from_visible(
-                                            X_test, config.G_GIBBS_K)
         # test the predictions of the LR layer
-        preds_st = csg.cls.predict(test_probs_st)
+        preds_st = csg.predict_logistic_cls(X_test)
+
         accuracy_st = sum(preds_st == y_test) / float(config.TEST_SET_SIZE)
         # Now train a normal logistic regression classifier and test it
         print('Training standard Logistic Regression Classifier...')

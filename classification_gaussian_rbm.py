@@ -42,3 +42,10 @@ class ClsGaussianRBM(object):
         """
         (data_probs, data_states) = self.grbm.sample_hidden_from_visible(data)
         self.cls.fit(data_probs, labels)
+
+    def predict_logistic_cls(self, data):
+        """Predict the labels for data using the Logistic Regression layer on top of the
+        learned features by the Restricted Boltzmann Machine.
+        """
+        (data_probs, data_states) = self.grbm.sample_hidden_from_visible(X_test)
+        return self.cls.predict(data_probs)
