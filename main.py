@@ -1,12 +1,12 @@
-from sklearn.linear_model import LogisticRegression
-from mnist import MNIST
 import numpy as np
 import sys
 
+from sklearn.linear_model import LogisticRegression
+
+from mnist import MNIST
 import config
 import util
-import classification_gaussian_rbm
-import classification_rbm
+from classification import *
 import multinomial_rbm
 import gaussian_rbm
 import rbm
@@ -142,6 +142,49 @@ if __name__ == '__main__':
               (accuracy_st))
         print('Accuracy of the Logistic classifier: %s' %
               (accuracy_lr))
+
+    # #####################################################
+    # Classification Multinomial rbm vs Logistic Regression
+    # #####################################################
+    elif type == 'mrbm-vs-logistic':
+        # discretization of data
+        X_mu = util.discretize_dataset(X, config.MULTI_KV)
+        X_mu_test = util.discretize_dataset(X_test, config.MULTI_KV)
+        # create multinomial rbm
+        csm = classification_multinomial_rbm.ClsMultiRBM(config.MULTI_NV, config.MULTI_NH, config.MULTI_KV, config.MULTI_KN)
+        # unsupervised learning of features
+        print('Starting unsupervised learning of the features...')
+        csm.learn_unsupervised_features(X_mu,
+                                        validation=X_mu_test[0:config.M_BATCH_SIZE],
+                                        max_epochs=config.M_MAX_EPOCHS,
+                                        alpha=config.M_ALPHA,
+                                        m=config.M_M,
+                                        batch_size=config.M_BATCH_SIZE,
+                                        gibbs_k=config.M_GIBBS_K,
+                                        verbose=config.M_VERBOSE,
+                                        display=display)
+        print('Saving the Multi RBM to outfile...')
+        csm.mrbm.save_configuration(config.M_OUTFILE)
+        # fit the Logistic Regression layer
+        print('Fitting the Logistic Regression layer...')
+        csm.fit_logistic_cls(X_mu, y)
+        # sample the test set
+        print('Testing the accuracy of the classifier...')
+        # test the predictions of the LR layer
+        preds_m = csm.predict_logistic_cls(X_mu_test)
+
+        accuracy_m = sum(preds_m == y_test) / float(config.TEST_SET_SIZE)
+        # Now train a normal logistic regression classifier and test it
+        print('Training standard Logistic Regression Classifier...')
+        lr_cls = LogisticRegression()
+        lr_cls.fit(X_mu, y)
+        lr_cls_preds = lr_cls.predict(X_mu_test)
+        accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
+        print('Accuracy of the RBM classifier: %s' %
+              (accuracy_m))
+        print('Accuracy of the Logistic classifier: %s' %
+              (accuracy_lr))
+
 
     # ##################################################
     # Classification Gaussian rbm vs Logistic Regression

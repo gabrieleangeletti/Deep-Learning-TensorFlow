@@ -5,6 +5,7 @@ from rbm import RBM
 
 class DBN(object):
     """Deep Belief Network implementation.
+    ========================= TODO ============================
     """
 
     def __init__(self, num_layers):

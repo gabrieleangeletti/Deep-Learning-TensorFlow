@@ -2,7 +2,6 @@ __author__ = 'blackecho'
 
 import numpy as np
 import json
-import math
 
 import util
 
@@ -78,7 +77,7 @@ class MultinomialRBM(AbstractRBM):
         alpha_update = int(max_epochs / (alpha / 0.01)) + 1
         # Momentum parameter update rule
         m_update = int(max_epochs / ((0.9 - m) / 0.01)) + 1
-        # Convert the batch into binary visible states
+        # Convert batches into binary visible states
         binary_batches = [self._convert_visible_state_to_binary(b) for b in batches]
         # Convert the validation into binary visible states
         binary_validation = None
@@ -113,7 +112,8 @@ class MultinomialRBM(AbstractRBM):
 
             if display and verbose:
                 print("Reconstructed sample from the training set")
-                print(display(v_states[np.random.randint(v_states.shape[0])]))
+                rand_sample = v_states[np.random.randint(v_states.shape[0])]
+                print(display(self._convert_visible_binary_to_multinomial([rand_sample])))
 
             print("Epoch %s : error is %s" % (epoch, total_error))
             if epoch % 25 == 0 and epoch > 0:
@@ -196,7 +196,9 @@ class MultinomialRBM(AbstractRBM):
         :param gibbs_k: number of gibbs sampling steps
         :return (visible units probabilities, visible units states)
         """
-        (_, _, v_probs, _) = self.gibbs_sampling(h_in, gibbs_k)
+        # Convert data into binary visible states
+        binary_in = self._convert_visible_state_to_binary(h_in)
+        (_, _, v_probs, _) = self.gibbs_sampling(binary_in, gibbs_k)
         v_states = []
         for ps in v_probs:
             tmp = [0] * len(ps)
@@ -213,7 +215,9 @@ class MultinomialRBM(AbstractRBM):
         :param gibbs_k: number of gibbs sampling steps
         :return (hidden units probabilities, hidden units states)
         """
-        (_, _, h_probs, _) = self.gibbs_sampling(v_in, gibbs_k)
+        # Convert data into binary visible states
+        binary_in = self._convert_visible_state_to_binary(v_in)
+        (_, _, h_probs, _) = self.gibbs_sampling(binary_in, gibbs_k)
         h_states = []
         for ps in h_probs:
             tmp = [0] * len(ps)
@@ -253,12 +257,7 @@ class MultinomialRBM(AbstractRBM):
             while offset + self.k_hidden < len(sample):
                 den = 0.0
                 for i in sample[offset: offset + self.k_hidden + 1]:
-                    # ##################DEV
-                    if math.isnan(i):
-                        val = 0
-                    else:
-                        val = np.exp(i)
-                    # ##################DEV
+                    val = np.exp(i)
                     probs.append(val)
                     den += val
                 offset += self.k_hidden + 1
@@ -323,6 +322,34 @@ class MultinomialRBM(AbstractRBM):
                 sample_multin.append(tmp)
             bin.append(np.array([item for sublist in sample_multin for item in sublist]))
         return np.array(bin)
+
+    def _convert_visible_binary_to_multinomial(self, x):
+        """Converts the visible binary state x into multinomial states
+        :param x: visible binary state
+        :return: multinomial state vector
+        """
+        out = []
+        offset = 0
+        for sample in x:
+            while offset + self.k_visible < len(sample):
+                tmp = sample[offset: offset + self.k_visible + 1]
+                out.append(tmp.tolist().index(max(tmp)))
+                offset += self.k_visible + 1
+        return np.array(out)
+
+    def _convert_hidden_binary_to_multinomial(self, x):
+        """Converts the hidden binary state x into multinomial states
+        :param x: hidden binary state
+        :return: multinomial state vector
+        """
+        out = []
+        offset = 0
+        for sample in x:
+            while offset + self.k_hidden < len(sample):
+                tmp = sample[offset: offset + self.k_hidden + 1]
+                out.append(tmp.tolist().index(max(tmp)))
+                offset += self.k_hidden + 1
+        return np.array(out)
 
     def _convert_hidden_state_to_binary(self, x):
         """Converts the Multinomial state x into binary units

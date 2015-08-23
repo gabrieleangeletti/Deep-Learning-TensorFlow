@@ -1,3 +1,5 @@
+__author__ = 'blackecho'
+
 from sklearn.linear_model import LogisticRegression
 
 from rbm import RBM
@@ -9,11 +11,11 @@ class ClsRBM(object):
                  num_visible,
                  num_hidden):
 
-        # standard restricted boltzmann machine object
+        # standard restricted boltzmann machine
         self.rbm = RBM(num_visible,
                        num_hidden)
 
-        # Logistic Regression classifier on top of the spline rbm
+        # Logistic Regression classifier on top of the rbm
         self.cls = LogisticRegression()
 
     def learn_unsupervised_features(self,
@@ -26,6 +28,8 @@ class ClsRBM(object):
                                     gibbs_k=1,
                                     verbose=False,
                                     display=None):
+        """Unsupervised learning of the rbm layer
+        """
         self.rbm.train(data,
                        validation=validation,
                        max_epochs=max_epochs,

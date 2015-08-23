@@ -1,3 +1,5 @@
+__author__ = 'blackecho'
+
 from abc import ABCMeta, abstractmethod
 
 

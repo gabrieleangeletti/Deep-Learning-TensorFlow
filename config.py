@@ -1,5 +1,5 @@
 # Datasets sizes
-TRAIN_SET_SIZE = 50
+TRAIN_SET_SIZE = 500
 TEST_SET_SIZE = 4000
 
 ####################################################################
@@ -18,10 +18,10 @@ OUTFILE = 'models/rbm.json'  # outfile to save the configuration of the rbm afte
 # Multinomial RBM configuration
 MULTI_NV = 784  # number of visible units
 MULTI_NH = 150 # number of hidden units
-MULTI_KV = 2 # visible units can be between 0 and this parameter
-MULTI_KN = 2 # hidden units can be between 0 and this parameter
+MULTI_KV = 1 # visible units can be between 0 and this parameter
+MULTI_KN = 1 # hidden units can be between 0 and this parameter
 # Train parameters
-M_MAX_EPOCHS = 100   # number of training epochs
+M_MAX_EPOCHS = 200   # number of training epochs
 M_ALPHA = 0.01		# learning rate
 M_M = 0.0				# momentum parameter
 M_BATCH_SIZE = 25     # size of each batch
