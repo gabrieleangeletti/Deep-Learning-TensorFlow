@@ -21,19 +21,12 @@ class DBN(object):
                  verbose=False, display=None):
         """Unsupervised, layer-wise training of the Deep Belief Net.
         :param data: the training set
-
         :param max_epochs: number of training steps
-
         :param batch_size: size of each batch
-
         :param alpha: learning rate
-
         :param m: momentum parameter
-
-        :param gibbs_k: mumber of gibbs sampling steps
-
+        :param gibbs_k: number of gibbs sampling steps
         :param verbose: if true display a progress bar through the loop
-
         :param display: function used to display reconstructed samples
                         after gibbs sampling for each epoch.
                         If batch_size is greater than one, one

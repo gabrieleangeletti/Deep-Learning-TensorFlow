@@ -1,8 +1,8 @@
-__author__ = 'blackecho'
-
 from sklearn.linear_model import LogisticRegression
 
 from rbm import RBM
+
+__author__ = 'blackecho'
 
 
 class ClsRBM(object):
@@ -26,6 +26,7 @@ class ClsRBM(object):
                                     alpha=0.1,
                                     m=0.5,
                                     gibbs_k=1,
+                                    alpha_update_rule='constant',
                                     verbose=False,
                                     display=None):
         """Unsupervised learning of the rbm layer
@@ -37,6 +38,7 @@ class ClsRBM(object):
                        alpha=alpha,
                        m=m,
                        gibbs_k=gibbs_k,
+                       alpha_update_rule=alpha_update_rule,
                        verbose=verbose,
                        display=display)
 

@@ -1,12 +1,12 @@
-__author__ = 'blackecho'
-
 from pyprind import ProgPercent
 import numpy as np
 import click
 import json
 
 from abstract_rbm import AbstractRBM
-import util
+import utils
+
+__author__ = 'blackecho'
 
 
 class RBM(AbstractRBM):
@@ -25,15 +25,14 @@ class RBM(AbstractRBM):
         :param v_bias: visible units bias
         """
 
-        self.num_visible = num_visible
-        self.num_hidden = num_hidden
+        super(RBM, self).__init__(num_visible, num_hidden)
 
-        if w is None and any([h_bias, v_bias]) is None:
+        if w is None and any([h_bias, v_bias]) is True:
             raise Exception('If W is None, then also b and c must be None')
 
         if w is None:
             # Initialize the weight matrix, using
-            # a Gaussian ddistribution with mean 0 and standard deviation 0.1
+            # a Gaussian distribution with mean 0 and standard deviation 0.1
             self.W = 0.01 * np.random.randn(self.num_visible, self.num_hidden)
             self.h_bias = np.zeros(self.num_hidden)
             self.v_bias = np.ones(self.num_visible)
@@ -49,21 +48,11 @@ class RBM(AbstractRBM):
         self.last_velocity = 0.0
 
     def train(self, data, validation=None, max_epochs=100, batch_size=10,
-              alpha=0.1, m=0.5, gibbs_k=1, verbose=False, display=None):
+              alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
         """Train the restricted boltzmann machine with the given parameters.
-        :param data: the training set
-        :param validation: the validation set
-        :param max_epochs: number of training steps
-        :param batch_size: size of each batch
-        :param alpha: learning rate
-        :param m: momentum parameter
-        :param gibbs_k: number of gibbs sampling steps
-        :param verbose: if true display a progress bar through the loop
-        :param display: function used to display reconstructed samples
-                        after gibbs sampling for each epoch.
-                        If batch_size is greater than one, one
-                        random sample will be displayed.
         """
+        assert alpha_update_rule in ['constant', 'linear', 'exp']
+
         # Total error per epoch
         total_error = 0
 
@@ -79,33 +68,39 @@ class RBM(AbstractRBM):
         self.v_bias = np.log(neuron_mean)
 
         # divide data into batches
-        batches = util.generate_batches(data, batch_size)
+        batches = utils.generate_batches(data, batch_size)
         n_batches = len(batches)
+
         # Learning rate update rule
-        alpha_update = int(max_epochs / (alpha / 0.01)) + 1
+        alpha_rule = None
+        if alpha_update_rule == 'exp':
+            alpha_rule = utils.ExpDecayParameter(alpha)
+        elif alpha_update_rule == 'linear':
+            alpha_rule = utils.LinearDecayParameter(alpha, max_epochs)
+        elif alpha_update_rule == 'constant':
+            alpha_rule = utils.ConstantParameter(alpha)
+        assert alpha_rule is not None
+
         # Momentum parameter update rule
         m_update = int(max_epochs / ((0.9 - m) / 0.01)) + 1
 
         for epoch in xrange(max_epochs):
+            alpha = alpha_rule.update()  # learning rate update
             if verbose:
                 prog_bar = ProgPercent(n_batches)
             for batch in batches:
                 if verbose:
                     prog_bar.update()
-                (associations_delta, h_bias_delta, v_probs,
-                 h_probs) = self.gibbs_sampling(batch, gibbs_k)
+                (associations_delta, h_bias_delta, v_probs, h_probs) = self.gibbs_sampling(batch, gibbs_k)
                 # useful to compute the error
-                v_states = (v_probs > np.random.rand(
-                    batch_size, self.num_visible)).astype(np.int)
+                v_states = (v_probs > np.random.rand(batch_size, self.num_visible)).astype(np.int)
 
                 # weights update
-                deltaW = alpha * \
-                    (associations_delta / float(batch_size)) + \
-                    m*self.last_velocity
+                deltaW = alpha * (associations_delta / float(batch_size)) + m*self.last_velocity
                 self.W += deltaW
                 self.last_velocity = deltaW
                 # bias updates mean through the batch
-                self.h_bias += alpha * (h_bias_delta).mean(axis=0)
+                self.h_bias += alpha * h_bias_delta.mean(axis=0)
                 self.v_bias += alpha * \
                     (batch - v_probs).mean(axis=0)
 
@@ -117,25 +112,17 @@ class RBM(AbstractRBM):
                 print(display(v_states[np.random.randint(v_states.shape[0])]))
 
             print("Epoch %s : error is %s" % (epoch, total_error))
-            if epoch % 25 == 0 and epoch > 0:
-                self.train_free_energies.append(
-                    self.average_free_energy(batches[0]))
+            if epoch % 10 == 0:
+                self.train_free_energies.append(self.avg_free_energy(batches[0]))
                 if validation is not None:
-                    self.validation_free_energies.append(
-                        self.average_free_energy(validation))
+                    self.validation_free_energies.append(self.avg_free_energy(validation))
             if epoch % m_update == 0 and epoch > 0:
                 m += 0.01
-            if epoch % alpha_update == 0 and epoch > 0 and alpha > 0.005:
-                alpha -= 0.01
             self.costs.append(total_error)
             total_error = 0
 
     def gibbs_sampling(self, v_in_0, k):
         """Performs k steps of Gibbs Sampling, starting from the visible units input.
-        :param v_in_0: input of the visible units
-        :param k: number of sampling steps
-        :return difference between positive associations and negative
-        associations after k steps of gibbs sampling
         """
         batch_size = v_in_0.shape[0]
 
@@ -181,28 +168,20 @@ class RBM(AbstractRBM):
                 h_probs_new)
 
     def sample_visible_from_hidden(self, h_in, gibbs_k=1):
-        """
-        Assuming the RBM has been trained, run the network on a set of
+        """Assuming the RBM has been trained, run the network on a set of
         hidden units, to get a sample of the visible units.
-        :param h_in: states of the hidden units.
-        :param gibbs_k: number of gibbs sampling steps
-        :return (visible units probabilities, visible units states)
         """
         (_, _, v_probs, _) = self.gibbs_sampling(h_in, gibbs_k)
         v_states = (v_probs > np.random.rand(v_probs.shape[0], v_probs.shape[1])).astype(np.int)
-        return (v_probs, v_states)
+        return v_probs, v_states
 
     def sample_hidden_from_visible(self, v_in, gibbs_k=1):
-        """
-        Assuming the RBM has been trained, run the network on a set of
+        """Assuming the RBM has been trained, run the network on a set of
         visible units, to get a sample of the visible units.
-        :param v_in: states of the visible units.
-        :param gibbs_k: number of gibbs sampling steps
-        :return (hidden units probabilities, hidden units states)
         """
         (_, _, _, h_probs) = self.gibbs_sampling(v_in, gibbs_k)
         h_states = (h_probs > np.random.rand(h_probs.shape[0], h_probs.shape[1])).astype(np.int)
-        return (h_probs, h_states)
+        return h_probs, h_states
 
     def visible_act_func(self, x):
         """Sigmoid function"""
@@ -212,7 +191,7 @@ class RBM(AbstractRBM):
         """Sigmoid function"""
         return 1.0 / (1 + np.exp(-x))
 
-    def average_free_energy(self, data):
+    def avg_free_energy(self, data):
         """Compute the average free energy over a representative sample
         of the training set or the validation set.
         """
@@ -223,7 +202,6 @@ class RBM(AbstractRBM):
 
     def save_configuration(self, outfile):
         """Save a json representation of the RBM object.
-        :param outfile: path of the output file
         """
         with open(outfile, 'w') as f:
             f.write(json.dumps({'W': self.W.tolist(),
@@ -239,7 +217,6 @@ class RBM(AbstractRBM):
 
     def load_configuration(self, infile):
         """Load a json representation of the RBM object.
-        :param infile: path of the input file
         """
         with open(infile, 'r') as f:
             data = json.load(f)

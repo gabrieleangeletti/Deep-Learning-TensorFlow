@@ -3,7 +3,7 @@ __author__ = 'blackecho'
 import numpy as np
 import json
 
-import util
+import utils
 
 from pyprind import ProgPercent
 
@@ -71,7 +71,7 @@ class MultinomialRBM(AbstractRBM):
         total_error = 0
 
         # divide data into batches
-        batches = util.generate_batches(data, batch_size)
+        batches = utils.generate_batches(data, batch_size)
         n_batches = len(batches)
         # Learning rate update rule
         alpha_update = int(max_epochs / (alpha / 0.01)) + 1

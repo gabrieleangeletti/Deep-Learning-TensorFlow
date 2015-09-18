@@ -1,5 +1,5 @@
 # Datasets sizes
-TRAIN_SET_SIZE = 500
+TRAIN_SET_SIZE = 5000
 TEST_SET_SIZE = 4000
 
 ####################################################################
@@ -7,11 +7,12 @@ TEST_SET_SIZE = 4000
 NV = 784 			# number of visible units
 NH = 100    		# number of hidden units
 # Train parameters
-MAX_EPOCHS = 100   # number of training epochs
+MAX_EPOCHS = 10   # number of training epochs
 ALPHA = 0.12		# learning rate
 M = 0.0				# momentum parameter
 BATCH_SIZE = 1     # size of each batch
 GIBBS_K = 1			# number of gibbs sampling steps
+ALPHA_UPDATE_RULE = 'constant'  # type of update rule for the learning rate
 VERBOSE = True  # if true, a progress bar and a reconstructed sample for each epoch will be shown
 OUTFILE = 'models/rbm.json'  # outfile to save the configuration of the rbm after training
 ####################################################################
@@ -31,12 +32,12 @@ M_OUTFILE = 'models/mrbm.json'  # outfile to save the configuration of the rbm a
 ####################################################################
 # Gaussian RBM configuration
 GAUSS_NV = 784            # number of visible units
-GAUSS_NH = 450            # number of hidden units
+GAUSS_NH = 200            # number of hidden units
 # Train parameters
-G_MAX_EPOCHS = 2000   # number of training epochs
-G_ALPHA = 0.001       # learning rate
+G_MAX_EPOCHS = 100   # number of training epochs
+G_ALPHA = 0.0001       # learning rate
 G_M = 0.0             # momentum parameter
-G_BATCH_SIZE = 20     # size of each batch
+G_BATCH_SIZE = 100     # size of each batch
 G_GIBBS_K = 1         # number of gibbs sampling steps
 G_VERBOSE = True  # if true, a progress bar and a reconstructed sample for each epoch will be shown
 G_OUTFILE = 'models/grbm.json'  # outfile to save the configuration of the rbm after training

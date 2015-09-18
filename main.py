@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 
 from mnist import MNIST
 import config
-import util
+import utils
 from classification import *
 import multinomial_rbm
 import gaussian_rbm
@@ -30,9 +30,12 @@ if __name__ == '__main__':
     X_test = test_images[randperm_test]
     y = mndata_labels[randperm]
     y_test = test_labels[randperm_test]
-    # normalize dataset to be between 0 and 1
-    X_norm = util.normalize_dataset(X)
-    X_norm_test = util.normalize_dataset(X_test)
+    # normalize dataset to be binary valued
+    X_norm = utils.normalize_dataset_to_binary(X)
+    X_norm_test = utils.normalize_dataset_to_binary(X_test)
+    # normalize dataset to be real valued
+    X_real = utils.normalize_dataset(X)
+    X_real_test = utils.normalize_dataset(X_test)
     # Type of learning machines to train
     if len(sys.argv) > 1:
         type = sys.argv[1].split('=')[1]
@@ -54,6 +57,7 @@ if __name__ == '__main__':
                 m=config.M,
                 batch_size=config.BATCH_SIZE,
                 gibbs_k=config.GIBBS_K,
+                alpha_update_rule=config.ALPHA_UPDATE_RULE,
                 verbose=config.VERBOSE,
                 display=display)
         # save the rbm to a file
@@ -65,8 +69,8 @@ if __name__ == '__main__':
     # ########################################
     if type == 'multinomial':
         # discretization of data
-        X_mu = util.discretize_dataset(X, config.MULTI_KV)
-        X_mu_test = util.discretize_dataset(X_test, config.MULTI_KV)
+        X_mu = utils.discretize_dataset(X, config.MULTI_KV)
+        X_mu_test = utils.discretize_dataset(X_test, config.MULTI_KV)
         # create multinomial rbm
         mr = multinomial_rbm.MultinomialRBM(config.MULTI_NV, config.MULTI_NH, config.MULTI_KV, config.MULTI_KN)
         mr.train(X_mu,
@@ -83,14 +87,14 @@ if __name__ == '__main__':
         mr.save_configuration(config.M_OUTFILE)
 
     # ###############################################
-    # Bernoulli Gaussian Restricted Boltzmann Machine
+    # Gaussian-Bernoulli Restricted Boltzmann Machine
     # ###############################################
     if type == 'gaussian':
         # create gaussian rbm
         gr = gaussian_rbm.GaussianRBM(config.GAUSS_NV, config.GAUSS_NH)
         print('Begin Training...')
-        gr.train(X,
-                 validation=X_test[0:config.G_BATCH_SIZE],
+        gr.train(X_real,
+                 validation=X_real_test[0:config.G_BATCH_SIZE],
                  max_epochs=config.G_MAX_EPOCHS,
                  alpha=config.G_ALPHA,
                  m=config.G_M,
@@ -117,6 +121,7 @@ if __name__ == '__main__':
                                         alpha=config.ALPHA,
                                         m=config.M,
                                         gibbs_k=config.GIBBS_K,
+                                        alpha_update_rule=config.ALPHA_UPDATE_RULE,
                                         verbose=config.VERBOSE,
                                         display=display)
 
@@ -148,8 +153,8 @@ if __name__ == '__main__':
     # #####################################################
     elif type == 'mrbm-vs-logistic':
         # discretization of data
-        X_mu = util.discretize_dataset(X, config.MULTI_KV)
-        X_mu_test = util.discretize_dataset(X_test, config.MULTI_KV)
+        X_mu = utils.discretize_dataset(X, config.MULTI_KV)
+        X_mu_test = utils.discretize_dataset(X_test, config.MULTI_KV)
         # create multinomial rbm
         csm = classification_multinomial_rbm.ClsMultiRBM(config.MULTI_NV, config.MULTI_NH, config.MULTI_KV, config.MULTI_KN)
         # unsupervised learning of features
@@ -185,7 +190,6 @@ if __name__ == '__main__':
         print('Accuracy of the Logistic classifier: %s' %
               (accuracy_lr))
 
-
     # ##################################################
     # Classification Gaussian rbm vs Logistic Regression
     # ##################################################
@@ -194,8 +198,8 @@ if __name__ == '__main__':
             config.GAUSS_NV, config.GAUSS_NH)
         # unsupervised learning of features
         print('Starting unsupervised learning of the features...')
-        csg.learn_unsupervised_features(X,
-                                        validation=X_test[0:config.G_BATCH_SIZE],
+        csg.learn_unsupervised_features(X_real,
+                                        validation=X_real_test[0:config.G_BATCH_SIZE],
                                         max_epochs=config.G_MAX_EPOCHS,
                                         batch_size=config.G_BATCH_SIZE,
                                         alpha=config.G_ALPHA,
@@ -209,20 +213,20 @@ if __name__ == '__main__':
         csg.grbm.save_configuration(config.G_OUTFILE)
         # fit the Logistic Regression layer
         print('Fitting the Logistic Regression layer...')
-        csg.fit_logistic_cls(X, y)
+        csg.fit_logistic_cls(X_real, y)
         # sample the test set
         print('Testing the accuracy of the classifier...')
         # test the predictions of the LR layer
-        preds_st = csg.predict_logistic_cls(X_test)
+        preds_st = csg.predict_logistic_cls(X_real_test)
 
         accuracy_st = sum(preds_st == y_test) / float(config.TEST_SET_SIZE)
         # Now train a normal logistic regression classifier and test it
         print('Training standard Logistic Regression Classifier...')
         lr_cls = LogisticRegression()
-        lr_cls.fit(X, y)
-        lr_cls_preds = lr_cls.predict(X_test)
+        lr_cls.fit(X_real, y)
+        lr_cls_preds = lr_cls.predict(X_real_test)
         accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
-        print('Accuracy of the RBM classifier: %s' %
+        print('Accuracy of the Gaussian RBM classifier: %s' %
               (accuracy_st))
         print('Accuracy of the Logistic classifier: %s' %
               (accuracy_lr))

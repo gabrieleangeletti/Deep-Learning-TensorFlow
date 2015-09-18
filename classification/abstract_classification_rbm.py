@@ -1,6 +1,6 @@
-__author__ = 'blackecho'
-
 from abc import ABCMeta, abstractmethod
+
+__author__ = 'blackecho'
 
 
 class AbstractClsRBM(object):

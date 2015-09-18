@@ -24,6 +24,7 @@ class ClsGaussianRBM(object):
                                     alpha=0.1,
                                     m=0.5,
                                     gibbs_k=1,
+                                    alpha_update_rule='constant',
                                     verbose=False,
                                     display=None):
         self.grbm.train(data,
@@ -33,6 +34,7 @@ class ClsGaussianRBM(object):
                         alpha=alpha,
                         m=m,
                         gibbs_k=gibbs_k,
+                        alpha_update_rule=alpha_update_rule,
                         verbose=verbose,
                         display=display)
 
@@ -47,5 +49,5 @@ class ClsGaussianRBM(object):
         """Predict the labels for data using the Logistic Regression layer on top of the
         learned features by the Restricted Boltzmann Machine.
         """
-        (data_probs, data_states) = self.grbm.sample_hidden_from_visible(X_test)
+        (data_probs, data_states) = self.grbm.sample_hidden_from_visible(data)
         return self.cls.predict(data_probs)
