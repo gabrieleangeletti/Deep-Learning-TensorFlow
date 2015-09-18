@@ -14,11 +14,11 @@ class NreluRBM(AbstractRBM):
     Noisy Rectified Linear units.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, num_visible, num_hidden):
+        super(NreluRBM, self).__init__(num_visible, num_hidden)
 
     def train(self, data, validation=None, max_epochs=100, batch_size=10,
-              alpha=0.1, m=0.5, gibbs_k=1, verbose=False, display=None):
+              alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
         """Train the rbm with the given parameters.
         """
         pass

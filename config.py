@@ -1,7 +1,9 @@
 # Datasets sizes
-TRAIN_SET_SIZE = 5000
+TRAIN_SET_SIZE = 100
 TEST_SET_SIZE = 4000
 
+####################################################################
+# Logistic Regression Classifier configuration
 ####################################################################
 # Standard RBM configuration
 NV = 784 			# number of visible units
@@ -27,6 +29,7 @@ M_ALPHA = 0.01		# learning rate
 M_M = 0.0				# momentum parameter
 M_BATCH_SIZE = 25     # size of each batch
 M_GIBBS_K = 1			# number of gibbs sampling steps
+M_ALPHA_UPDATE_RULE = 'constant'  # type of update rule for the learning rate
 M_VERBOSE = True  # if true, a progress bar and a reconstructed sample for each epoch will be shown
 M_OUTFILE = 'models/mrbm.json'  # outfile to save the configuration of the rbm after training
 ####################################################################
@@ -37,8 +40,21 @@ GAUSS_NH = 200            # number of hidden units
 G_MAX_EPOCHS = 100   # number of training epochs
 G_ALPHA = 0.0001       # learning rate
 G_M = 0.0             # momentum parameter
-G_BATCH_SIZE = 100     # size of each batch
+G_BATCH_SIZE = 10     # size of each batch
 G_GIBBS_K = 1         # number of gibbs sampling steps
+G_ALPHA_UPDATE_RULE = 'constant'  # type of update rule for the learning rate
 G_VERBOSE = True  # if true, a progress bar and a reconstructed sample for each epoch will be shown
 G_OUTFILE = 'models/grbm.json'  # outfile to save the configuration of the rbm after training
+####################################################################
+# Deep Belief Network configuration
+DBN_LAYERS = [784, 300, 200, 100]
+# Train parameters
+DBN_MAX_EPOCHS = 10   # number of training epochs
+DBN_ALPHA = 0.05		# learning rate
+DBN_M = 0.0				# momentum parameter
+DBN_BATCH_SIZE = 1     # size of each batch
+DBN_GIBBS_K = 1			# number of gibbs sampling steps
+DBN_ALPHA_UPDATE_RULE = 'constant'  # type of update rule for the learning rate
+DBN_VERBOSE = True  # if true, a progress bar and a reconstructed sample for each epoch will be shown
+DBN_OUTFILE = 'models/rbm.json'  # outfile to save the configuration of the rbm after training
 ####################################################################

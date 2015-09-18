@@ -1,22 +1,21 @@
-from sklearn.linear_model import LogisticRegression
-
-from rbm import RBM
+from abstract_classification_rbm import AbstractClsRBM
 
 __author__ = 'blackecho'
 
 
-class ClsRBM(object):
+class ClsRBM(AbstractClsRBM):
 
     def __init__(self,
                  num_visible,
-                 num_hidden):
+                 num_hidden,
+                 *args,
+                 **kwargs):
 
-        # standard restricted boltzmann machine
-        self.rbm = RBM(num_visible,
-                       num_hidden)
-
-        # Logistic Regression classifier on top of the rbm
-        self.cls = LogisticRegression()
+        super(ClsRBM, self).__init__(num_visible,
+                                     num_hidden,
+                                     AbstractClsRBM.rbm_type.rbm,
+                                     *args,
+                                     **kwargs)
 
     def learn_unsupervised_features(self,
                                     data,
@@ -46,12 +45,12 @@ class ClsRBM(object):
         """Train a logistic regression classifier on top of the learned features
         by the Restricted Boltzmann Machine.
         """
-        (data_probs, data_states) = self.rbm.sample_hidden_from_visible(data)
+        (data_probs, data_states) = self.rbm.sample_hidden_from_visible(data, gibbs_k=1)
         self.cls.fit(data_probs, labels)
 
     def predict_logistic_cls(self, data):
         """Predict the labels for data using the Logistic Regression layer on top of the
         learned features by the Restricted Boltzmann Machine.
         """
-        (data_probs, data_states) = self.rbm.sample_hidden_from_visible(data)
+        (data_probs, data_states) = self.rbm.sample_hidden_from_visible(data, gibbs_k=1)
         return self.cls.predict(data_probs)

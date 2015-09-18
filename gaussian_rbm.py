@@ -50,14 +50,14 @@ class GaussianRBM(AbstractRBM):
         self.train_free_energies = []
         self.validation_free_energies = []
         # last gradient, used for momentum
-        self.last_velocity = 0.0
+        self.last_velocity = 0.
 
     def train(self, data, validation=None, max_epochs=100, batch_size=1,
               alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
         """Train the restricted boltzmann machine with the given parameters.
         """
         # Initialize total error
-        total_error = 0
+        total_error = 0.
 
         # divide data into batches
         batches = utils.generate_batches(data, batch_size)

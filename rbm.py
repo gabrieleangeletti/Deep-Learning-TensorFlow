@@ -45,7 +45,7 @@ class RBM(AbstractRBM):
         self.train_free_energies = []
         self.validation_free_energies = []
         # last gradient, used for momentum
-        self.last_velocity = 0.0
+        self.last_velocity = 0.
 
     def train(self, data, validation=None, max_epochs=100, batch_size=10,
               alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
@@ -54,7 +54,7 @@ class RBM(AbstractRBM):
         assert alpha_update_rule in ['constant', 'linear', 'exp']
 
         # Total error per epoch
-        total_error = 0
+        total_error = 0.
 
         # Set the visible bias weights to the approximate probability
         # of a neuron being activated in the training data.
@@ -130,8 +130,7 @@ class RBM(AbstractRBM):
         # Constrastive Divergence phase
         h_activations_0 = np.dot(v_in_0, self.W) + self.h_bias
         h_probs_0 = self.hidden_act_func(h_activations_0)
-        h_states_0 = (h_probs_0 > np.random.rand(
-            batch_size, self.num_hidden)).astype(np.int)
+        h_states_0 = (h_probs_0 > np.random.rand(batch_size, self.num_hidden)).astype(np.int)
         pos_associations = np.dot(v_in_0.T, h_states_0)
 
         for gibbs_step in xrange(k):
@@ -155,9 +154,7 @@ class RBM(AbstractRBM):
             # Sampling again from the hidden units
             h_activations_new = np.dot(v_probs, self.W) + self.h_bias
             h_probs_new = self.hidden_act_func(h_activations_new)
-            h_states_new = (
-                h_probs_new > np.random.rand(batch_size, self.num_hidden)
-            ).astype(np.int)
+            h_states_new = (h_probs_new > np.random.rand(batch_size, self.num_hidden)).astype(np.int)
             # We are again using states but we could have used probabilities
             neg_associations = np.dot(v_probs.T, h_states_new)
             # Use the new sampled visible units in the next step

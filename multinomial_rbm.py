@@ -1,5 +1,3 @@
-__author__ = 'blackecho'
-
 import numpy as np
 import json
 
@@ -8,6 +6,8 @@ import utils
 from pyprind import ProgPercent
 
 from abstract_rbm import AbstractRBM
+
+__author__ = 'blackecho'
 
 
 class MultinomialRBM(AbstractRBM):
