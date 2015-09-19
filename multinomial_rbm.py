@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 import json
 
@@ -26,8 +28,10 @@ class MultinomialRBM(AbstractRBM):
         :param v_bias: visible units bias
         """
 
-        self.num_visible = num_visible * (k_visible + 1)
-        self.num_hidden = num_hidden * (k_hidden + 1)
+        super(MultinomialRBM, self).__init__(num_visible, num_hidden)
+
+        self.num_visible *= (k_visible + 1)
+        self.num_hidden *= (k_hidden + 1)
         self.k_visible = k_visible
         self.k_hidden = k_hidden
 
@@ -51,32 +55,19 @@ class MultinomialRBM(AbstractRBM):
         # last gradient, used for momentum
         self.last_velocity = 0.0
 
-    def train(self, data, validation=None, max_epochs=100, batch_size=10,
-              alpha=0.1, m=0.5, gibbs_k=1, verbose=False, display=None):
-        """Train the restricted boltzmann machine with the given parameters.
-        :param data: the training set
-        :param validation: the validation set
-        :param max_epochs: number of training steps
-        :param batch_size: size of each batch
-        :param alpha: learning rate
-        :param m: momentum parameter
-        :param gibbs_k: number of gibbs sampling steps
-        :param verbose: if true display a progress bar through the loop
-        :param display: function used to display reconstructed samples
-                        after gibbs sampling for each epoch.
-                        If batch_size is greater than one, one
-                        random sample will be displayed.
-        """
+    def train(self, data, validation=None, epochs=100, batch_size=10,
+              alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
         # Total error per epoch
         total_error = 0
 
         # divide data into batches
         batches = utils.generate_batches(data, batch_size)
         n_batches = len(batches)
-        # Learning rate update rule
-        alpha_update = int(max_epochs / (alpha / 0.01)) + 1
+
+        alpha_rule = AbstractRBM._prepare_alpha_update(alpha_update_rule, alpha, epochs)
+
         # Momentum parameter update rule
-        m_update = int(max_epochs / ((0.9 - m) / 0.01)) + 1
+        m_update = int(epochs / ((0.9 - m) / 0.01)) + 1
         # Convert batches into binary visible states
         binary_batches = [self._convert_visible_state_to_binary(b) for b in batches]
         # Convert the validation into binary visible states
@@ -84,12 +75,11 @@ class MultinomialRBM(AbstractRBM):
         if validation is not None:
             binary_validation = self._convert_visible_state_to_binary(validation)
 
-        for epoch in xrange(max_epochs):
-            if verbose:
-                prog_bar = ProgPercent(n_batches)
+        for epoch in xrange(epochs):
+            alpha = alpha_rule.update()  # learning rate update
+            prog_bar = ProgPercent(n_batches)
             for batch in binary_batches:
-                if verbose:
-                    prog_bar.update()
+                prog_bar.update()
                 (associations_delta, h_bias_delta, v_probs,
                  h_probs) = self.gibbs_sampling(batch, gibbs_k)
                 # Useful to compute the error
@@ -124,8 +114,6 @@ class MultinomialRBM(AbstractRBM):
                         self.average_free_energy(binary_validation))
             if epoch % m_update == 0 and epoch > 0 and m < 0.9:
                 m += 0.01
-            if epoch % alpha_update == 0 and epoch > 0 and alpha > 0.005:
-                alpha -= 0.01
             self.costs.append(total_error)
             total_error = 0
 
@@ -182,11 +170,7 @@ class MultinomialRBM(AbstractRBM):
             neg_associations = np.dot(v_probs.T, h_states_new)
             # Use the new sampled visible units in the next step
             v_in = v_probs
-        return (pos_associations - neg_associations,
-                h_probs_0 - h_probs_new,
-                v_probs,
-                h_probs_new)
-
+        return pos_associations - neg_associations, h_probs_0 - h_probs_new, v_probs, h_probs_new
 
     def sample_visible_from_hidden(self, h_in, gibbs_k=1):
         """
@@ -205,7 +189,7 @@ class MultinomialRBM(AbstractRBM):
             tmp[ps.tolist().index(max(ps))] = 1
             v_states.append(tmp)
         v_states = np.array(v_states)
-        return (v_probs, v_states)
+        return v_probs, v_states
 
     def sample_hidden_from_visible(self, v_in, gibbs_k=1):
         """
@@ -224,7 +208,7 @@ class MultinomialRBM(AbstractRBM):
             tmp[ps.tolist().index(max(ps))] = 1
             h_states.append(tmp)
         h_states = np.array(h_states)
-        return (h_probs, h_states)
+        return h_probs, h_states
 
     def visible_act_func(self, x):
         """Softmax Activation Function (One of K multinomial states)
@@ -365,35 +349,3 @@ class MultinomialRBM(AbstractRBM):
                 sample_multin.append(tmp)
             bin.append(np.array([item for sublist in sample_multin for item in sublist]))
         return np.array(bin)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

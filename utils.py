@@ -1,5 +1,23 @@
 from abc import ABCMeta, abstractmethod
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import numpy as np
+
+
+def int2binary_vect(y):
+    """Converts the integer vector y into a vector of binary vector, each representing one integer.
+    Usually y are the labels of a supervised dataset, that must be converted to binary vector for use with
+    stochastic binary neurons or RBM/DBN.
+    :param y: integer vector
+    :return: binary representation of y
+    """
+    n_bits = (lambda x: max(x) + 1 if 0 in x else max(x))(y)
+    out = []
+    for _, v in enumerate(y):
+        tmp = [0] * n_bits
+        tmp[v] = 1
+        out.append(tmp)
+    return np.array(out)
 
 
 def normalize_dataset_to_binary(data):
@@ -54,6 +72,7 @@ def generate_batches(data, batch_size):
 
     return batches
 
+
 def discretize_dataset(data, N):
     """Constraint dataset values to be integers between 0 and N.
     :param data: dataset to be converted
@@ -72,7 +91,7 @@ def discretize_dataset(data, N):
     for sample in data:
         converted_sample = np.array([])
         for elem in sample:
-            for i,t in enumerate(threshold_vect):
+            for i, t in enumerate(threshold_vect):
                 if elem <= t:
                     if i == 0:
                         converted_sample = np.append(converted_sample, 0)
@@ -83,6 +102,19 @@ def discretize_dataset(data, N):
         converted_data = np.append(converted_data, [converted_sample], axis=0)
     # remove the first row used only for np.append
     return np.delete(converted_data, 0, 0)
+
+
+def gen_image(img, width, height, outfile):
+    assert len(img) == width * height
+
+    img = img.reshape(width, height)
+
+    desired_width = 3  # in inches
+    scale = desired_width / float(width)
+
+    fig, ax = plt.subplots(1, 1, figsize=(desired_width, height*scale))
+    ax.imshow(img, cmap=cm.Greys_r, interpolation='none')
+    fig.savefig(outfile, dpi=300)
 
 
 class AbstractUpdatingParameter(object):

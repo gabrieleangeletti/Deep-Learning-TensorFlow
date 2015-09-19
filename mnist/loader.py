@@ -2,6 +2,7 @@ import os
 import struct
 from array import array
 
+
 class MNIST(object):
     def __init__(self, path='.'):
         self.path = path

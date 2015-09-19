@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 import sys
 
@@ -53,7 +55,7 @@ if __name__ == '__main__':
         print('Begin Training...')
         r.train(X_norm,
                 validation=X_norm_test[0:config.BATCH_SIZE],
-                max_epochs=config.MAX_EPOCHS,
+                epochs=config.EPOCHS,
                 alpha=config.ALPHA,
                 m=config.M,
                 batch_size=config.BATCH_SIZE,
@@ -64,6 +66,14 @@ if __name__ == '__main__':
         # save the rbm to a file
         print('Saving the RBM to outfile...')
         r.save_configuration(config.OUTFILE)
+        # print('Reading the mind of the RBM...')
+        # _, mind = r.fantasy(config.FANTASY_K)
+        # print(display(mind[0]))
+        print('Saving image of random hidden unit weights to outfile...')
+        r.save_weights_images(config.HS,
+                              config.WIDTH,
+                              config.HEIGHT,
+                              config.W_OUTFILE)
 
     # ########################################
     # Multinomial Restricted Boltzmann Machine
@@ -76,7 +86,7 @@ if __name__ == '__main__':
         mr = multinomial_rbm.MultinomialRBM(config.MULTI_NV, config.MULTI_NH, config.MULTI_KV, config.MULTI_KN)
         mr.train(X_mu,
                  validation=X_mu_test[0:config.M_BATCH_SIZE],
-                 max_epochs=config.M_MAX_EPOCHS,
+                 epochs=config.M_EPOCHS,
                  alpha=config.M_ALPHA,
                  m=config.M_M,
                  batch_size=config.M_BATCH_SIZE,
@@ -96,7 +106,7 @@ if __name__ == '__main__':
         print('Begin Training...')
         gr.train(X_real,
                  validation=X_real_test[0:config.G_BATCH_SIZE],
-                 max_epochs=config.G_MAX_EPOCHS,
+                 epochs=config.G_EPOCHS,
                  alpha=config.G_ALPHA,
                  m=config.G_M,
                  batch_size=config.G_BATCH_SIZE,
@@ -117,7 +127,7 @@ if __name__ == '__main__':
         print('Starting unsupervised learning of the features...')
         cst.learn_unsupervised_features(X_norm,
                                         validation=X_norm_test[0:config.BATCH_SIZE],
-                                        max_epochs=config.MAX_EPOCHS,
+                                        epochs=config.EPOCHS,
                                         batch_size=config.BATCH_SIZE,
                                         alpha=config.ALPHA,
                                         m=config.M,
@@ -144,10 +154,8 @@ if __name__ == '__main__':
         lr_cls.fit(X, y)
         lr_cls_preds = lr_cls.predict(X_test)
         accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
-        print('Accuracy of the RBM classifier: %s' %
-              (accuracy_st))
-        print('Accuracy of the Logistic classifier: %s' %
-              (accuracy_lr))
+        print('Accuracy of the RBM classifier: %s' % accuracy_st)
+        print('Accuracy of the Logistic classifier: %s' % accuracy_lr)
 
     # #####################################################
     # Classification Multinomial rbm vs Logistic Regression
@@ -162,7 +170,7 @@ if __name__ == '__main__':
         print('Starting unsupervised learning of the features...')
         csm.learn_unsupervised_features(X_mu,
                                         validation=X_mu_test[0:config.M_BATCH_SIZE],
-                                        max_epochs=config.M_MAX_EPOCHS,
+                                        epochs=config.M_EPOCHS,
                                         alpha=config.M_ALPHA,
                                         m=config.M_M,
                                         batch_size=config.M_BATCH_SIZE,
@@ -186,10 +194,8 @@ if __name__ == '__main__':
         lr_cls.fit(X_mu, y)
         lr_cls_preds = lr_cls.predict(X_mu_test)
         accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
-        print('Accuracy of the RBM classifier: %s' %
-              (accuracy_m))
-        print('Accuracy of the Logistic classifier: %s' %
-              (accuracy_lr))
+        print('Accuracy of the RBM classifier: %s' % accuracy_m)
+        print('Accuracy of the Logistic classifier: %s' % accuracy_lr)
 
     # ##################################################
     # Classification Gaussian rbm vs Logistic Regression
@@ -200,7 +206,7 @@ if __name__ == '__main__':
         print('Starting unsupervised learning of the features...')
         csg.learn_unsupervised_features(X_real,
                                         validation=X_real_test[0:config.G_BATCH_SIZE],
-                                        max_epochs=config.G_MAX_EPOCHS,
+                                        epochs=config.G_EPOCHS,
                                         batch_size=config.G_BATCH_SIZE,
                                         alpha=config.G_ALPHA,
                                         m=config.G_M,
@@ -227,23 +233,67 @@ if __name__ == '__main__':
         lr_cls.fit(X_real, y)
         lr_cls_preds = lr_cls.predict(X_real_test)
         accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
-        print('Accuracy of the Gaussian RBM classifier: %s' %
-              (accuracy_st))
-        print('Accuracy of the Logistic classifier: %s' %
-              (accuracy_lr))
+        print('Accuracy of the Gaussian RBM classifier: %s' % accuracy_st)
+        print('Accuracy of the Logistic classifier: %s' % accuracy_lr)
 
     # ##################################################
     # Deep Belief Network
     # ##################################################
     elif type == 'dbn':
         deep_net = DBN(config.DBN_LAYERS)
-        deep_net.pretrain(X_norm,
-                          validation=X_norm_test[0:config.BATCH_SIZE],
-                          max_epochs=config.MAX_EPOCHS,
-                          alpha=config.ALPHA,
-                          m=config.M,
-                          batch_size=config.BATCH_SIZE,
-                          gibbs_k=config.GIBBS_K,
-                          alpha_update_rule=config.ALPHA_UPDATE_RULE,
-                          verbose=config.VERBOSE,
-                          display=display)
+        # Unsupervised greedy layer-wise pre-training of the net
+        deep_net.unsupervised_pretrain(X_norm,
+                                       validation=X_norm_test[0:config.DBN_BATCH_SIZE],
+                                       epochs=config.DBN_EPOCHS,
+                                       alpha=config.DBN_ALPHA,
+                                       m=config.DBN_M,
+                                       batch_size=config.DBN_BATCH_SIZE,
+                                       gibbs_k=config.DBN_GIBBS_K,
+                                       alpha_update_rule=config.DBN_ALPHA_UPDATE_RULE,
+                                       verbose=config.DBN_VERBOSE,
+                                       display=display)
+        # Start the supervised train of the last RBM
+        print('Start training of last rbm on the joint distribution data/labels...')
+        deep_net.supervised_pretrain(config.DBN_LAST_LAYER,
+                                     X_norm,
+                                     y,
+                                     epochs=config.DBN_EPOCHS,
+                                     batch_size=config.DBN_BATCH_SIZE,
+                                     alpha=config.DBN_ALPHA,
+                                     m=config.DBN_M,
+                                     gibbs_k=config.DBN_GIBBS_K,
+                                     alpha_update_rule=config.DBN_ALPHA_UPDATE_RULE)
+        print('Save last layer rbm to outfile...')
+        deep_net.last_rbm.save_configuration(config.DBN_LAST_LAYER_OUTFILE)
+
+    elif type == 'dbn-vs-logistic':
+        deep_net = DBN(config.DBN_LAYERS)
+        # Unsupervised greedy layer-wise pre-training of the net
+        deep_net.unsupervised_pretrain(X_norm,
+                                       validation=X_norm_test[0:config.DBN_BATCH_SIZE],
+                                       epochs=config.DBN_EPOCHS,
+                                       alpha=config.DBN_ALPHA,
+                                       m=config.DBN_M,
+                                       batch_size=config.DBN_BATCH_SIZE,
+                                       gibbs_k=config.DBN_GIBBS_K,
+                                       alpha_update_rule=config.DBN_ALPHA_UPDATE_RULE,
+                                       verbose=config.DBN_VERBOSE,
+                                       display=display)
+
+        # fit the Logistic Regression layer
+        print('Fitting the Logistic Regression layer...')
+        deep_net.fit_cls(X_norm, y)
+        # sample the test set
+        print('Testing the accuracy of the classifier...')
+        # test the predictions of the LR layer
+        preds_st = deep_net.predict_cls(X_norm_test)
+
+        accuracy_st = sum(preds_st == y_test) / float(config.TEST_SET_SIZE)
+        # Now train a normal logistic regression classifier and test it
+        print('Training standard Logistic Regression Classifier...')
+        lr_cls = LogisticRegression()
+        lr_cls.fit(X_norm, y)
+        lr_cls_preds = lr_cls.predict(X_norm_test)
+        accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
+        print('Accuracy of the Deep Belief Network: %s' % accuracy_st)
+        print('Accuracy of the Logistic classifier: %s' % accuracy_lr)

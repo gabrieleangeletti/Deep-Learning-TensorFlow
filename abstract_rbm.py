@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import utils
 
 __author__ = 'blackecho'
 
@@ -19,12 +20,12 @@ class AbstractRBM(object):
         self.num_hidden = num_hidden
 
     @abstractmethod
-    def train(self, data, validation=None, max_epochs=100, batch_size=10,
+    def train(self, data, validation=None, epochs=100, batch_size=10,
               alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
         """Train the restricted boltzmann machine with the given parameters.
         :param data: the training set
         :param validation: the validation set
-        :param max_epochs: number of training steps
+        :param epochs: number of training steps
         :param batch_size: size of each batch
         :param alpha: learning rate
         :param m: momentum parameter
@@ -101,3 +102,18 @@ class AbstractRBM(object):
         :param infile: path of the input file
         """
         pass
+
+    @staticmethod
+    def _prepare_alpha_update(alpha_update_rule, alpha, epochs):
+        # Learning rate update rule
+        if alpha_update_rule == 'exp':
+            alpha_rule = utils.ExpDecayParameter(alpha)
+        elif alpha_update_rule == 'linear':
+            alpha_rule = utils.LinearDecayParameter(alpha, epochs)
+        elif alpha_update_rule == 'constant':
+            alpha_rule = utils.ConstantParameter(alpha)
+        else:
+            raise Exception('alpha_update_rule must be in ["exp", "constant", "linear"]')
+        assert alpha_rule is not None
+
+        return alpha_rule

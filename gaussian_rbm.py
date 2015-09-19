@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from pyprind import ProgPercent
 import numpy as np
 import click
@@ -52,45 +54,37 @@ class GaussianRBM(AbstractRBM):
         # last gradient, used for momentum
         self.last_velocity = 0.
 
-    def train(self, data, validation=None, max_epochs=100, batch_size=1,
+    def train(self, data, validation=None, epochs=100, batch_size=1,
               alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
         """Train the restricted boltzmann machine with the given parameters.
         """
+        assert display is not None if verbose is True else True
+
         # Initialize total error
         total_error = 0.
 
         # divide data into batches
         batches = utils.generate_batches(data, batch_size)
 
-        # Learning rate update rule
-        alpha_rule = None
-        if alpha_update_rule == 'exp':
-            alpha_rule = utils.ExpDecayParameter(alpha)
-        elif alpha_update_rule == 'linear':
-            alpha_rule = utils.LinearDecayParameter(alpha, max_epochs)
-        elif alpha_update_rule == 'constant':
-            alpha_rule = utils.ConstantParameter(alpha)
-        assert alpha_rule is not None
+        alpha_rule = AbstractRBM._prepare_alpha_update(alpha_update_rule, alpha, epochs)
 
         # Momentum parameter update rule
-        m_update = int(max_epochs / ((0.9 - m) / 0.01)) + 1
+        m_update = int(epochs / ((0.9 - m) / 0.01)) + 1
 
-        for epoch in xrange(max_epochs):
+        for epoch in xrange(epochs):
             alpha = alpha_rule.update()  # learning rate update
-            if verbose:
-                prog_bar = ProgPercent(len(batches))
+            prog_bar = ProgPercent(len(batches))
             for batch in batches:
-                if verbose:
-                    prog_bar.update()
+                prog_bar.update()
                 (associations_delta, h_bias_delta, v_values_new,
                  h_probs_new, v_sigma_delta_0, v_sigma_delta) = self.gibbs_sampling(batch, gibbs_k)
 
                 # weights update
-                deltaW = alpha * \
+                dw = alpha * \
                     (associations_delta / float(batch_size)) + \
                     m * self.last_velocity
-                self.W += deltaW
-                self.last_velocity = deltaW
+                self.W += dw
+                self.last_velocity = dw
                 # bias updates mean through the batch
                 self.h_bias += alpha * np.array(h_bias_delta.mean(axis=0))[0, :]
                 cst = 1 / np.square(self.sigma)
@@ -107,9 +101,8 @@ class GaussianRBM(AbstractRBM):
                 error = np.sum((batch - v_values_new) ** 2) / float(batch_size)
                 total_error += error
 
-            if display and verbose:
-                print("Reconstructed sample from the training set")
-                print display(v_values_new[np.random.randint(v_values_new.shape[0])], threshold=200)
+            if verbose:
+                print(display(v_values_new[np.random.randint(v_values_new.shape[0])], threshold=0.5))
 
             print("Epoch %s : error is %s" % (epoch, total_error))
             if epoch % 10 == 0:
@@ -131,18 +124,13 @@ class GaussianRBM(AbstractRBM):
         dot_prod = np.dot(v_in_0 / np.square(self.v_sigma), self.W)
         h_activations_0 = dot_prod + self.h_bias
         h_probs_0 = self.hidden_act_func(h_activations_0)
-        h_states_0 = (h_probs_0 > np.random.rand(h_probs_0.shape[0], h_probs_0.shape[1])).astype(np.int)
+        h_states = (h_probs_0 > np.random.rand(h_probs_0.shape[0], h_probs_0.shape[1])).astype(np.int)
         pos_associations = np.dot(v_in_0.T, h_probs_0)
         # positive delta for the standard deviation
         v_sigma_delta_0 = 0.  # 2 * dot_prod * h_probs_0
 
         for gibbs_step in xrange(k):
-            if gibbs_step == 0:
-                # first step: we have already computed the hidden things
-                h_activations = h_activations_0
-                h_probs = h_probs_0
-                h_states = h_states_0
-            else:
+            if gibbs_step > 0:
                 # Not first step: sample hidden from new visible
                 # Sample from the hidden units given the visible units -
                 # Positive CD phase
@@ -255,7 +243,7 @@ def main(config):
         num_hidden = data['num_hidden']
         act_func = data['act_func']
         dataset = np.array(data['dataset'])
-        max_epochs = data['max_epochs']
+        epochs = data['epochs']
         alpha = data['alpha']
         m = data['m']
         batch_size = data['batch_size']
@@ -265,7 +253,7 @@ def main(config):
         # create rbm object
         grbm = GaussianRBM(num_visible, num_hidden, act_func)
         grbm.train(dataset,
-                   max_epochs=max_epochs,
+                   epochs=epochs,
                    alpha=alpha,
                    m=m,
                    batch_size=batch_size,
