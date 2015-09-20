@@ -4,6 +4,24 @@ import matplotlib.cm as cm
 import numpy as np
 
 
+def logistic(x):
+    """Logistic Function.
+    """
+    return 1. / (1. + np.exp(-x))
+
+
+def softmax(x):
+    """Return the softmax of x, that is an array of the same length as x, with all 0s and 1 in the index
+    of the max element in x.
+    :param x: numpy array whose elements are in the range [0, 1]
+    :return: softmax of x
+    """
+    mx_i = np.where(x == max(x))[0][0]
+    softmx = [0] * len(x)
+    softmx[mx_i] = 1
+    return softmx
+
+
 def int2binary_vect(y):
     """Converts the integer vector y into a vector of binary vector, each representing one integer.
     Usually y are the labels of a supervised dataset, that must be converted to binary vector for use with
@@ -187,6 +205,21 @@ class ExpDecayParameter(AbstractUpdatingParameter):
     def update(self):
         self.t += 1.0
         return 1 / (1 + (self.t / self.param))
+
+
+def prepare_alpha_update(alpha_update_rule, alpha, epochs):
+    # Learning rate update rule
+    if alpha_update_rule == 'exp':
+        alpha_rule = ExpDecayParameter(alpha)
+    elif alpha_update_rule == 'linear':
+        alpha_rule = LinearDecayParameter(alpha, epochs)
+    elif alpha_update_rule == 'constant':
+        alpha_rule = ConstantParameter(alpha)
+    else:
+        raise Exception('alpha_update_rule must be in ["exp", "constant", "linear"]')
+    assert alpha_rule is not None
+
+    return alpha_rule
 
 
 

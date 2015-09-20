@@ -41,15 +41,15 @@ if __name__ == '__main__':
     X_real_test = utils.normalize_dataset(X_test)
     # Type of learning machines to train
     if len(sys.argv) > 1:
-        type = sys.argv[1].split('=')[1]
+        run_type = sys.argv[1].split('=')[1]
     else:
         # default type is standard
-        type = 'standard'
+        run_type = 'standard'
 
     # #####################################
     # Standard Restricted Boltzmann Machine
     # #####################################
-    if type == 'standard':
+    if run_type == 'standard':
         # create rbm
         r = rbm.RBM(config.NV, config.NH)
         print('Begin Training...')
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     # ########################################
     # Multinomial Restricted Boltzmann Machine
     # ########################################
-    if type == 'multinomial':
+    if run_type == 'multinomial':
         # discretization of data
         X_mu = utils.discretize_dataset(X, config.MULTI_KV)
         X_mu_test = utils.discretize_dataset(X_test, config.MULTI_KV)
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     # ###############################################
     # Gaussian-Bernoulli Restricted Boltzmann Machine
     # ###############################################
-    if type == 'gaussian':
+    if run_type == 'gaussian':
         # create gaussian rbm
         gr = gaussian_rbm.GaussianRBM(config.GAUSS_NV, config.GAUSS_NH)
         print('Begin Training...')
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     # #################################################
     # Classification rbm vs Logistic Regression
     # #################################################
-    elif type == 'rbm-vs-logistic':
+    elif run_type == 'rbm-vs-logistic':
         cst = classification_rbm.ClsRBM(config.NV, config.NH)
         # unsupervised learning of features
         print('Starting unsupervised learning of the features...')
@@ -139,6 +139,11 @@ if __name__ == '__main__':
         # save the standard rbm to a file
         print('Saving the RBM to outfile...')
         cst.rbm.save_configuration(config.OUTFILE)
+        print('Saving image of random hidden unit weights to outfile...')
+        cst.rbm.save_weights_images(config.HS,
+                                    config.WIDTH,
+                                    config.HEIGHT,
+                                    config.W_OUTFILE)
         # fit the Logistic Regression layer
         print('Fitting the Logistic Regression layer...')
         cst.fit_logistic_cls(X_norm, y)
@@ -160,7 +165,7 @@ if __name__ == '__main__':
     # #####################################################
     # Classification Multinomial rbm vs Logistic Regression
     # #####################################################
-    elif type == 'mrbm-vs-logistic':
+    elif run_type == 'mrbm-vs-logistic':
         # discretization of data
         X_mu = utils.discretize_dataset(X, config.MULTI_KV)
         X_mu_test = utils.discretize_dataset(X_test, config.MULTI_KV)
@@ -200,7 +205,7 @@ if __name__ == '__main__':
     # ##################################################
     # Classification Gaussian rbm vs Logistic Regression
     # ##################################################
-    elif type == 'grbm-vs-logistic':
+    elif run_type == 'grbm-vs-logistic':
         csg = classification_gaussian_rbm.ClsGaussianRBM(config.GAUSS_NV, config.GAUSS_NH)
         # unsupervised learning of features
         print('Starting unsupervised learning of the features...')
@@ -239,7 +244,7 @@ if __name__ == '__main__':
     # ##################################################
     # Deep Belief Network
     # ##################################################
-    elif type == 'dbn':
+    elif run_type == 'dbn':
         deep_net = DBN(config.DBN_LAYERS)
         # Unsupervised greedy layer-wise pre-training of the net
         deep_net.unsupervised_pretrain(X_norm,
@@ -266,7 +271,7 @@ if __name__ == '__main__':
         print('Save last layer rbm to outfile...')
         deep_net.last_rbm.save_configuration(config.DBN_LAST_LAYER_OUTFILE)
 
-    elif type == 'dbn-vs-logistic':
+    elif run_type == 'dbn-vs-logistic':
         deep_net = DBN(config.DBN_LAYERS)
         # Unsupervised greedy layer-wise pre-training of the net
         deep_net.unsupervised_pretrain(X_norm,

@@ -20,7 +20,7 @@ class ClsGaussianRBM(AbstractClsRBM):
     def learn_unsupervised_features(self,
                                     data,
                                     validation=None,
-                                    max_epochs=100,
+                                    epochs=100,
                                     batch_size=1,
                                     alpha=0.1,
                                     m=0.5,
@@ -30,7 +30,7 @@ class ClsGaussianRBM(AbstractClsRBM):
                                     display=None):
         self.rbm.train(data,
                        validation=validation,
-                       max_epochs=max_epochs,
+                       epochs=epochs,
                        batch_size=batch_size,
                        alpha=alpha,
                        m=m,

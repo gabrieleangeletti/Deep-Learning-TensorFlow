@@ -66,7 +66,7 @@ class GaussianRBM(AbstractRBM):
         # divide data into batches
         batches = utils.generate_batches(data, batch_size)
 
-        alpha_rule = AbstractRBM._prepare_alpha_update(alpha_update_rule, alpha, epochs)
+        alpha_rule = utils.prepare_alpha_update(alpha_update_rule, alpha, epochs)
 
         # Momentum parameter update rule
         m_update = int(epochs / ((0.9 - m) / 0.01)) + 1
@@ -192,8 +192,8 @@ class GaussianRBM(AbstractRBM):
         return np.random.normal(x, np.square(self.sigma))
 
     def hidden_act_func(self, x):
-        """Sigmoid function"""
-        return 1. / (1. + np.exp(-x))
+        """Logistic function"""
+        return utils.logistic(x)
 
     def avg_free_energy(self, data):
         """Compute the average free energy over a representative sample

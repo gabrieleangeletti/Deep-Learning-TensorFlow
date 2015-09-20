@@ -52,7 +52,7 @@ class AbstractClsRBM(object):
     def learn_unsupervised_features(self,
                                     data,
                                     validation=None,
-                                    max_epochs=100,
+                                    epochs=100,
                                     batch_size=1,
                                     alpha=0.1,
                                     m=0.5,
@@ -64,7 +64,7 @@ class AbstractClsRBM(object):
         with the given parameters.
         :param data: the training set
         :param validation: the validation set
-        :param max_epochs: number of training steps
+        :param epochs: number of training steps
         :param batch_size: size of each batch
         :param alpha: learning rate
         :param m: momentum parameter

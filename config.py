@@ -1,6 +1,6 @@
 # Datasets sizes
-TRAIN_SET_SIZE = 3000
-TEST_SET_SIZE = 4000
+TRAIN_SET_SIZE = 30000
+TEST_SET_SIZE = 10000
 
 ####################################################################
 # Logistic Regression Classifier configuration
@@ -8,10 +8,10 @@ TEST_SET_SIZE = 4000
 ####################################################################
 # Standard RBM configuration
 NV = 784 			# number of visible units
-NH = 250    		# number of hidden units
+NH = 500    		# number of hidden units
 # Train parameters
-EPOCHS = 300   # number of training epochs
-ALPHA = 0.05		# learning rate
+EPOCHS = 500        # number of training epochs
+ALPHA = 0.01		# learning rate
 M = 0.0				# momentum parameter
 BATCH_SIZE = 100     # size of each batch
 GIBBS_K = 1			# number of gibbs sampling steps
@@ -21,7 +21,7 @@ OUTFILE = 'models/rbm.json'  # outfile to save the configuration of the rbm afte
 # Mind reader
 FANTASY_K = 1000        # number of gibbs sampling steps for reading the mind of the rbm
 # Weights image
-HS = 10  # how many hidden unit weights to save
+HS = 100  # how many hidden unit weights to save
 WIDTH = 28
 HEIGHT = 28
 W_OUTFILE = 'models/rbm_w.png'  # outfile for the hidden weights image/s

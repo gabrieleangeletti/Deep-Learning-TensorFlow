@@ -102,18 +102,3 @@ class AbstractRBM(object):
         :param infile: path of the input file
         """
         pass
-
-    @staticmethod
-    def _prepare_alpha_update(alpha_update_rule, alpha, epochs):
-        # Learning rate update rule
-        if alpha_update_rule == 'exp':
-            alpha_rule = utils.ExpDecayParameter(alpha)
-        elif alpha_update_rule == 'linear':
-            alpha_rule = utils.LinearDecayParameter(alpha, epochs)
-        elif alpha_update_rule == 'constant':
-            alpha_rule = utils.ConstantParameter(alpha)
-        else:
-            raise Exception('alpha_update_rule must be in ["exp", "constant", "linear"]')
-        assert alpha_rule is not None
-
-        return alpha_rule

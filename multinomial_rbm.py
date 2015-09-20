@@ -64,7 +64,7 @@ class MultinomialRBM(AbstractRBM):
         batches = utils.generate_batches(data, batch_size)
         n_batches = len(batches)
 
-        alpha_rule = AbstractRBM._prepare_alpha_update(alpha_update_rule, alpha, epochs)
+        alpha_rule = utils.prepare_alpha_update(alpha_update_rule, alpha, epochs)
 
         # Momentum parameter update rule
         m_update = int(epochs / ((0.9 - m) / 0.01)) + 1
@@ -119,7 +119,7 @@ class MultinomialRBM(AbstractRBM):
 
     def gibbs_sampling(self, v_in, k):
         """Performs k steps of Gibbs Sampling, starting from the visible units input.
-        :param v_in_0: input of the visible units
+        :param v_in: input of the visible units
         :param k: number of sampling steps
         :return: difference between positive associations and negative
         associations after k steps of gibbs sampling
@@ -217,7 +217,7 @@ class MultinomialRBM(AbstractRBM):
         """
         out = []
         for sample in x:
-            offset = 0 # offset through the units
+            offset = 0  # offset through the units
             probs = []
             while offset + self.k_visible < len(sample):
                 den = 0.0

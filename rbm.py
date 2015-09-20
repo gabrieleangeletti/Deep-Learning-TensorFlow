@@ -88,7 +88,7 @@ class RBM(AbstractRBM):
         batches = utils.generate_batches(data, batch_size)
         n_batches = len(batches)
 
-        alpha_rule = AbstractRBM._prepare_alpha_update(alpha_update_rule, alpha, epochs)
+        alpha_rule = utils.prepare_alpha_update(alpha_update_rule, alpha, epochs)
 
         # Momentum parameter update rule
         m_update = int(epochs / ((0.9 - m) / 0.01)) + 1
@@ -107,7 +107,7 @@ class RBM(AbstractRBM):
                 self.last_velocity = dw
                 # bias updates mean through the batch
                 self.h_bias += alpha * h_bias_delta.mean(axis=0)
-                self.v_bias += alpha * (batch - v_probs).mean(axis=0)
+                self.v_bias += alpha * (batch - v_probs).mean(axis=0)  # TODO: try v_states
 
                 error = np.sum((batch - v_probs) ** 2) / float(batch_size)
                 total_error += error
@@ -168,25 +168,29 @@ class RBM(AbstractRBM):
         """Assuming the RBM has been trained, run the network on a set of
         hidden units, to get a sample of the visible units.
         """
-        (_, _, v_probs, _) = self.gibbs_sampling(h_in, gibbs_k)
+        # Reconstruct the visible units from the hidden, then gibbs sampling from the visible
+        v_activations = np.dot(h_in, self.W.T) + self.v_bias
+        v_probs = self.visible_act_func(v_activations)
         v_states = (v_probs > np.random.rand(v_probs.shape[0], v_probs.shape[1])).astype(np.int)
+        if gibbs_k > 1:
+            (_, _, v_probs, v_states, _) = self.gibbs_sampling(v_states, gibbs_k-1)
         return v_probs, v_states
 
     def sample_hidden_from_visible(self, v_in, gibbs_k=1):
         """Assuming the RBM has been trained, run the network on a set of
         visible units, to get a sample of the visible units.
         """
-        (_, _, _, h_probs) = self.gibbs_sampling(v_in, gibbs_k)
+        (_, _, _, _, h_probs) = self.gibbs_sampling(v_in, gibbs_k)
         h_states = (h_probs > np.random.rand(h_probs.shape[0], h_probs.shape[1])).astype(np.int)
         return h_probs, h_states
 
     def visible_act_func(self, x):
-        """Sigmoid function"""
-        return 1. / (1. + np.exp(-x))
+        """Logistic function"""
+        return utils.logistic(x)
 
     def hidden_act_func(self, x):
-        """Sigmoid function"""
-        return 1. / (1. + np.exp(-x))
+        """Logistic function"""
+        return utils.logistic(x)
 
     def fantasy(self, k=1):
         """Generate a sample from the RBM after n steps of gibbs sampling, starting with a
