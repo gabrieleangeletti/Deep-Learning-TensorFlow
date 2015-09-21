@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-import utils
 
 __author__ = 'blackecho'
 

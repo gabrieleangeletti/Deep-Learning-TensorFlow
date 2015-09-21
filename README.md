@@ -16,7 +16,7 @@ Main file used for training.
 
 - Set all the parameters in config.py.
 - run the command:
-    python main.py type=...
+    python main.py type=[...]
     where type can be equal to the following (without quotes):
 
     "standard" : unsupervised training of a standard rbm and saving to outfile for later retrieving

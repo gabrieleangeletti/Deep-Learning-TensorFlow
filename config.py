@@ -1,5 +1,5 @@
 # Datasets sizes
-TRAIN_SET_SIZE = 30000
+TRAIN_SET_SIZE = 1000
 TEST_SET_SIZE = 10000
 
 ####################################################################
@@ -7,7 +7,7 @@ TEST_SET_SIZE = 10000
 # EMPTY
 ####################################################################
 # Standard RBM configuration
-NV = 784 			# number of visible units
+NV = 500 			# number of visible units
 NH = 500    		# number of hidden units
 # Train parameters
 EPOCHS = 500        # number of training epochs
@@ -17,11 +17,11 @@ BATCH_SIZE = 100     # size of each batch
 GIBBS_K = 1			# number of gibbs sampling steps
 ALPHA_UPDATE_RULE = 'constant'  # type of update rule for the learning rate
 VERBOSE = True  # if true, a progress bar and a reconstructed sample for each epoch will be shown
-OUTFILE = 'models/rbm.json'  # outfile to save the configuration of the rbm after training
+OUTFILE = 'models/rbm_layer2.json'  # outfile to save the configuration of the rbm after training
 # Mind reader
 FANTASY_K = 1000        # number of gibbs sampling steps for reading the mind of the rbm
 # Weights image
-HS = 100  # how many hidden unit weights to save
+HS = 20  # how many hidden unit weights to save
 WIDTH = 28
 HEIGHT = 28
 W_OUTFILE = 'models/rbm_w.png'  # outfile for the hidden weights image/s
@@ -56,15 +56,27 @@ G_OUTFILE = 'models/grbm.json'  # outfile to save the configuration of the rbm a
 ####################################################################
 # Deep Belief Network configuration
 DBN_LAYERS = [784, 500, 500]
+DBN_INPUT_RBMS = ['models/rbm.json', 'models/rbm_layer2.json']
 DBN_LAST_LAYER = 2000
 # Train parameters
-DBN_EPOCHS = 150        # number of training epochs
+DBN_EPOCHS = 1          # number of training epochs
 DBN_ALPHA = 0.05		# learning rate
 DBN_M = 0.0				# momentum parameter
 DBN_BATCH_SIZE = 20     # size of each batch
 DBN_GIBBS_K = 1			# number of gibbs sampling steps
 DBN_ALPHA_UPDATE_RULE = 'constant'  # type of update rule for the learning rate
+# Supervised fine tuning parameters
+DBN_FT_EPOCHS = 5        # number of training epochs
+DBN_FT_ALPHA = 0.01		 # learning rate
+DBN_FT_BATCH_SIZE = 20     # size of each batch
+DBN_FT_GIBBS_K = 1			# number of gibbs sampling steps
+DBN_FT_TOP_GIBBS_K = 3     # number of gibbs sampling steps in the undirected associative memory layer
+DBN_FT_ALPHA_UPDATE_RULE = 'constant'  # type of update rule for the learning rate
+# Testing parameters
+DBN_TEST_TOP_GIBBS_K = 50
+
 DBN_VERBOSE = True  # if true, a progress bar and a reconstructed sample for each epoch will be shown
 DBN_OUTFILE = 'models/dbn.json'  # outfile to save the configuration of the rbm after training
 DBN_LAST_LAYER_OUTFILE = 'models/last_layer_rbm.json'  # outfile to save the configuration of the rbm after training
+DBN_PERFORMANCE_OUTFILE = 'models/dbn_performance_metrics.json'  # outfile to save the performance metrics of the rbm
 ####################################################################

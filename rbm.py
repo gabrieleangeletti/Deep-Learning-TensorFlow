@@ -130,13 +130,12 @@ class RBM(AbstractRBM):
     def gibbs_sampling(self, v_in_0, k):
         """Performs k steps of Gibbs Sampling, starting from the visible units input.
         """
-        batch_size = v_in_0.shape[0]
 
         # Sample from the hidden units given the visible units - Positive
         # Constrastive Divergence phase
         h_activations_0 = np.dot(v_in_0, self.W) + self.h_bias
         h_probs_0 = self.hidden_act_func(h_activations_0)
-        h_states = (h_probs_0 > np.random.rand(batch_size, self.num_hidden)).astype(np.int)
+        h_states = utils.probs_to_binary(h_probs_0)
         pos_associations = np.dot(v_in_0.T, h_states)
 
         for gibbs_step in xrange(k):
@@ -146,18 +145,18 @@ class RBM(AbstractRBM):
                 # Positive CD phase
                 h_activations = np.dot(v_in_0, self.W) + self.h_bias
                 h_probs = self.hidden_act_func(h_activations)
-                h_states = (h_probs > np.random.rand(batch_size, self.num_hidden)).astype(np.int)
+                h_states = utils.probs_to_binary(h_probs)
 
             # Reconstruct the visible units
             # Negative Contrastive Divergence phase
             v_activations = np.dot(h_states, self.W.T) + self.v_bias
             v_probs = self.visible_act_func(v_activations)
             # useful to compute the error
-            v_states = (v_probs > np.random.rand(batch_size, self.num_visible)).astype(np.int)
+            v_states = utils.probs_to_binary(v_probs)
             # Sampling again from the hidden units
             h_activations_new = np.dot(v_probs, self.W) + self.h_bias
             h_probs_new = self.hidden_act_func(h_activations_new)
-            h_states_new = (h_probs_new > np.random.rand(batch_size, self.num_hidden)).astype(np.int)
+            h_states_new = utils.probs_to_binary(h_probs_new)
             # Use the new sampled visible units in the next step
             v_in_0 = v_states
         # We are again using states but we could have used probabilities
@@ -171,7 +170,7 @@ class RBM(AbstractRBM):
         # Reconstruct the visible units from the hidden, then gibbs sampling from the visible
         v_activations = np.dot(h_in, self.W.T) + self.v_bias
         v_probs = self.visible_act_func(v_activations)
-        v_states = (v_probs > np.random.rand(v_probs.shape[0], v_probs.shape[1])).astype(np.int)
+        v_states = utils.probs_to_binary(v_probs)
         if gibbs_k > 1:
             (_, _, v_probs, v_states, _) = self.gibbs_sampling(v_states, gibbs_k-1)
         return v_probs, v_states
@@ -181,7 +180,7 @@ class RBM(AbstractRBM):
         visible units, to get a sample of the visible units.
         """
         (_, _, _, _, h_probs) = self.gibbs_sampling(v_in, gibbs_k)
-        h_states = (h_probs > np.random.rand(h_probs.shape[0], h_probs.shape[1])).astype(np.int)
+        h_states = utils.probs_to_binary(h_probs)
         return h_probs, h_states
 
     def visible_act_func(self, x):

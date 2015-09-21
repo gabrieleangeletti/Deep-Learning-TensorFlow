@@ -2,6 +2,7 @@ from __future__ import print_function
 
 from sklearn.linear_model import LogisticRegression
 import numpy as np
+import json
 
 from rbm import RBM
 import utils
@@ -15,18 +16,27 @@ class DBN(object):
 
     def __init__(self, num_layers, *args, **kwargs):
         """Initialization of the Deep Belief Network.
+        For supervised learning for classification there are two choices:
+
+        1 - greedy unsupervised learning and then Logistic Regression on top of the last layer
+            The methods for supervised learning of LR are fit_cls for training and predict_cls for testing.
+
+        2 - greedy unsupervised learning and then add another RBM that models the joint distribution between data
+            and labels, using the wake-sleep algorithm. The methods for supervised training are wake_sleep for
+            training and predict_ws for testing.
+
         :param num_layers: array whose elements are the number of
                units for each layer.
         """
         self.layers = [RBM(num_layers[i], num_layers[i+1]) for i in xrange(len(num_layers)-1)]
 
-        # Logistic Regression classifier on top of the last rbm
+        # Logistic Regression classifier on top of the penultime rbm
         self.cls = LogisticRegression(*args, **kwargs)
-        # Last layer rbm for supervised training (initialized in supervised training)
+        # Last layer rbm for supervised training (initialized in wake-sleep algorithm)
         self.last_rbm = None
 
         # Training performance metrics
-        self.errors = np.array([])
+        self.errors = []
 
     def unsupervised_pretrain(self,
                               data,
@@ -89,51 +99,6 @@ class DBN(object):
                 # validation set representation of the first rbm
                 _, middle_val_repr = rbm.sample_hidden_from_visible(middle_val_repr)
 
-    def supervised_pretrain(self,
-                            num_last_layer,
-                            data,
-                            y,
-                            epochs=100,
-                            batch_size=1,
-                            alpha=0.01,
-                            m=0.5,
-                            gibbs_k=1,
-                            alpha_update_rule='constant'):
-        """The last layer is a rbm trained on the joint distribution of the prev. layer and the labels.
-        To be called after unsupervised pretrain of the first layers of the dbn.
-        :param num_last_layer: number of hidden units for the last RBM
-        :param data: input dataset
-        :param y: dataset labels (labels must be integers)
-        :param epochs: number of training epochs
-        :param batch_size: size of each bach
-        :param alpha: learning rate parameter
-        :param m: momentum parameter
-        :param gibbs_k: number of gibbs sampling steps
-        :param alpha_update_rule: update rule for the learning rate
-        """
-        assert data.shape[0] == y.shape[0]
-
-        # convert integer labels to binary
-        bin_y = utils.int2binary_vect(y)
-        # representation of the dataset by previous last rbm
-        data_repr = self.forward(data)
-        # initialize the last layer rbm
-        self.last_rbm = RBM(data_repr[0].shape[0] + bin_y[0].shape[0], num_last_layer)
-        # merge data_repr with y
-        joint_data = []
-        for i in range(data.shape[0]):
-            joint_data.append(np.hstack([data_repr[i], bin_y[i]]))
-        joint_data = np.array(joint_data)
-        # now train the last rbm on the joint distribution between data_repr and y
-        self.last_rbm.train(joint_data,
-                            validation=None,
-                            epochs=epochs,
-                            batch_size=batch_size,
-                            alpha=alpha,
-                            m=m,
-                            gibbs_k=gibbs_k,
-                            alpha_update_rule=alpha_update_rule)
-
     def wake_sleep(self,
                    num_last_layer,
                    data,
@@ -156,16 +121,17 @@ class DBN(object):
         """
         assert data.shape[0] == y.shape[0]
 
-        # convert integer labels to binary
+        # convert integer labels to binary vectors
         bin_y = utils.int2binary_vect(y)
 
         # divide data into batches
         batches = utils.generate_batches(data, batch_size)
         # divide labels into batches
-        y_batches = utils.generate_batches(y, batch_size)
+        y_batches = utils.generate_batches(bin_y, batch_size)
 
+        num_pen_units = self.layers[-1].num_visible
         # initialize the last layer rbm
-        self.last_rbm = RBM(self.layers[-1] + bin_y[0].shape[0], num_last_layer)
+        self.last_rbm = RBM(num_pen_units + bin_y[0].shape[0], num_last_layer)
 
         alpha_rule = utils.prepare_alpha_update(alpha_update_rule, alpha, epochs)
 
@@ -174,90 +140,133 @@ class DBN(object):
         for epoch in xrange(epochs):
             alpha = alpha_rule.update()  # learning rate update
             for i, batch in enumerate(batches):
+                targets = y_batches[i]
                 # ========== WAKE/POSITIVE PHASE ==========
-                middle_states = None  # states of middle layers
-                wake_hid_states = None  # hidden states of the first layer, will be useful in the sleep phase
-                for l, rbm in enumerate(self.layers):
-                    if l == 0:
-                        # Compute probs/states for all the layers
-                        h_probs = rbm.hidden_act_func(np.dot(batch, rbm.W) + rbm.h_bias)
-                        h_states = (h_probs > np.random.rand(h_probs.shape[0], h_probs.shape[1])).astype(np.int)
-                        wake_hid_states = h_states
-                    else:
-                        # Compute probs/states for all the layers
-                        h_probs = rbm.hidden_act_func(np.dot(middle_states, rbm.W) + rbm.h_bias)
-                        h_states = (h_probs > np.random.rand(h_probs.shape[0], h_probs.shape[1])).astype(np.int)
-                    middle_states = h_states
+                # TODO: for now only works with fixed architecture: lab <--> top <--> pen -> hid -> vis
+                # TODO: this is the architecture used by Hinton et al. 2006 for MNIST.
 
-                # merge data_repr with y
-                joint_data = []
-                for j in range(middle_states.shape[0]):
-                    joint_data.append(np.hstack([middle_states[j], bin_y[j]]))
-                joint_data = np.array(joint_data)
+                # ===== Bottom-up Pass =====
+                wake_hid_probs = utils.logistic(np.dot(batch, self.layers[0].W) + self.layers[0].h_bias)
+                wake_hid_states = utils.probs_to_binary(wake_hid_probs)
 
-                # Compute probs/states for the last rbm
-                wake_probs = self.last_rbm.hidden_act_func(np.dot(joint_data, self.last_rbm.W) + self.last_rbm.h_bias)
-                wake_states = (wake_probs > np.random.rand(wake_probs.shape[0], wake_probs.shape[1])).astype(np.int)
-                # Positive statistics for the wake phase
-                poslabtopstatistics = np.dot(bin_y.T, wake_states)
-                pospentopstatistic = np.dot(middle_states.T, wake_states)
+                wake_pen_probs = utils.logistic(np.dot(wake_hid_states, self.layers[1].W) + self.layers[1].h_bias)
+                wake_pen_states = utils.probs_to_binary(wake_pen_probs)
+
+                joint_data = utils.merge_data_labels(wake_pen_states, targets)
+                wake_top_probs = utils.logistic(np.dot(joint_data, self.last_rbm.W) + self.last_rbm.h_bias)
+                wake_top_states = utils.probs_to_binary(wake_top_probs)
+
+                # ===== Positive phase statistics for contrastive divergence =====
+                poslabtopstatistics = np.dot(targets.T, wake_top_states)
+                pospentopstatistics = np.dot(wake_pen_states.T, wake_top_states)
+
+                # divide last rbm weights and biases in pen and lab
+                pen_w = self.last_rbm.W[:num_pen_units]
+                lab_w = self.last_rbm.W[num_pen_units:]
+                pen_gen_b = self.last_rbm.v_bias[:num_pen_units]
+                lab_gen_b = self.last_rbm.v_bias[num_pen_units:]
+
                 # Perform gibbs sampling using the top level undirected associative memory
-                neg_top_states = wake_states  # initialization
-                for k in range(top_gibbs_k):
+                sofmax_values = None  # softmax values used to compute cross entropy error
+                neg_top_states = wake_top_states  # initialization
+                for j in range(top_gibbs_k):
+                    neg_pen_probs = utils.logistic(np.dot(neg_top_states, pen_w.T) + pen_gen_b)
+                    neg_pen_states = utils.probs_to_binary(neg_pen_probs)
 
-                    neg_pen_probs = self.last_rbm.visible_act_func(np.dot(neg_top_states, middle_states.T) +
-                                                                   self.last_rbm.v_bias)
-                    neg_pen_states = (neg_pen_probs >
-                                      np.random.rand(neg_pen_probs.shape[0], neg_pen_probs.shape[1])).astype(np.int)
+                    sofmax_values, neg_lab_probs = utils.softmax(np.dot(neg_top_states, lab_w.T) + lab_gen_b)
+                    neg_top_probs = utils.logistic(np.dot(neg_pen_states, pen_w) + np.dot(neg_lab_probs, lab_w) +
+                                                   self.last_rbm.h_bias)
+                    neg_top_states = utils.probs_to_binary(neg_top_probs)
 
-                    neg_lab_probs = utils.softmax(np.dot(neg_top_states, bin_y.T) + self.last_rbm.v_bias[self.last_layer[-1:]])
+                # Compute cross entropy error for the batch
+                total_error = utils.compute_cross_entropy_error(sofmax_values, targets)
 
-                    # merge data_repr with y
-                    joint_data = []
-                    for j in range(neg_pen_states.shape[0]):
-                        joint_data.append(np.hstack([neg_pen_states[j], neg_lab_probs[j]]))
-                    joint_data = np.array(joint_data)
+                # ===== Negative phase statistics for contrastive divergence =====
+                negpentopstatistics = np.dot(neg_pen_states.T, neg_top_states)
+                neglabtopstatistics = np.dot(neg_lab_probs.T, neg_top_states)
 
-                    neg_top_probs = self.last_rbm.visible_act_func(np.dot(joint_data, self.last_rbm.W) +
-                                                                   self.last_rbm.h_bias)
-                    neg_top_states = (neg_top_probs >
-                                      np.random.rand(neg_top_probs.shape[0], neg_top_probs.shape[1])).astype(np.int)
-
-                # ========== SLEEP/NEGATIVE PHASE ==========
-                neg_pen_top_statistics = np.dot(neg_pen_states.T, neg_top_states)
-                neg_lab_top_statistics = np.dot(neg_lab_probs.T, neg_top_states)
-
-                # Starting from the end of the gibbs sampling run, perform a top-down generative
-                # pass to get sleep/negative phase probabilities and sample states
+                # Starting from the end of the gibbs sampling run, perform a top-down
+                # generative pass to get sleep/negative phase probabilities and sample states
                 sleep_pen_states = neg_pen_states
-                sleep_middle_states = None  # states of middle layers
-                sleep_vis_probs = None  # probabilities of the first layer (raw input)
-                for l, rbm in reversed(list(enumerate(self.layers))):
-                    if l == len(self.layers)-1:
-                        # Compute probs/states for all the layers
-                        sleep_h_probs = rbm.hidden_act_func(np.dot(sleep_pen_states, rbm.W) + rbm.v_bias)
-                        sleep_h_states = (sleep_h_probs > np.random.rand(sleep_h_probs.shape[0], sleep_h_probs.shape[1])).astype(np.int)
-                    else:
-                        # Compute probs/states for all the layers
-                        sleep_h_probs = rbm.hidden_act_func(np.dot(sleep_middle_states, rbm.W) + rbm.v_bias)
-                        sleep_h_states = (sleep_h_probs > np.random.rand(sleep_h_probs.shape[0], sleep_h_probs.shape[1])).astype(np.int)
-                        if l == 0:
-                            sleep_vis_probs = sleep_h_probs
-                    sleep_middle_states = sleep_h_states
+                sleep_hid_probs = utils.logistic(np.dot(sleep_pen_states, self.layers[1].W.T) + self.layers[1].v_bias)
+                sleep_hid_states = utils.probs_to_binary(sleep_hid_probs)
+                sleep_vis_probs = utils.logistic(np.dot(sleep_hid_states, self.layers[0].W.T) + self.layers[0].v_bias)
 
                 # Predictions
-                # psleeppenstates = logistic(sleephidstates*hidpen + penrecbiases);
-                # psleephidstates = logistic(sleepvisprobs*vishid + hidrecbiases);
-                # pvisprobs = self.layers[0].visible_act_func(np.dot(wake_hid_states, self.layers[0].W) + self.layers[0].v_bias)
-                # phidprobs = logistic(wakepenstates*penhid + hidgenbiases);
+                p_sleep_pen_states = utils.logistic(np.dot(sleep_hid_states, self.layers[1].W) + self.layers[1].h_bias)
+                p_sleep_hid_states = utils.logistic(np.dot(sleep_vis_probs, self.layers[0].W) + self.layers[0].h_bias)
+                p_vis_probs = utils.logistic(np.dot(wake_hid_states, self.layers[0].W.T) + self.layers[0].v_bias)
+                p_hid_probs = utils.logistic(np.dot(wake_pen_states, self.layers[1].W.T) + self.layers[1].h_bias)
 
-                # ========== Updates to generative parameters ==========
-                # ========== Updates to top level associative memory parameters ==========
-                # ========== Updates to inference approximation parameters ==========
+                # ===== Updates to Generative Parameters =====
+                self.layers[0].W += alpha*(np.dot(wake_hid_states.T, batch-p_vis_probs)).T
+                self.layers[0].v_bias += alpha*(batch - p_vis_probs).mean(axis=0)
+                self.layers[1].W += alpha*(np.dot(wake_pen_states.T, wake_hid_states - p_hid_probs)).T
+                self.layers[1].v_bias += alpha*(wake_hid_states - p_hid_probs).mean(axis=0)
+
+                # ===== Updates to Top level associative memory parameters =====
+                self.last_rbm.W[num_pen_units:] += alpha*(poslabtopstatistics - neglabtopstatistics)
+                self.last_rbm.v_bias[num_pen_units:] += alpha*(targets - neg_lab_probs).mean(axis=0)
+                self.last_rbm.W[:num_pen_units] += alpha*(pospentopstatistics - negpentopstatistics)
+                self.last_rbm.v_bias[:num_pen_units] += alpha*(wake_pen_states - neg_pen_states).mean(axis=0)
+                self.last_rbm.h_bias += alpha*(wake_top_states - neg_top_states).mean(axis=0)
+
+                # ===== Updates to Recognition/Inference approximation parameters =====
+                self.layers[1].W += alpha*(np.dot(sleep_hid_states.T, sleep_pen_states - p_sleep_pen_states))
+                self.layers[1].h_bias += alpha*(sleep_pen_states - p_sleep_pen_states).mean(axis=0)
+                self.layers[0].W += alpha*(np.dot(sleep_vis_probs.T, sleep_hid_states - p_sleep_hid_states))
+                self.layers[0].h_bias += alpha*(sleep_hid_states - p_sleep_hid_states).mean(axis=0)
 
             print("Epoch {:d} : error is {:f}".format(epoch, total_error))
-            self.errors = np.append(self.errors, total_error)
+            self.errors.append(total_error)
             total_error = 0.
+
+    def predict_ws(self, data, top_gibbs_k=1):
+        """Perform a bottom-up recognition pass and then get a sample of the labels for the test data
+        after alternating gibbs sampling on the undirected associative memory of the deep net.
+        :param data: test dataset
+        :param top_gibbs_k: number of gibbs sampling steps using the top level undirected associative
+                            memory
+        """
+
+        num_pen_units = self.layers[-1].num_visible
+
+        # TODO: for now random initial targets and then set to equilibrium, must see if this is right
+        num_labels = len(self.last_rbm.W[num_pen_units:])
+        targets = [(0.5 > np.random.random(num_labels)).astype(np.int) for _ in range(len(data))]
+        # ========== WAKE/POSITIVE PHASE ==========
+        # TODO: for now only works with fixed architecture: lab <--> top <--> pen -> hid -> vis
+        # TODO: this is the architecture used by Hinton et al. 2006 for MNIST.
+
+        # ===== Bottom-up Pass =====
+        wake_hid_probs = utils.logistic(np.dot(data, self.layers[0].W) + self.layers[0].h_bias)
+        wake_hid_states = utils.probs_to_binary(wake_hid_probs)
+
+        wake_pen_probs = utils.logistic(np.dot(wake_hid_states, self.layers[1].W) + self.layers[1].h_bias)
+        wake_pen_states = utils.probs_to_binary(wake_pen_probs)
+
+        joint_data = utils.merge_data_labels(wake_pen_states, targets)
+        wake_top_probs = utils.logistic(np.dot(joint_data, self.last_rbm.W) + self.last_rbm.h_bias)
+        wake_top_states = utils.probs_to_binary(wake_top_probs)
+
+        # divide last rbm weights and biases in pen and lab
+        pen_w = self.last_rbm.W[:num_pen_units]
+        lab_w = self.last_rbm.W[num_pen_units:]
+        pen_gen_b = self.last_rbm.v_bias[:num_pen_units]
+        lab_gen_b = self.last_rbm.v_bias[num_pen_units:]
+
+        # Perform gibbs sampling using the top level undirected associative memory
+        neg_top_states = wake_top_states  # initialization
+        for j in range(top_gibbs_k):
+            neg_pen_probs = utils.logistic(np.dot(neg_top_states, pen_w.T) + pen_gen_b)
+            neg_pen_states = utils.probs_to_binary(neg_pen_probs)
+
+            _, neg_lab_probs = utils.softmax(np.dot(neg_top_states, lab_w.T) + lab_gen_b)
+            neg_top_probs = utils.logistic(np.dot(neg_pen_states, pen_w) + np.dot(neg_lab_probs, lab_w) +
+                                           self.last_rbm.h_bias)
+            neg_top_states = utils.probs_to_binary(neg_top_probs)
+
+        return utils.binary2int_vect(neg_lab_probs)
 
     def fantasy(self, k=1):
         """Generate a sample from the DBN after n steps of gibbs sampling, starting with a
@@ -305,3 +314,20 @@ class DBN(object):
         """
         out_layer = self.forward(data)
         return self.cls.predict(out_layer)
+
+    def load_rbms(self, infiles):
+        """Load json configuration of trained rbms to initialize the deep net.
+        :param infiles: list of input files, one for each rbm
+        """
+        self.layers = []  # delete previously rbms
+        for rbm_file in infiles:
+            r = RBM(1, 1)
+            r.load_configuration(rbm_file)
+            self.layers.append(r)
+
+    def save_performance_metrics(self, outfile):
+        """Save a json configuration of the deep net to out file.
+        :param: output file
+        """
+        with open(outfile, 'w') as f:
+            f.write(json.dumps({'erros': self.errors}))

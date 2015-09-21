@@ -14,12 +14,63 @@ def softmax(x):
     """Return the softmax of x, that is an array of the same length as x, with all 0s and 1 in the index
     of the max element in x.
     :param x: numpy array whose elements are in the range [0, 1]
-    :return: softmax of x
+    :return: softmax values of x, softmax binary array of x
     """
-    mx_i = np.where(x == max(x))[0][0]
-    softmx = [0] * len(x)
-    softmx[mx_i] = 1
-    return softmx
+    exps = []
+    out = []
+    for sample in x:
+        # Compute exponentials
+        sample_exp = []
+        den = 0.
+        for s in sample:
+            val = np.exp(s)
+            den += val
+            sample_exp.append(val)
+        sample_exp /= den
+        exps.append(sample_exp)
+        # Compute max value
+        mx_i = np.where(sample_exp == max(sample_exp))[0][0]
+        softmx = [0] * len(sample_exp)
+        softmx[mx_i] = 1
+        out.append(softmx)
+    return np.array(exps), np.array(out)
+
+
+def probs_to_binary(x):
+    """Convert an array of probabilities to an array of stochastic binary states.
+    :param x: input probabilities
+    :return: stochastic binary states defined by x
+    """
+    return (x > np.random.rand(x.shape[0], x.shape[1])).astype(np.int)
+
+
+def merge_data_labels(data, y):
+    """Merge data array with labels array in a unique array data + labels.
+    The two arrays can have an arbitrary number of samples, but the number of samples must be the same.
+    :param data: data array
+    :param y: labels array
+    :return: joint array between data and labels
+    """
+    # merge data_repr with y
+    joint_data = []
+    for j in range(data.shape[0]):
+        joint_data.append(np.hstack([data[j], y[j]]))
+    return np.array(joint_data)
+
+
+def compute_cross_entropy_error(preds, targets):
+    """Compute the Average Cross Entropy error (ACE) across a set of predictions and relative targets.
+    :param preds: predictions made by the classifier
+    :param targets: supervised targets
+    :return: average cross entropy error over the batch
+    """
+    batch_size = len(preds)
+    num_labels = len(targets[0])
+    err = 0.
+    for i in range(batch_size):
+        for k in range(num_labels):
+            err += targets[i][k] * np.log(preds[i][k])
+    return -err
 
 
 def int2binary_vect(y):
@@ -36,6 +87,15 @@ def int2binary_vect(y):
         tmp[v] = 1
         out.append(tmp)
     return np.array(out)
+
+
+def binary2int_vect(y):
+    """Converts the binary softmax vector y into the integer label that y is representing.
+    This is the decoding function with respect to int2binary_vect.
+    :param y: binary softmax vector
+    :return: integer representation of y
+    """
+    return np.where(y == 1)[0][0]
 
 
 def normalize_dataset_to_binary(data):

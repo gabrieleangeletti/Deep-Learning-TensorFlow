@@ -244,9 +244,10 @@ if __name__ == '__main__':
     # ##################################################
     # Deep Belief Network
     # ##################################################
-    elif run_type == 'dbn':
+    elif run_type == 'dbn-unsupervised':
         deep_net = DBN(config.DBN_LAYERS)
         # Unsupervised greedy layer-wise pre-training of the net
+        print('Start unsupervised greedy layer-wise training...')
         deep_net.unsupervised_pretrain(X_norm,
                                        validation=X_norm_test[0:config.DBN_BATCH_SIZE],
                                        epochs=config.DBN_EPOCHS,
@@ -257,20 +258,51 @@ if __name__ == '__main__':
                                        alpha_update_rule=config.DBN_ALPHA_UPDATE_RULE,
                                        verbose=config.DBN_VERBOSE,
                                        display=display)
-        # Start the supervised train of the last RBM
-        print('Start training of last rbm on the joint distribution data/labels...')
-        deep_net.supervised_pretrain(config.DBN_LAST_LAYER,
-                                     X_norm,
-                                     y,
-                                     epochs=config.DBN_EPOCHS,
-                                     batch_size=config.DBN_BATCH_SIZE,
-                                     alpha=config.DBN_ALPHA,
-                                     m=config.DBN_M,
-                                     gibbs_k=config.DBN_GIBBS_K,
-                                     alpha_update_rule=config.DBN_ALPHA_UPDATE_RULE)
-        print('Save last layer rbm to outfile...')
-        deep_net.last_rbm.save_configuration(config.DBN_LAST_LAYER_OUTFILE)
+        print('Start supervised fine tuning using wake-sleep algorithm...')
+        deep_net.wake_sleep(config.DBN_LAST_LAYER,
+                            X_norm,
+                            y,
+                            config.DBN_FT_BATCH_SIZE,
+                            config.DBN_FT_EPOCHS,
+                            config.DBN_FT_ALPHA,
+                            config.DBN_FT_TOP_GIBBS_K,
+                            config.DBN_FT_ALPHA_UPDATE_RULE)
 
+    # ##################################################
+    # Deep Belief Network loaded from pretrained rbms
+    # ##################################################
+    elif run_type == 'dbn-from-trained-rbms':
+        deep_net = DBN([])
+        deep_net.load_rbms(config.DBN_INPUT_RBMS)
+        print('Start supervised fine tuning using wake-sleep algorithm...')
+        deep_net.wake_sleep(config.DBN_LAST_LAYER,
+                            X_norm,
+                            y,
+                            config.DBN_FT_BATCH_SIZE,
+                            config.DBN_FT_EPOCHS,
+                            config.DBN_FT_ALPHA,
+                            config.DBN_FT_TOP_GIBBS_K,
+                            config.DBN_FT_ALPHA_UPDATE_RULE)
+        print('Save configuration of last layer rbm')
+        deep_net.last_rbm.save_configuration(config.DBN_LAST_LAYER_OUTFILE)
+        print('Save performance metrics of the rbm during wake sleep...')
+        deep_net.save_performance_metrics(config.DBN_PERFORMANCE_OUTFILE)
+        print('Testing the accuracy of the dbn...')
+        dbn_preds = deep_net.predict_ws(X_norm_test, config.DBN_TEST_TOP_GIBBS_K)
+
+        accuracy_dbn = sum(preds_st == y_test) / float(config.TEST_SET_SIZE)
+        # Now train a normal logistic regression classifier and test it
+        print('Training standard Logistic Regression Classifier...')
+        lr_cls = LogisticRegression()
+        lr_cls.fit(X_norm, y)
+        lr_cls_preds = lr_cls.predict(X_norm_test)
+        accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
+        print('Accuracy of the Deep Belief Network: %s' % accuracy_dbn)
+        print('Accuracy of the Logistic classifier: %s' % accuracy_lr)
+
+    # ##################################################
+    # Deep Belief Network vs Logistic Regression
+    # ##################################################
     elif run_type == 'dbn-vs-logistic':
         deep_net = DBN(config.DBN_LAYERS)
         # Unsupervised greedy layer-wise pre-training of the net
@@ -301,4 +333,38 @@ if __name__ == '__main__':
         lr_cls_preds = lr_cls.predict(X_norm_test)
         accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
         print('Accuracy of the Deep Belief Network: %s' % accuracy_st)
+        print('Accuracy of the Logistic classifier: %s' % accuracy_lr)
+
+    # ##################################################
+    # Temporary, development or debug executions
+    # ##################################################
+    elif run_type == 'tmp':
+        print('Sampling from the first RBM')
+        r = rbm.RBM(1, 1)
+        r.load_configuration('models/rbm.json')
+        _, data_repr = r.sample_hidden_from_visible(X_norm)
+        _, data_val_repr = r.sample_hidden_from_visible(X_norm_test)
+
+        r2 = rbm.RBM(1, 1)
+        r2.load_configuration('models/rbm_layer2.json')
+
+        # fit the Logistic Regression layer
+        print('Fitting the Logistic Regression layer...')
+        (data_probs, data_states) = r2.sample_hidden_from_visible(data_repr, gibbs_k=1)
+        cls = LogisticRegression()
+        cls.fit(data_states, y)
+        # sample the test set
+        print('Testing the accuracy of the classifier...')
+        # test the predictions of the LR layer
+        (test_probs, test_states) = r2.sample_hidden_from_visible(data_val_repr, gibbs_k=1)
+        preds_st = cls.predict(test_states)
+
+        accuracy_st = sum(preds_st == y_test) / float(config.TEST_SET_SIZE)
+        # Now train a normal logistic regression classifier and test it
+        print('Training standard Logistic Regression Classifier...')
+        lr_cls = LogisticRegression()
+        lr_cls.fit(X, y)
+        lr_cls_preds = lr_cls.predict(X_test)
+        accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
+        print('Accuracy of the RBM classifier: %s' % accuracy_st)
         print('Accuracy of the Logistic classifier: %s' % accuracy_lr)
