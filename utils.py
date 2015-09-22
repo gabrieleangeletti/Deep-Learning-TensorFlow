@@ -95,7 +95,10 @@ def binary2int_vect(y):
     :param y: binary softmax vector
     :return: integer representation of y
     """
-    return np.where(y == 1)[0][0]
+    out = []
+    for sample in y:
+        out.append(np.where(np.array(sample) == 1)[0][0])
+    return np.array(out)
 
 
 def normalize_dataset_to_binary(data):

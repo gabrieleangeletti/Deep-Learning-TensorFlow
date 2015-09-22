@@ -231,9 +231,10 @@ class DBN(object):
 
         num_pen_units = self.layers[-1].num_visible
 
-        # TODO: for now random initial targets and then set to equilibrium, must see if this is right
+        # the label units are set to be on with probability 0.1, then, after gibbs sampling, they
+        # will converge to the corret label unit
         num_labels = len(self.last_rbm.W[num_pen_units:])
-        targets = [(0.5 > np.random.random(num_labels)).astype(np.int) for _ in range(len(data))]
+        targets = [(0.1 > np.random.random(num_labels)).astype(np.int) for _ in range(len(data))]
         # ========== WAKE/POSITIVE PHASE ==========
         # TODO: for now only works with fixed architecture: lab <--> top <--> pen -> hid -> vis
         # TODO: this is the architecture used by Hinton et al. 2006 for MNIST.
@@ -242,29 +243,31 @@ class DBN(object):
         wake_hid_probs = utils.logistic(np.dot(data, self.layers[0].W) + self.layers[0].h_bias)
         wake_hid_states = utils.probs_to_binary(wake_hid_probs)
 
-        wake_pen_probs = utils.logistic(np.dot(wake_hid_states, self.layers[1].W) + self.layers[1].h_bias)
+        # ############# USING PROBS ##################
+        wake_pen_probs = utils.logistic(np.dot(wake_hid_probs, self.layers[1].W) + self.layers[1].h_bias)
         wake_pen_states = utils.probs_to_binary(wake_pen_probs)
 
-        joint_data = utils.merge_data_labels(wake_pen_states, targets)
+        # ############# USING PROBS ##################
+        joint_data = utils.merge_data_labels(wake_pen_probs, targets)
         wake_top_probs = utils.logistic(np.dot(joint_data, self.last_rbm.W) + self.last_rbm.h_bias)
         wake_top_states = utils.probs_to_binary(wake_top_probs)
 
         # divide last rbm weights and biases in pen and lab
         pen_w = self.last_rbm.W[:num_pen_units]
         lab_w = self.last_rbm.W[num_pen_units:]
-        pen_gen_b = self.last_rbm.v_bias[:num_pen_units]
+        # pen_gen_b = self.last_rbm.v_bias[:num_pen_units]
         lab_gen_b = self.last_rbm.v_bias[num_pen_units:]
 
-        # Perform gibbs sampling using the top level undirected associative memory
-        neg_top_states = wake_top_states  # initialization
+        # Perform gibbs sampling using the top level undirected associative memory, clamped on
+        # pen_state representation
+        # ####################### USING PROBS ###########
+        neg_top_states = wake_top_probs  # initialization
         for j in range(top_gibbs_k):
-            neg_pen_probs = utils.logistic(np.dot(neg_top_states, pen_w.T) + pen_gen_b)
-            neg_pen_states = utils.probs_to_binary(neg_pen_probs)
-
             _, neg_lab_probs = utils.softmax(np.dot(neg_top_states, lab_w.T) + lab_gen_b)
-            neg_top_probs = utils.logistic(np.dot(neg_pen_states, pen_w) + np.dot(neg_lab_probs, lab_w) +
+            # #################### USING wake pen probs
+            neg_top_probs = utils.logistic(np.dot(wake_pen_probs, pen_w) + np.dot(neg_lab_probs, lab_w) +
                                            self.last_rbm.h_bias)
-            neg_top_states = utils.probs_to_binary(neg_top_probs)
+            neg_top_states = neg_top_probs # utils.probs_to_binary(neg_top_probs)
 
         return utils.binary2int_vect(neg_lab_probs)
 
@@ -330,4 +333,4 @@ class DBN(object):
         :param: output file
         """
         with open(outfile, 'w') as f:
-            f.write(json.dumps({'erros': self.errors}))
+            f.write(json.dumps({'errors': self.errors}))

@@ -283,20 +283,22 @@ if __name__ == '__main__':
                             config.DBN_FT_ALPHA,
                             config.DBN_FT_TOP_GIBBS_K,
                             config.DBN_FT_ALPHA_UPDATE_RULE)
-        print('Save configuration of last layer rbm')
-        deep_net.last_rbm.save_configuration(config.DBN_LAST_LAYER_OUTFILE)
+        print('Save configuration of rbm layers after training')
+        deep_net.layers[0].save_configuration(config.DBN_OUTFILES[0])
+        deep_net.layers[1].save_configuration(config.DBN_OUTFILES[1])
+        deep_net.last_rbm.save_configuration(config.DBN_OUTFILES[2])
         print('Save performance metrics of the rbm during wake sleep...')
         deep_net.save_performance_metrics(config.DBN_PERFORMANCE_OUTFILE)
         print('Testing the accuracy of the dbn...')
         dbn_preds = deep_net.predict_ws(X_norm_test, config.DBN_TEST_TOP_GIBBS_K)
 
-        accuracy_dbn = sum(preds_st == y_test) / float(config.TEST_SET_SIZE)
+        accuracy_dbn = sum(dbn_preds == y_test) / float(config.TEST_SET_SIZE)
         # Now train a normal logistic regression classifier and test it
         print('Training standard Logistic Regression Classifier...')
-        lr_cls = LogisticRegression()
-        lr_cls.fit(X_norm, y)
-        lr_cls_preds = lr_cls.predict(X_norm_test)
-        accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
+        lr = LogisticRegression()
+        lr.fit(X_norm, y)
+        lr_preds = lr.predict(X_norm_test)
+        accuracy_lr = sum(lr_preds == y_test) / float(config.TEST_SET_SIZE)
         print('Accuracy of the Deep Belief Network: %s' % accuracy_dbn)
         print('Accuracy of the Logistic classifier: %s' % accuracy_lr)
 
@@ -345,11 +347,17 @@ if __name__ == '__main__':
         _, data_repr = r.sample_hidden_from_visible(X_norm)
         _, data_val_repr = r.sample_hidden_from_visible(X_norm_test)
 
+        print('Fitting the Logistic Regression layer of layer 1...')
+        cls1 = LogisticRegression()
+        cls1.fit(data_repr, y)
+        preds_st1 = cls1.predict(data_val_repr)
+        accuracy_st1 = sum(preds_st1 == y_test) / float(config.TEST_SET_SIZE)
+
         r2 = rbm.RBM(1, 1)
         r2.load_configuration('models/rbm_layer2.json')
 
         # fit the Logistic Regression layer
-        print('Fitting the Logistic Regression layer...')
+        print('Fitting the Logistic Regression layer of layer 2...')
         (data_probs, data_states) = r2.sample_hidden_from_visible(data_repr, gibbs_k=1)
         cls = LogisticRegression()
         cls.fit(data_states, y)
@@ -366,5 +374,7 @@ if __name__ == '__main__':
         lr_cls.fit(X, y)
         lr_cls_preds = lr_cls.predict(X_test)
         accuracy_lr = sum(lr_cls_preds == y_test) / float(config.TEST_SET_SIZE)
-        print('Accuracy of the RBM classifier: %s' % accuracy_st)
+
+        print('Accuracy of the RBM layer 1 classifier: %s' % accuracy_st1)
+        print('Accuracy of the RBM layer 2 classifier: %s' % accuracy_st)
         print('Accuracy of the Logistic classifier: %s' % accuracy_lr)
