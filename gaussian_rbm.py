@@ -61,7 +61,7 @@ class GaussianRBM(AbstractRBM):
         assert display is not None if verbose is True else True
 
         # Initialize total error
-        total_error = 0.
+        batch_error = 0.
 
         # divide data into batches
         batches = utils.generate_batches(data, batch_size)
@@ -80,16 +80,13 @@ class GaussianRBM(AbstractRBM):
                  h_probs_new, v_sigma_delta_0, v_sigma_delta) = self.gibbs_sampling(batch, gibbs_k)
 
                 # weights update
-                dw = alpha * \
-                    (associations_delta / float(batch_size)) + \
-                    m * self.last_velocity
+                dw = alpha * (associations_delta / float(batch_size)) + m * self.last_velocity
                 self.W += dw
                 self.last_velocity = dw
                 # bias updates mean through the batch
                 self.h_bias += alpha * np.array(h_bias_delta.mean(axis=0))[0, :]
                 cst = 1 / np.square(self.sigma)
-                self.v_bias += alpha * \
-                    ((cst*batch) - (cst*v_values_new)).mean(axis=0)
+                self.v_bias += alpha * ((cst*batch) - (cst*v_values_new)).mean(axis=0)
                 # standard deviation update
                 # batch_square_norm = np.square(np.linalg.norm(batch))
                 # reconstr_square_norm = np.square(np.linalg.norm(v_values_new))
@@ -98,34 +95,32 @@ class GaussianRBM(AbstractRBM):
                 #    ((reconstr_square_norm - v_sigma_delta) / (self.v_sigma ** 3)).mean(axis=0)
                 # self.v_sigma = self.v_sigma.mean(axis=0)
 
-                error = np.sum((batch - v_values_new) ** 2) / float(batch_size)
-                total_error += error
+                batch_error += np.sum((batch - v_values_new) ** 2) / float(batch_size)
 
             if verbose:
                 print(display(v_values_new[np.random.randint(v_values_new.shape[0])], threshold=0.5))
 
-            print("Epoch %s : error is %s" % (epoch, total_error))
+            print("Epoch %s : error is %s" % (epoch, batch_error))
             if epoch % 10 == 0:
                 self.train_free_energies.append(self.avg_free_energy(batches[0]))
                 if validation is not None:
                     self.validation_free_energies.append(self.avg_free_energy(validation))
             if epoch % m_update == 0 and epoch > 0:
                 m += 0.01
-            self.costs.append(total_error)
-            total_error = 0
+            self.costs.append(batch_error)
+            batch_error = 0
 
     def gibbs_sampling(self, v_in_0, k):
         """Performs k steps of Gibbs Sampling, starting from the visible units input.
         """
-        batch_size = v_in_0.shape[0]
 
         # Sample from the hidden units given the visible units - Positive
         # Constrastive Divergence phase
         dot_prod = np.dot(v_in_0 / np.square(self.v_sigma), self.W)
         h_activations_0 = dot_prod + self.h_bias
         h_probs_0 = self.hidden_act_func(h_activations_0)
-        h_states = (h_probs_0 > np.random.rand(h_probs_0.shape[0], h_probs_0.shape[1])).astype(np.int)
-        pos_associations = np.dot(v_in_0.T, h_probs_0)
+        h_states = utils.probs_to_binary(h_probs_0)
+        pos_associations = np.dot(v_in_0.T, h_states)
         # positive delta for the standard deviation
         v_sigma_delta_0 = 0.  # 2 * dot_prod * h_probs_0
 
@@ -136,9 +131,7 @@ class GaussianRBM(AbstractRBM):
                 # Positive CD phase
                 h_activations = np.dot(v_in_0 / np.square(self.v_sigma), self.W) + self.h_bias
                 h_probs = self.hidden_act_func(h_activations)
-                h_states = (
-                    h_probs > np.random.rand(batch_size, self.num_hidden)
-                ).astype(np.int)
+                h_states = utils.probs_to_binary(h_probs)
 
             # Reconstruct the visible units
             # units - Negative Contrastive Divergence phase
@@ -149,12 +142,10 @@ class GaussianRBM(AbstractRBM):
             dot_prod_new = np.dot(v_values / np.square(self.v_sigma), self.W)
             h_activations_new = dot_prod_new + self.h_bias
             h_probs_new = self.hidden_act_func(h_activations_new)
-            h_states_new = (
-                h_probs_new > np.random.rand(batch_size, self.num_hidden)
-            ).astype(np.int)
+            h_states_new = utils.probs_to_binary(h_probs_new)
 
             # We are again using states but we could have used probabilities
-            neg_associations = np.dot(v_values.T, h_probs_new)
+            neg_associations = np.dot(v_values.T, h_states_new)
             # negative delta for the standard deviation
             v_sigma_delta = 0.  # 2 * dot_prod_new * h_probs_new
             # Use the new sampled visible units in the next step
@@ -173,7 +164,7 @@ class GaussianRBM(AbstractRBM):
         hidden units, to get a sample of the visible units.
         """
         (dummy, dummy, v_probs, dummy, _, _) = self.gibbs_sampling(h_in, gibbs_k)
-        visible_states = (v_probs > np.random.random(v_probs.shape[0])).astype(np.int)
+        visible_states = utils.probs_to_binary(v_probs)
         return v_probs, visible_states
 
     def sample_hidden_from_visible(self, v_in, gibbs_k=1):
@@ -183,7 +174,7 @@ class GaussianRBM(AbstractRBM):
         # This is exactly like the Positive Contrastive divergence phase
         h_activations = np.dot(v_in, self.W) + self.h_bias
         h_probs = self.hidden_act_func(h_activations)
-        h_states = (h_probs > np.random.rand(h_probs.shape[0], h_probs.shape[1])).astype(np.int)
+        h_states = utils.probs_to_binary(h_probs)
         return h_probs, h_states
 
     def visible_act_func(self, x):

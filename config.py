@@ -1,5 +1,5 @@
 # Datasets sizes
-TRAIN_SET_SIZE = 7000
+TRAIN_SET_SIZE = 3000
 TEST_SET_SIZE = 10000
 
 ####################################################################
@@ -46,7 +46,7 @@ GAUSS_NV = 784            # number of visible units
 GAUSS_NH = 250            # number of hidden units
 # Train parameters
 G_EPOCHS = 100         # number of training epochs
-G_ALPHA = 0.00005      # learning rate
+G_ALPHA = 0.0001      # learning rate
 G_M = 0.0             # momentum parameter
 G_BATCH_SIZE = 50     # size of each batch
 G_GIBBS_K = 1         # number of gibbs sampling steps

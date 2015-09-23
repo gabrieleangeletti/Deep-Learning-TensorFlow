@@ -58,7 +58,7 @@ class MultinomialRBM(AbstractRBM):
     def train(self, data, validation=None, epochs=100, batch_size=10,
               alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
         # Total error per epoch
-        total_error = 0
+        batch_error = 0
 
         # divide data into batches
         batches = utils.generate_batches(data, batch_size)
@@ -80,32 +80,25 @@ class MultinomialRBM(AbstractRBM):
             prog_bar = ProgPercent(n_batches)
             for batch in binary_batches:
                 prog_bar.update()
-                (associations_delta, h_bias_delta, v_probs,
+                (associations_delta, h_bias_delta, v_probs, v_states,
                  h_probs) = self.gibbs_sampling(batch, gibbs_k)
-                # Useful to compute the error
-                v_states = (v_probs > np.random.rand(
-                    batch_size, self.num_visible)).astype(np.int)
 
                 # weights update
-                deltaW = alpha * \
-                    (associations_delta / float(batch_size)) + \
-                    m*self.last_velocity
+                deltaW = alpha * (associations_delta / float(batch_size)) + m*self.last_velocity
                 self.W += deltaW
                 self.last_velocity = deltaW
                 # bias updates mean through the batch
                 self.h_bias += alpha * (h_bias_delta).mean(axis=0)
-                self.v_bias += alpha * \
-                    (batch - v_probs).mean(axis=0)
+                self.v_bias += alpha * (batch - v_probs).mean(axis=0)
 
-                error = np.sum((batch - v_probs) ** 2) / float(batch_size)
-                total_error += error
+                batch_error += np.sum((batch - v_probs) ** 2) / float(batch_size)
 
             if display and verbose:
                 print("Reconstructed sample from the training set")
                 rand_sample = v_states[np.random.randint(v_states.shape[0])]
                 print(display(self._convert_visible_binary_to_multinomial([rand_sample])))
 
-            print("Epoch %s : error is %s" % (epoch, total_error))
+            print("Epoch %s : error is %s" % (epoch, batch_error))
             if epoch % 25 == 0 and epoch > 0:
                 self.train_free_energies.append(
                     self.average_free_energy(binary_batches[0]))
@@ -114,8 +107,8 @@ class MultinomialRBM(AbstractRBM):
                         self.average_free_energy(binary_validation))
             if epoch % m_update == 0 and epoch > 0 and m < 0.9:
                 m += 0.01
-            self.costs.append(total_error)
-            total_error = 0
+            self.costs.append(batch_error)
+            batch_error = 0
 
     def gibbs_sampling(self, v_in, k):
         """Performs k steps of Gibbs Sampling, starting from the visible units input.
@@ -158,6 +151,7 @@ class MultinomialRBM(AbstractRBM):
             # Negative Contrastive Divergence phase
             v_activations = np.dot(h_states, self.W.T) + self.v_bias
             v_probs = self.visible_act_func(v_activations)
+            v_states = utils.probs_to_binary(v_probs)
             # Sampling again from the hidden units
             h_activations_new = np.dot(v_probs, self.W) + self.h_bias
             h_probs_new = self.hidden_act_func(h_activations_new)
@@ -170,7 +164,7 @@ class MultinomialRBM(AbstractRBM):
             neg_associations = np.dot(v_probs.T, h_states_new)
             # Use the new sampled visible units in the next step
             v_in = v_probs
-        return pos_associations - neg_associations, h_probs_0 - h_probs_new, v_probs, h_probs_new
+        return pos_associations - neg_associations, h_probs_0 - h_probs_new, v_probs, v_states, h_probs_new
 
     def sample_visible_from_hidden(self, h_in, gibbs_k=1):
         """
@@ -182,7 +176,7 @@ class MultinomialRBM(AbstractRBM):
         """
         # Convert data into binary visible states
         binary_in = self._convert_visible_state_to_binary(h_in)
-        (_, _, v_probs, _) = self.gibbs_sampling(binary_in, gibbs_k)
+        (_, _, v_probs, _, _) = self.gibbs_sampling(binary_in, gibbs_k)
         v_states = []
         for ps in v_probs:
             tmp = [0] * len(ps)
@@ -201,7 +195,7 @@ class MultinomialRBM(AbstractRBM):
         """
         # Convert data into binary visible states
         binary_in = self._convert_visible_state_to_binary(v_in)
-        (_, _, h_probs, _) = self.gibbs_sampling(binary_in, gibbs_k)
+        (_, _, _, _, h_probs) = self.gibbs_sampling(binary_in, gibbs_k)
         h_states = []
         for ps in h_probs:
             tmp = [0] * len(ps)
@@ -236,7 +230,7 @@ class MultinomialRBM(AbstractRBM):
         """
         out = []
         for sample in x:
-            offset = 0 # offset through the units
+            offset = 0  # offset through the units
             probs = []
             while offset + self.k_hidden < len(sample):
                 den = 0.0
@@ -300,7 +294,7 @@ class MultinomialRBM(AbstractRBM):
         bin = []
         for sample in x:
             sample_multin = []
-            for i,u in enumerate(sample):
+            for i, u in enumerate(sample):
                 tmp = [0] * (self.k_visible + 1)
                 tmp[int(u)] = 1
                 sample_multin.append(tmp)
@@ -343,7 +337,7 @@ class MultinomialRBM(AbstractRBM):
         bin = []
         for sample in x:
             sample_multin = []
-            for i,u in enumerate(sample):
+            for i, u in enumerate(sample):
                 tmp = [0] * (self.k_hidden + 1)
                 tmp[int(u)] = 1
                 sample_multin.append(tmp)

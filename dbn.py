@@ -34,6 +34,9 @@ class DBN(object):
         self.cls = LogisticRegression(*args, **kwargs)
         # Last layer rbm for supervised training (initialized in wake-sleep algorithm)
         self.last_rbm = None
+        # top-down generative weights. They are initialized to be the same as the bottom-up recognition weights
+        # in the wake sleep algorithm
+        self.top_down_w = None
 
         # Training performance metrics
         self.errors = []
@@ -121,6 +124,10 @@ class DBN(object):
         """
         assert data.shape[0] == y.shape[0]
 
+        # Initialize the top down generative weights to be the same as the recognition weights of the rbm
+        # and they are untied, se that their values can become different
+        self.top_down_w = [rbm.W.T for rbm in self.layers]
+
         # convert integer labels to binary vectors
         bin_y = utils.int2binary_vect(y)
 
@@ -135,7 +142,8 @@ class DBN(object):
 
         alpha_rule = utils.prepare_alpha_update(alpha_update_rule, alpha, epochs)
 
-        total_error = 0.
+        cross_entropy_error = 0.
+        mean_square_error = 0.
 
         for epoch in xrange(epochs):
             alpha = alpha_rule.update()  # learning rate update
@@ -179,7 +187,7 @@ class DBN(object):
                     neg_top_states = utils.probs_to_binary(neg_top_probs)
 
                 # Compute cross entropy error for the batch
-                total_error = utils.compute_cross_entropy_error(sofmax_values, targets)
+                cross_entropy_error += utils.compute_cross_entropy_error(sofmax_values, targets)
 
                 # ===== Negative phase statistics for contrastive divergence =====
                 negpentopstatistics = np.dot(neg_pen_states.T, neg_top_states)
@@ -188,20 +196,23 @@ class DBN(object):
                 # Starting from the end of the gibbs sampling run, perform a top-down
                 # generative pass to get sleep/negative phase probabilities and sample states
                 sleep_pen_states = neg_pen_states
-                sleep_hid_probs = utils.logistic(np.dot(sleep_pen_states, self.layers[1].W.T) + self.layers[1].v_bias)
+                sleep_hid_probs = utils.logistic(np.dot(sleep_pen_states, self.top_down_w[1]) + self.layers[1].v_bias)
                 sleep_hid_states = utils.probs_to_binary(sleep_hid_probs)
-                sleep_vis_probs = utils.logistic(np.dot(sleep_hid_states, self.layers[0].W.T) + self.layers[0].v_bias)
+                sleep_vis_probs = utils.logistic(np.dot(sleep_hid_states, self.top_down_w[0]) + self.layers[0].v_bias)
 
                 # Predictions
                 p_sleep_pen_states = utils.logistic(np.dot(sleep_hid_states, self.layers[1].W) + self.layers[1].h_bias)
                 p_sleep_hid_states = utils.logistic(np.dot(sleep_vis_probs, self.layers[0].W) + self.layers[0].h_bias)
-                p_vis_probs = utils.logistic(np.dot(wake_hid_states, self.layers[0].W.T) + self.layers[0].v_bias)
-                p_hid_probs = utils.logistic(np.dot(wake_pen_states, self.layers[1].W.T) + self.layers[1].h_bias)
+                p_vis_probs = utils.logistic(np.dot(wake_hid_states, self.top_down_w[0]) + self.layers[0].v_bias)
+                p_hid_probs = utils.logistic(np.dot(wake_pen_states, self.top_down_w[1]) + self.layers[1].h_bias)
+
+                # Compute mean square error for the batch
+                mean_square_error += np.sum((batch - p_vis_probs) ** 2) / float(batch_size)
 
                 # ===== Updates to Generative Parameters =====
-                self.layers[0].W += alpha*(np.dot(wake_hid_states.T, batch-p_vis_probs)).T
+                self.top_down_w[0] += alpha*(np.dot(wake_hid_states.T, batch-p_vis_probs))
                 self.layers[0].v_bias += alpha*(batch - p_vis_probs).mean(axis=0)
-                self.layers[1].W += alpha*(np.dot(wake_pen_states.T, wake_hid_states - p_hid_probs)).T
+                self.top_down_w[1] += alpha*(np.dot(wake_pen_states.T, wake_hid_states - p_hid_probs))
                 self.layers[1].v_bias += alpha*(wake_hid_states - p_hid_probs).mean(axis=0)
 
                 # ===== Updates to Top level associative memory parameters =====
@@ -217,9 +228,11 @@ class DBN(object):
                 self.layers[0].W += alpha*(np.dot(sleep_vis_probs.T, sleep_hid_states - p_sleep_hid_states))
                 self.layers[0].h_bias += alpha*(sleep_hid_states - p_sleep_hid_states).mean(axis=0)
 
-            print("Epoch {:d} : error is {:f}".format(epoch, total_error))
-            self.errors.append(total_error)
-            total_error = 0.
+            print("Epoch {:d} : cross entropy error is {:f}, mean square error is {:f}".format(epoch,
+                  cross_entropy_error, mean_square_error))
+            self.errors.append(cross_entropy_error)
+            cross_entropy_error = 0.
+            mean_square_error = 0.
 
     def predict_ws(self, data, top_gibbs_k=1):
         """Perform a bottom-up recognition pass and then get a sample of the labels for the test data

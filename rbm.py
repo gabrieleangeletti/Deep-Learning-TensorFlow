@@ -71,7 +71,7 @@ class RBM(AbstractRBM):
         assert alpha_update_rule in ['constant', 'linear', 'exp']
 
         # Total error per epoch
-        total_error = 0.
+        batch_error = 0.
 
         # Set the visible bias weights to the approximate probability
         # of a neuron being activated in the training data.
@@ -109,21 +109,20 @@ class RBM(AbstractRBM):
                 self.h_bias += alpha * h_bias_delta.mean(axis=0)
                 self.v_bias += alpha * (batch - v_probs).mean(axis=0)  # TODO: try v_states
 
-                error = np.sum((batch - v_probs) ** 2) / float(batch_size)
-                total_error += error
+                batch_error += np.sum((batch - v_probs) ** 2) / float(batch_size)
 
             if verbose:
                 print(display(v_states[np.random.randint(v_states.shape[0])]))
 
-            print("Epoch {:d} : error is {:f}".format(epoch, total_error))
+            print("Epoch {:d} : error is {:f}".format(epoch, batch_error))
             if epoch % 10 == 0:
                 self.train_free_energies.append(self.avg_free_energy(batches[0]))
                 if validation is not None:
                     self.validation_free_energies.append(self.avg_free_energy(validation))
             if epoch % m_update == 0 and epoch > 0:
                 m += 0.01
-            self.costs.append(total_error)
-            total_error = 0.
+            self.costs.append(batch_error)
+            batch_error = 0.
         end = time.clock()
         print("Training took {:f}s time".format(end - start))
 
