@@ -47,9 +47,9 @@ if __name__ == '__main__':
         run_type = 'standard'
 
     # #####################################
-    # Standard Restricted Boltzmann Machine
+    # Binary Restricted Boltzmann Machine
     # #####################################
-    if run_type == 'standard':
+    if run_type == 'binary':
         # create rbm
         r = rbm.RBM(config.NV, config.NH)
         print('Begin Training...')
@@ -57,10 +57,11 @@ if __name__ == '__main__':
                 validation=X_norm_test[0:config.BATCH_SIZE],
                 epochs=config.EPOCHS,
                 alpha=config.ALPHA,
-                m=config.M,
+                momentum=config.M,
                 batch_size=config.BATCH_SIZE,
                 gibbs_k=config.GIBBS_K,
                 alpha_update_rule=config.ALPHA_UPDATE_RULE,
+                momentum_update_rule=config.MOMENTUM_UPDATE_RULE,
                 verbose=config.VERBOSE,
                 display=display)
         # save the rbm to a file
@@ -88,8 +89,10 @@ if __name__ == '__main__':
                  validation=X_mu_test[0:config.M_BATCH_SIZE],
                  epochs=config.M_EPOCHS,
                  alpha=config.M_ALPHA,
-                 m=config.M_M,
+                 momentum=config.M_M,
                  batch_size=config.M_BATCH_SIZE,
+                 alpha_update_rule=config.M_ALPHA_UPDATE_RULE,
+                 momentum_update_rule=config.M_MOMENTUM_UPDATE_RULE,
                  gibbs_k=config.M_GIBBS_K,
                  verbose=config.M_VERBOSE,
                  display=display)
@@ -108,10 +111,11 @@ if __name__ == '__main__':
                  validation=X_real_test[0:config.G_BATCH_SIZE],
                  epochs=config.G_EPOCHS,
                  alpha=config.G_ALPHA,
-                 m=config.G_M,
+                 momentum=config.G_M,
                  batch_size=config.G_BATCH_SIZE,
                  gibbs_k=config.G_GIBBS_K,
                  alpha_update_rule=config.G_ALPHA_UPDATE_RULE,
+                 momentum_update_rule=config.G_MOMENTUM_UPDATE_RULE,
                  verbose=config.G_VERBOSE,
                  display=display)
         # save the rbm to a file
@@ -130,9 +134,10 @@ if __name__ == '__main__':
                                         epochs=config.EPOCHS,
                                         batch_size=config.BATCH_SIZE,
                                         alpha=config.ALPHA,
-                                        m=config.M,
+                                        momentum=config.M,
                                         gibbs_k=config.GIBBS_K,
                                         alpha_update_rule=config.ALPHA_UPDATE_RULE,
+                                        momentum_update_rule=config.MOMENTUM_UPDATE_RULE,
                                         verbose=config.VERBOSE,
                                         display=display)
 
@@ -170,15 +175,20 @@ if __name__ == '__main__':
         X_mu = utils.discretize_dataset(X, config.MULTI_KV)
         X_mu_test = utils.discretize_dataset(X_test, config.MULTI_KV)
         # create multinomial rbm
-        csm = classification_multinomial_rbm.ClsMultiRBM(config.MULTI_NV, config.MULTI_NH, config.MULTI_KV, config.MULTI_KN)
+        csm = classification_multinomial_rbm.ClsMultiRBM(config.MULTI_NV,
+                                                         config.MULTI_NH,
+                                                         config.MULTI_KV,
+                                                         config.MULTI_KN)
         # unsupervised learning of features
         print('Starting unsupervised learning of the features...')
         csm.learn_unsupervised_features(X_mu,
                                         validation=X_mu_test[0:config.M_BATCH_SIZE],
                                         epochs=config.M_EPOCHS,
                                         alpha=config.M_ALPHA,
-                                        m=config.M_M,
+                                        momentum=config.M_M,
                                         batch_size=config.M_BATCH_SIZE,
+                                        alpha_update_rule=config.M_ALPHA_UPDATE_RULE,
+                                        momentum_update_rule=config.M_MOMENTUM_UPDATE_RULE,
                                         gibbs_k=config.M_GIBBS_K,
                                         verbose=config.M_VERBOSE,
                                         display=display)
@@ -214,9 +224,10 @@ if __name__ == '__main__':
                                         epochs=config.G_EPOCHS,
                                         batch_size=config.G_BATCH_SIZE,
                                         alpha=config.G_ALPHA,
-                                        m=config.G_M,
+                                        momentum=config.G_M,
                                         gibbs_k=config.G_GIBBS_K,
                                         alpha_update_rule=config.G_ALPHA_UPDATE_RULE,
+                                        momentum_update_rule=config.G_MOMENTUM_UPDATE_RULE,
                                         verbose=config.G_VERBOSE,
                                         display=display)
 
@@ -252,10 +263,11 @@ if __name__ == '__main__':
                                        validation=X_norm_test[0:config.DBN_BATCH_SIZE],
                                        epochs=config.DBN_EPOCHS,
                                        alpha=config.DBN_ALPHA,
-                                       m=config.DBN_M,
+                                       momentum=config.DBN_M,
                                        batch_size=config.DBN_BATCH_SIZE,
                                        gibbs_k=config.DBN_GIBBS_K,
                                        alpha_update_rule=config.DBN_ALPHA_UPDATE_RULE,
+                                       momentum_update_rule=config.DBN_MOMENTUM_UPDATE_RULE,
                                        verbose=config.DBN_VERBOSE,
                                        display=display)
         print('Start supervised fine tuning using wake-sleep algorithm...')
@@ -278,11 +290,13 @@ if __name__ == '__main__':
         deep_net.wake_sleep(config.DBN_LAST_LAYER,
                             X_norm,
                             y,
-                            config.DBN_FT_BATCH_SIZE,
-                            config.DBN_FT_EPOCHS,
-                            config.DBN_FT_ALPHA,
-                            config.DBN_FT_TOP_GIBBS_K,
-                            config.DBN_FT_ALPHA_UPDATE_RULE)
+                            batch_size=config.DBN_FT_BATCH_SIZE,
+                            epochs=config.DBN_FT_EPOCHS,
+                            alpha=config.DBN_FT_ALPHA,
+                            momentum=config.DBN_FT_M,
+                            top_gibbs_k=config.DBN_FT_TOP_GIBBS_K,
+                            alpha_update_rule=config.DBN_FT_ALPHA_UPDATE_RULE,
+                            momentum_update_rule=config.DBN_FT_MOMENTUM_UPDATE_RULE)
         print('Save configuration of rbm layers after training')
         deep_net.layers[0].save_configuration(config.DBN_OUTFILES[0])
         deep_net.layers[1].save_configuration(config.DBN_OUTFILES[1])
@@ -312,10 +326,11 @@ if __name__ == '__main__':
                                        validation=X_norm_test[0:config.DBN_BATCH_SIZE],
                                        epochs=config.DBN_EPOCHS,
                                        alpha=config.DBN_ALPHA,
-                                       m=config.DBN_M,
+                                       momentum=config.DBN_M,
                                        batch_size=config.DBN_BATCH_SIZE,
                                        gibbs_k=config.DBN_GIBBS_K,
                                        alpha_update_rule=config.DBN_ALPHA_UPDATE_RULE,
+                                       momentum_update_rule=config.DBN_MOMENTUM_UPDATE_RULE,
                                        verbose=config.DBN_VERBOSE,
                                        display=display)
 

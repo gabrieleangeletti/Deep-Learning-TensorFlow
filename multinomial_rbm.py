@@ -53,10 +53,20 @@ class MultinomialRBM(AbstractRBM):
         self.train_free_energies = []
         self.validation_free_energies = []
         # last gradient, used for momentum
-        self.last_velocity = 0.0
+        self.last_velocity = 0.
 
-    def train(self, data, validation=None, epochs=100, batch_size=10,
-              alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
+    def train(self,
+              data,
+              validation=None,
+              epochs=100,
+              batch_size=10,
+              alpha=0.1,
+              momentum=0.5,
+              gibbs_k=1,
+              alpha_update_rule='constant',
+              momentum_update_rule='constant',
+              verbose=False,
+              display=None):
         # Total error per epoch
         batch_error = 0
 
@@ -64,10 +74,13 @@ class MultinomialRBM(AbstractRBM):
         batches = utils.generate_batches(data, batch_size)
         n_batches = len(batches)
 
-        alpha_rule = utils.prepare_alpha_update(alpha_update_rule, alpha, epochs)
+        # prepare parameters update rule
+        alpha_rule = utils.prepare_parameter_update(alpha_update_rule, alpha, epochs)
+        momentum_rule = utils.prepare_parameter_update(momentum_update_rule, momentum, epochs)
 
-        # Momentum parameter update rule
-        m_update = int(epochs / ((0.9 - m) / 0.01)) + 1
+        # last gradient, used for momentum
+        last_velocity = 0.
+
         # Convert batches into binary visible states
         binary_batches = [self._convert_visible_state_to_binary(b) for b in batches]
         # Convert the validation into binary visible states
@@ -77,6 +90,7 @@ class MultinomialRBM(AbstractRBM):
 
         for epoch in xrange(epochs):
             alpha = alpha_rule.update()  # learning rate update
+            m = momentum_rule.update()  # momentum update
             prog_bar = ProgPercent(n_batches)
             for batch in binary_batches:
                 prog_bar.update()
@@ -84,9 +98,9 @@ class MultinomialRBM(AbstractRBM):
                  h_probs) = self.gibbs_sampling(batch, gibbs_k)
 
                 # weights update
-                deltaW = alpha * (associations_delta / float(batch_size)) + m*self.last_velocity
+                deltaW = alpha * (associations_delta / float(batch_size)) + m*last_velocity
                 self.W += deltaW
-                self.last_velocity = deltaW
+                last_velocity = deltaW
                 # bias updates mean through the batch
                 self.h_bias += alpha * (h_bias_delta).mean(axis=0)
                 self.v_bias += alpha * (batch - v_probs).mean(axis=0)
@@ -105,8 +119,6 @@ class MultinomialRBM(AbstractRBM):
                 if validation is not None:
                     self.validation_free_energies.append(
                         self.average_free_energy(binary_validation))
-            if epoch % m_update == 0 and epoch > 0 and m < 0.9:
-                m += 0.01
             self.costs.append(batch_error)
             batch_error = 0
 
@@ -242,7 +254,7 @@ class MultinomialRBM(AbstractRBM):
             out.append(probs / den)
         return np.array(out)
 
-    def average_free_energy(self, data):
+    def avg_free_energy(self, data):
         """Compute the average free energy over a representative sample
         of the training set or the validation set, already converted to binary.
         """

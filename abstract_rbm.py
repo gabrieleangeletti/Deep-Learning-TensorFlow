@@ -19,8 +19,18 @@ class AbstractRBM(object):
         self.num_hidden = num_hidden
 
     @abstractmethod
-    def train(self, data, validation=None, epochs=100, batch_size=10,
-              alpha=0.1, m=0.5, gibbs_k=1, alpha_update_rule='constant', verbose=False, display=None):
+    def train(self,
+              data,
+              validation=None,
+              epochs=100,
+              batch_size=10,
+              alpha=[0.1],
+              momentum=[0.5],
+              gibbs_k=1,
+              alpha_update_rule='constant',
+              momentum_update_rule='constant',
+              verbose=False,
+              display=None):
         """Train the restricted boltzmann machine with the given parameters.
         :param data: the training set
         :param validation: the validation set
@@ -30,6 +40,8 @@ class AbstractRBM(object):
         :param m: momentum parameter
         :param gibbs_k: number of gibbs sampling steps
         :param alpha_update_rule: type of update rule for the learning rate. Can be constant,
+               linear or exponential
+        :param momentum_update_rule: type of update rule for the momentum parameter. Can be constant,
                linear or exponential
         :param verbose: if true display a progress bar through the loop
         :param display: function used to display reconstructed samples

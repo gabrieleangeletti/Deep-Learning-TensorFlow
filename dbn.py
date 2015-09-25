@@ -46,10 +46,11 @@ class DBN(object):
                               validation=None,
                               epochs=100,
                               batch_size=10,
-                              alpha=0.01,
-                              m=0.5,
+                              alpha=[0.01],
+                              momentum=[0.5],
                               gibbs_k=1,
                               alpha_update_rule='constant',
+                              momentum_update_rule='constant',
                               verbose=False,
                               display=None):
         """Unsupervised greedy layer-wise pre-training of the Deep Belief Net.
@@ -58,10 +59,12 @@ class DBN(object):
         :param epochs: number of training steps
         :param batch_size: size of each batch
         :param alpha: learning rate
-        :param m: momentum parameter
+        :param momentum: momentum parameter
         :param gibbs_k: number of gibbs sampling steps
         :param alpha_update_rule: type of update rule for the learning rate. Can be constant,
                linear or exponential
+        :param momentum_update_rule: type of update rule for the momentum parameter. Can be constant,
+           linear or exponential
         :param verbose: if true display a progress bar through the loop
         :param display: function used to display reconstructed samples
                         after gibbs sampling for each epoch.
@@ -78,9 +81,10 @@ class DBN(object):
                           epochs=epochs,
                           batch_size=batch_size,
                           alpha=alpha,
-                          m=m,
+                          momentum=momentum,
                           gibbs_k=gibbs_k,
                           alpha_update_rule=alpha_update_rule,
+                          momentum_update_rule=momentum_update_rule,
                           verbose=verbose,
                           display=display)
                 # dataset's representation of the first rbm
@@ -94,9 +98,10 @@ class DBN(object):
                           epochs=epochs,
                           batch_size=batch_size,
                           alpha=alpha,
-                          m=m,
+                          momentum=momentum,
                           gibbs_k=gibbs_k,
-                          alpha_update_rule=alpha_update_rule)
+                          alpha_update_rule=alpha_update_rule,
+                          momentum_update_rule=momentum_update_rule)
                 # features representation of the current rbm
                 _, middle_repr = rbm.sample_hidden_from_visible(middle_repr)
                 # validation set representation of the first rbm
@@ -108,9 +113,11 @@ class DBN(object):
                    y,
                    batch_size=1,
                    epochs=100,
-                   alpha=0.01,
+                   alpha=[0.01],
+                   momentum=[0.5],
                    top_gibbs_k=1,
-                   alpha_update_rule='constant'):
+                   alpha_update_rule='constant',
+                   momentum_update_rule='constant'):
         """Fine-tuning of the deep belief net using the wake-sleep algorithm proposed by Hinton et al. 2006.
         :param num_last_layer: number of hidden units for the last RBM
         :param data: input dataset
@@ -118,9 +125,11 @@ class DBN(object):
         :param batch_size: size of each bach
         :param epochs: number of training epochs
         :param alpha: learning rate parameter
+        :param momentum: momentum parameter
         :param top_gibbs_k: number of gibbs sampling steps using the top level undirected associative
                             memory
         :param alpha_update_rule: update rule for the learning rate
+        :param momentum_update_rule: update rule for the momentum
         """
         assert data.shape[0] == y.shape[0]
 
@@ -140,10 +149,9 @@ class DBN(object):
         # initialize the last layer rbm
         self.last_rbm = RBM(num_pen_units + bin_y[0].shape[0], num_last_layer)
 
-        alpha_rule = utils.prepare_alpha_update(alpha_update_rule, alpha, epochs)
+        alpha_rule = utils.prepare_parameter_update(alpha_update_rule, alpha, epochs)
 
         cross_entropy_error = 0.
-        mean_square_error = 0.
 
         for epoch in xrange(epochs):
             alpha = alpha_rule.update()  # learning rate update
@@ -206,9 +214,6 @@ class DBN(object):
                 p_vis_probs = utils.logistic(np.dot(wake_hid_states, self.top_down_w[0]) + self.layers[0].v_bias)
                 p_hid_probs = utils.logistic(np.dot(wake_pen_states, self.top_down_w[1]) + self.layers[1].h_bias)
 
-                # Compute mean square error for the batch
-                mean_square_error += np.sum((batch - p_vis_probs) ** 2) / float(batch_size)
-
                 # ===== Updates to Generative Parameters =====
                 self.top_down_w[0] += alpha*(np.dot(wake_hid_states.T, batch-p_vis_probs))
                 self.layers[0].v_bias += alpha*(batch - p_vis_probs).mean(axis=0)
@@ -228,11 +233,10 @@ class DBN(object):
                 self.layers[0].W += alpha*(np.dot(sleep_vis_probs.T, sleep_hid_states - p_sleep_hid_states))
                 self.layers[0].h_bias += alpha*(sleep_hid_states - p_sleep_hid_states).mean(axis=0)
 
-            print("Epoch {:d} : cross entropy error is {:f}, mean square error is {:f}".format(epoch,
-                  cross_entropy_error, mean_square_error))
+            print("Epoch {:d} : cross entropy error is {:f}".format(epoch,
+                  cross_entropy_error))
             self.errors.append(cross_entropy_error)
             cross_entropy_error = 0.
-            mean_square_error = 0.
 
     def predict_ws(self, data, top_gibbs_k=1):
         """Perform a bottom-up recognition pass and then get a sample of the labels for the test data

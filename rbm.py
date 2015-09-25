@@ -51,24 +51,26 @@ class RBM(AbstractRBM):
         self.costs = []
         self.train_free_energies = []
         self.validation_free_energies = []
-        # last gradient, used for momentum
-        self.last_velocity = 0.
 
     def train(self,
               data,
               validation=None,
               epochs=100,
               batch_size=10,
-              alpha=0.1,
-              m=0.5,
+              alpha=[0.1],
+              momentum=[0.5],
               gibbs_k=1,
               alpha_update_rule='constant',
+              momentum_update_rule='constant',
               verbose=False,
               display=None):
         """Train the restricted boltzmann machine with the given parameters.
         """
         assert display is not None if verbose is True else True
         assert alpha_update_rule in ['constant', 'linear', 'exp']
+        assert momentum_update_rule in ['constant', 'linear', 'exp']
+        assert len(alpha) > 1 if alpha_update_rule == 'linear' else len(alpha) == 1
+        assert len(momentum) > 1 if momentum_update_rule == 'linear' else len(momentum) == 1
 
         # Total error per epoch
         batch_error = 0.
@@ -88,23 +90,26 @@ class RBM(AbstractRBM):
         batches = utils.generate_batches(data, batch_size)
         n_batches = len(batches)
 
-        alpha_rule = utils.prepare_alpha_update(alpha_update_rule, alpha, epochs)
+        # prepare parameters update rule
+        alpha_rule = utils.prepare_parameter_update(alpha_update_rule, alpha, epochs)
+        momentum_rule = utils.prepare_parameter_update(momentum_update_rule, momentum, epochs)
 
-        # Momentum parameter update rule
-        m_update = int(epochs / ((0.9 - m) / 0.01)) + 1
+        # last gradient, used for momentum
+        last_velocity = 0.
 
         start = time.clock()
         for epoch in xrange(epochs):
             alpha = alpha_rule.update()  # learning rate update
+            m = momentum_rule.update()  # momentum update
             prog_bar = ProgPercent(n_batches)
             for batch in batches:
                 prog_bar.update()
                 (associations_delta, h_bias_delta, v_probs, v_states, h_probs) = self.gibbs_sampling(batch, gibbs_k)
 
                 # weights update
-                dw = alpha * (associations_delta / float(batch_size)) + m*self.last_velocity
+                dw = alpha * (associations_delta / float(batch_size)) + m*last_velocity
                 self.W += dw
-                self.last_velocity = dw
+                last_velocity = dw
                 # bias updates mean through the batch
                 self.h_bias += alpha * h_bias_delta.mean(axis=0)
                 self.v_bias += alpha * (batch - v_probs).mean(axis=0)  # TODO: try v_states
@@ -119,8 +124,6 @@ class RBM(AbstractRBM):
                 self.train_free_energies.append(self.avg_free_energy(batches[0]))
                 if validation is not None:
                     self.validation_free_energies.append(self.avg_free_energy(validation))
-            if epoch % m_update == 0 and epoch > 0:
-                m += 0.01
             self.costs.append(batch_error)
             batch_error = 0.
         end = time.clock()

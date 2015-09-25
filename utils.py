@@ -209,7 +209,7 @@ class AbstractUpdatingParameter(object):
         :param param: tuning parameter
         """
         self.param = param
-        self.t = 0.0  # current number of time steps
+        self.t = 0.  # current number of time steps
 
     @abstractmethod
     def update(self):
@@ -232,25 +232,26 @@ class ConstantParameter(AbstractUpdatingParameter):
         return self.param
 
 
-class LinearDecayParameter(AbstractUpdatingParameter):
-    """Class representing a linearly decay parameter, following the formula:
+class LinearParameter(AbstractUpdatingParameter):
+    """Class representing a linearly ascending or decading parameter, following the formula:
     base_rate * (1 - progress) + final_rate * progress, where base rate is the initial value for the parameter
     and final_rate is the final value. Progress is the ratio between the current iteration and the total number
     of iterations.
     """
 
-    def __init__(self, param, n):
+    def __init__(self, base, final, n):
         """Initialization.
         :param n: number of iterations
         """
-        super(LinearDecayParameter, self).__init__(param)
+        super(LinearParameter, self).__init__(base)
         self.n = n
-        self.final_rate = 0.001
+        self.base = base
+        self.final = final
+        self.progress = 0.
 
     def update(self):
-        self.t += 1.0
-        progress = self.t / self.n
-        return self.param * (1 - progress) + self.final_rate * progress
+        self.progress += 1. / self.n
+        return self.base * (1 - self.progress) + self.final * self.progress
 
 
 class ExpDecayParameter(AbstractUpdatingParameter):
@@ -266,25 +267,20 @@ class ExpDecayParameter(AbstractUpdatingParameter):
         super(ExpDecayParameter, self).__init__(param)
 
     def update(self):
-        self.t += 1.0
+        self.t += 1.
         return 1 / (1 + (self.t / self.param))
 
 
-def prepare_alpha_update(alpha_update_rule, alpha, epochs):
+def prepare_parameter_update(param_update_rule, param, epochs):
     # Learning rate update rule
-    if alpha_update_rule == 'exp':
-        alpha_rule = ExpDecayParameter(alpha)
-    elif alpha_update_rule == 'linear':
-        alpha_rule = LinearDecayParameter(alpha, epochs)
-    elif alpha_update_rule == 'constant':
-        alpha_rule = ConstantParameter(alpha)
+    if param_update_rule == 'exp':
+        param_rule = ExpDecayParameter(param[0])
+    elif param_update_rule == 'linear':
+        param_rule = LinearParameter(param[0], param[1], epochs)
+    elif param_update_rule == 'constant':
+        param_rule = ConstantParameter(param[0])
     else:
         raise Exception('alpha_update_rule must be in ["exp", "constant", "linear"]')
-    assert alpha_rule is not None
+    assert param_rule is not None
 
-    return alpha_rule
-
-
-
-
-
+    return param_rule
