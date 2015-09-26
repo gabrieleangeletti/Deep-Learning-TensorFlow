@@ -14,7 +14,9 @@ class DBNTest(unittest.TestCase):
         """
         deep_net = DBN([10, 5, 8])
         data = np.array([[0, 1, 0, 1, 1, 1, 0, 1, 0, 0]])
-        out = deep_net.forward(data)
+        middle_out, out = deep_net.forward(data)
+        self.assertEqual(middle_out[0].shape[0], 5)
+        self.assertEqual(middle_out[1].shape[0], 8)
         self.assertEqual(out.shape, (1, 8))
 
     def test_backward_func(self):
@@ -29,4 +31,3 @@ class DBNTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

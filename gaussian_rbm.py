@@ -69,8 +69,6 @@ class GaussianRBM(AbstractRBM):
         assert display is not None if verbose is True else True
         assert alpha_update_rule in ['constant', 'linear', 'exp']
         assert momentum_update_rule in ['constant', 'linear', 'exp']
-        assert len(alpha) > 1 if alpha_update_rule == 'linear' else len(alpha) == 1
-        assert len(momentum) > 1 if momentum_update_rule == 'linear' else len(momentum) == 1
 
         # Initialize total error
         batch_error = 0.

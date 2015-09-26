@@ -10,6 +10,12 @@ def logistic(x):
     return 1. / (1. + np.exp(-x))
 
 
+def logistic_dot(x):
+    """Logistic Function derivative.
+    """
+    return (1. / (1. + np.exp(-x))) * (1 - (1. / (1. + np.exp(-x))))
+
+
 def softmax(x):
     """Return the softmax of x, that is an array of the same length as x, with all 0s and 1 in the index
     of the max element in x.
@@ -56,6 +62,15 @@ def merge_data_labels(data, y):
     for j in range(data.shape[0]):
         joint_data.append(np.hstack([data[j], y[j]]))
     return np.array(joint_data)
+
+
+def compute_mean_square_error(preds, targets):
+    """Compute the Mean Square Error (MSE) across a set of predictions and relative targets.
+    :param preds: predictions made by the classifier
+    :param targets: supervised targets
+    :return: average mean square error over the batch
+    """
+    np.sum((targets - preds) ** 2) / float(preds.shape[0])
 
 
 def compute_cross_entropy_error(preds, targets):

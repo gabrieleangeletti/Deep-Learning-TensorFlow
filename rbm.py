@@ -69,8 +69,6 @@ class RBM(AbstractRBM):
         assert display is not None if verbose is True else True
         assert alpha_update_rule in ['constant', 'linear', 'exp']
         assert momentum_update_rule in ['constant', 'linear', 'exp']
-        assert len(alpha) > 1 if alpha_update_rule == 'linear' else len(alpha) == 1
-        assert len(momentum) > 1 if momentum_update_rule == 'linear' else len(momentum) == 1
 
         # Total error per epoch
         batch_error = 0.
@@ -88,7 +86,7 @@ class RBM(AbstractRBM):
 
         # divide data into batches
         batches = utils.generate_batches(data, batch_size)
-        n_batches = len(batches)
+        # n_batches = len(batches)
 
         # prepare parameters update rule
         alpha_rule = utils.prepare_parameter_update(alpha_update_rule, alpha, epochs)
@@ -101,14 +99,15 @@ class RBM(AbstractRBM):
         for epoch in xrange(epochs):
             alpha = alpha_rule.update()  # learning rate update
             m = momentum_rule.update()  # momentum update
-            prog_bar = ProgPercent(n_batches)
+            # prog_bar = ProgPercent(n_batches)
             for batch in batches:
-                prog_bar.update()
+                # prog_bar.update()
                 (associations_delta, h_bias_delta, v_probs, v_states, h_probs) = self.gibbs_sampling(batch, gibbs_k)
 
                 # weights update
-                dw = alpha * (associations_delta / float(batch_size)) + m*last_velocity
-                self.W += dw
+                dw = alpha*(associations_delta / float(batch_size))
+                mdw = dw + m*(dw - last_velocity)
+                self.W += mdw
                 last_velocity = dw
                 # bias updates mean through the batch
                 self.h_bias += alpha * h_bias_delta.mean(axis=0)

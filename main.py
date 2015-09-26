@@ -137,9 +137,9 @@ if __name__ == '__main__':
                                         momentum=config.M,
                                         gibbs_k=config.GIBBS_K,
                                         alpha_update_rule=config.ALPHA_UPDATE_RULE,
-                                        momentum_update_rule=config.MOMENTUM_UPDATE_RULE,
-                                        verbose=config.VERBOSE,
-                                        display=display)
+                                        momentum_update_rule=config.MOMENTUM_UPDATE_RULE)
+                                        # verbose=config.VERBOSE,
+                                        # display=display)
 
         # save the standard rbm to a file
         print('Saving the RBM to outfile...')
@@ -280,10 +280,10 @@ if __name__ == '__main__':
                             config.DBN_FT_TOP_GIBBS_K,
                             config.DBN_FT_ALPHA_UPDATE_RULE)
 
-    # ##################################################
-    # Deep Belief Network loaded from pretrained rbms
-    # ##################################################
-    elif run_type == 'dbn-from-trained-rbms':
+    # ##########################################################################
+    # Deep Belief Network loaded from pretrained rbms, fine-tune with wake-sleep
+    # ##########################################################################
+    elif run_type == 'dbn-from-trained-rbms-wake-sleep':
         deep_net = DBN([])
         deep_net.load_rbms(config.DBN_INPUT_RBMS)
         print('Start supervised fine tuning using wake-sleep algorithm...')
@@ -302,9 +302,44 @@ if __name__ == '__main__':
         deep_net.layers[1].save_configuration(config.DBN_OUTFILES[1])
         deep_net.last_rbm.save_configuration(config.DBN_OUTFILES[2])
         print('Save performance metrics of the rbm during wake sleep...')
-        deep_net.save_performance_metrics(config.DBN_PERFORMANCE_OUTFILE)
+        deep_net.save_performance_metrics(config.DBN_WS_PERFORMANCE_OUTFILE)
         print('Testing the accuracy of the dbn...')
         dbn_preds = deep_net.predict_ws(X_norm_test, config.DBN_TEST_TOP_GIBBS_K)
+
+        accuracy_dbn = sum(dbn_preds == y_test) / float(config.TEST_SET_SIZE)
+        # Now train a normal logistic regression classifier and test it
+        print('Training standard Logistic Regression Classifier...')
+        lr = LogisticRegression()
+        lr.fit(X_norm, y)
+        lr_preds = lr.predict(X_norm_test)
+        accuracy_lr = sum(lr_preds == y_test) / float(config.TEST_SET_SIZE)
+        print('Accuracy of the Deep Belief Network: %s' % accuracy_dbn)
+        print('Accuracy of the Logistic classifier: %s' % accuracy_lr)
+
+    # ##########################################################################
+    # Deep Belief Network loaded from pretrained rbms, fine-tune with backprop
+    # ##########################################################################
+    elif run_type == 'dbn-from-trained-rbms-backprop':
+        deep_net = DBN([])
+        deep_net.load_rbms(config.DBN_INPUT_RBMS)
+        print('Start supervised fine tuning using backpropagation...')
+        deep_net.backprop(config.DBN_SOFTMAX_LAYER,
+                          X_norm,
+                          y,
+                          batch_size=config.DBN_FT_BATCH_SIZE,
+                          epochs=config.DBN_FT_EPOCHS,
+                          alpha=config.DBN_FT_ALPHA,
+                          momentum=config.DBN_FT_M,
+                          alpha_update_rule=config.DBN_FT_ALPHA_UPDATE_RULE,
+                          momentum_update_rule=config.DBN_FT_MOMENTUM_UPDATE_RULE)
+        print('Save configuration of rbm layers after training')
+        deep_net.layers[0].save_configuration(config.DBN_BP_OUTFILES[0])
+        deep_net.layers[1].save_configuration(config.DBN_BP_OUTFILES[1])
+        # TODO: save configuration of softmax layer
+        print('Save performance metrics of the rbm during wake sleep...')
+        deep_net.save_performance_metrics(config.DBN_BP_PERFORMANCE_OUTFILE)
+        print('Testing the accuracy of the dbn...')
+        dbn_preds = deep_net.predict_bp(X_norm_test)
 
         accuracy_dbn = sum(dbn_preds == y_test) / float(config.TEST_SET_SIZE)
         # Now train a normal logistic regression classifier and test it

@@ -22,10 +22,11 @@ class ClsRBM(AbstractClsRBM):
                                     validation=None,
                                     epochs=100,
                                     batch_size=1,
-                                    alpha=0.1,
-                                    m=0.5,
+                                    alpha=[0.1],
+                                    momentum=[0.5],
                                     gibbs_k=1,
                                     alpha_update_rule='constant',
+                                    momentum_update_rule='constant',
                                     verbose=False,
                                     display=None):
         """Unsupervised learning of the rbm layer
@@ -35,9 +36,10 @@ class ClsRBM(AbstractClsRBM):
                        epochs=epochs,
                        batch_size=batch_size,
                        alpha=alpha,
-                       m=m,
+                       momentum=momentum,
                        gibbs_k=gibbs_k,
                        alpha_update_rule=alpha_update_rule,
+                       momentum_update_rule='constant',
                        verbose=verbose,
                        display=display)
 

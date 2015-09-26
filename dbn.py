@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from sklearn.linear_model import LogisticRegression
+from copy import copy
 import numpy as np
 import json
 
@@ -32,6 +33,9 @@ class DBN(object):
 
         # Logistic Regression classifier on top of the penultime rbm
         self.cls = LogisticRegression(*args, **kwargs)
+        # Output units on top of the penultime rbm to train with backpropagation
+        self.softmax_output = None
+        self.pen_softmax_w = None  # weights from the penultime layer to the softmax output
         # Last layer rbm for supervised training (initialized in wake-sleep algorithm)
         self.last_rbm = None
         # top-down generative weights. They are initialized to be the same as the bottom-up recognition weights
@@ -107,6 +111,91 @@ class DBN(object):
                 # validation set representation of the first rbm
                 _, middle_val_repr = rbm.sample_hidden_from_visible(middle_val_repr)
 
+    def backprop(self,
+                 num_softmax,
+                 data,
+                 y,
+                 batch_size=1,
+                 epochs=100,
+                 alpha=[0.01],
+                 momentum=[0.5],
+                 alpha_update_rule='constant',
+                 momentum_update_rule='constant'):
+        """Fine-tuning of the deep belief net using backpropagation algorithm. To be used after
+        unsupervised_pretrain.
+        :param num_softmax: number of softmax units in the output layer
+        :param data: input dataset
+        :param y: dataset labels
+        :param batch_size: size of each bach
+        :param epochs: number of training epochs
+        :param alpha: learning rate parameter
+        :param momentum: momentum parameter
+        :param alpha_update_rule: update rule for the learning rate
+        :param momentum_update_rule: update rule for the momentum
+        """
+        assert data.shape[0] == y.shape[0]
+
+        # add a column of ones to data for the bias
+        for i, sample in enumerate(data):
+            data[i] = np.insert(sample, 0, 1)
+
+        # Initialize the softmax output layer
+        self.softmax_output = np.zeros(num_softmax)
+        self.pen_softmax_w = 0.01 * np.random.random(self.layers[-1].num_hidden + 1, num_softmax)
+
+        # convert integer labels to binary vectors
+        bin_y = utils.int2binary_vect(y)
+
+        # divide data into batches
+        batches = utils.generate_batches(data, batch_size)
+        # divide labels into batches
+        y_batches = utils.generate_batches(bin_y, batch_size)
+
+        alpha_rule = utils.prepare_parameter_update(alpha_update_rule, alpha, epochs)
+
+        mean_square_error = 0.
+
+        for epoch in xrange(epochs):
+            alpha = alpha_rule.update()  # learning rate update
+            for i, batch in enumerate(batches):
+                targets = y_batches[i]
+
+                # Do a forward pass to compute the output of penultime layer
+                middle_out, pen_out = self.forward(data)
+                # compute the output of the softmax layer
+                net_out_probs = np.dot(pen_out, self.pen_softmax_w)
+                net_out = utils.softmax(net_out_probs)
+
+                # Compute mean square error for the batch
+                mean_square_error += utils.compute_mean_square_error(net_out, targets)
+
+                # error
+                e = targets - net_out
+
+                # softmax layer update
+                softmax_delta = e * utils.logistic_dot(net_out_probs)
+                # penultime layer weights update
+                for j in range(len(self.layers[-1].num_hidden)):
+                    for k in range(len(softmax_delta)):
+                        self.pen_softmax_w[j][k] += alpha*softmax_delta[k]*pen_out[k]
+
+                # middle layers update
+                next_layer_delta = softmax_delta  # initialization
+                for l, rbm in reversed(list(enumerate(self.layers))):
+                    e = []
+                    for v in range(rbm.num_visible):
+                        e.append(np.dot(rbm.W[v], next_layer_delta))
+                    this_layer_delta = []
+                    for v in range(rbm.num_visible):
+                        this_layer_delta.append(e[v] * utils.logistic_dot(middle_out[l-1]))
+                    for v in range(rbm.num_visible):
+                        rbm.W[v] += alpha*this_layer_delta[v]*middle_out[l-1]
+
+            print("Epoch {:d} : cross entropy error is {:f}".format(epoch,
+                  mean_square_error))
+            self.errors.append(mean_square_error)
+            mean_square_error = 0.
+
     def wake_sleep(self,
                    num_last_layer,
                    data,
@@ -135,7 +224,7 @@ class DBN(object):
 
         # Initialize the top down generative weights to be the same as the recognition weights of the rbm
         # and they are untied, se that their values can become different
-        self.top_down_w = [rbm.W.T for rbm in self.layers]
+        self.top_down_w = copy([rbm.W.T for rbm in self.layers])
 
         # convert integer labels to binary vectors
         bin_y = utils.int2binary_vect(y)
@@ -244,6 +333,7 @@ class DBN(object):
         :param data: test dataset
         :param top_gibbs_k: number of gibbs sampling steps using the top level undirected associative
                             memory
+        :return: predicted labels
         """
 
         num_pen_units = self.layers[-1].num_visible
@@ -284,9 +374,16 @@ class DBN(object):
             # #################### USING wake pen probs
             neg_top_probs = utils.logistic(np.dot(wake_pen_probs, pen_w) + np.dot(neg_lab_probs, lab_w) +
                                            self.last_rbm.h_bias)
-            neg_top_states = neg_top_probs # utils.probs_to_binary(neg_top_probs)
+            neg_top_states = neg_top_probs  # utils.probs_to_binary(neg_top_probs)
 
         return utils.binary2int_vect(neg_lab_probs)
+
+    def predict_bp(self, data):
+        """Predicts labels for data using softmax layer trained after backpropagation.
+        :param data: test dataset
+        :return: predicted labels
+        """
+        pass
 
     def fantasy(self, k=1):
         """Generate a sample from the DBN after n steps of gibbs sampling, starting with a
@@ -297,16 +394,20 @@ class DBN(object):
         pass
 
     def forward(self, data):
-        """Do a forward pass through the deep belief net and return the last
-        representation layer.
+        """Do a forward pass through the deep belief net and return the middle layer representations
+        as well as the last layer representation.
         :param data: input data to the visible units of the first rbm
-        :return middle_repr: last representation layer
+        :return middle_reprs, last_repr: middle representations, last representation layer
         """
-        middle_repr = None
+        middle_reprs = []
+        last_repr = None
+        aux = None
         for l, rbm in enumerate(self.layers):
-            middle_repr, _ = rbm.sample_hidden_from_visible(data) if l == 0\
-                    else rbm.sample_hidden_from_visible(middle_repr)
-        return middle_repr
+            aux, _ = rbm.sample_hidden_from_visible(data) if l == 0 else rbm.sample_hidden_from_visible(aux)
+            middle_reprs.append(aux[0])
+            if l == len(self.layers) - 1:
+                last_repr = aux
+        return middle_reprs, last_repr
 
     def backward(self, data):
         """Do a backward pass through the deep belief net and generate a sample
