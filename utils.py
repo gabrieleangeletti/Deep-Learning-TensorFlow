@@ -50,6 +50,21 @@ def probs_to_binary(x):
     return (x > np.random.rand(x.shape[0], x.shape[1])).astype(np.int)
 
 
+def filter_dropout(w, dropout):
+    """Filter the column of the weights matrix corresponding to zeros in the
+    dropout vector.
+    :param w: weights matrix of dimension num_visible x num_hidden
+    :param dropout: binary vector whose elements are 1 with probability 0.5
+    """
+    filtered_w = []
+    for i in range(w.shape[0]):
+        filtered_w.append([])
+        for j in range(w.shape[1]):
+            if dropout[j] == 1:
+                filtered_w[i].append(w[i][j])
+    return np.array(filtered_w)
+
+
 def merge_data_labels(data, y):
     """Merge data array with labels array in a unique array data + labels.
     The two arrays can have an arbitrary number of samples, but the number of samples must be the same.

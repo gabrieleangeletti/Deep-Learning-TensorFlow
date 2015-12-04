@@ -47,6 +47,8 @@ class RBM(AbstractRBM):
             self.W = w
             self.h_bias = h_bias
             self.v_bias = v_bias
+        # dropout vector
+        self.dropout = None
         # debugging values
         self.costs = []
         self.train_free_energies = []
@@ -62,6 +64,7 @@ class RBM(AbstractRBM):
               gibbs_k=1,
               alpha_update_rule='constant',
               momentum_update_rule='constant',
+              dropout=False,
               verbose=False,
               display=None):
         """Train the restricted boltzmann machine with the given parameters.
@@ -86,7 +89,7 @@ class RBM(AbstractRBM):
 
         # divide data into batches
         batches = utils.generate_batches(data, batch_size)
-        # n_batches = len(batches)
+        n_batches = len(batches)
 
         # prepare parameters update rule
         alpha_rule = utils.prepare_parameter_update(alpha_update_rule, alpha, epochs)
@@ -99,16 +102,22 @@ class RBM(AbstractRBM):
         for epoch in xrange(epochs):
             alpha = alpha_rule.update()  # learning rate update
             m = momentum_rule.update()  # momentum update
-            # prog_bar = ProgPercent(n_batches)
+            prog_bar = ProgPercent(n_batches)
             for batch in batches:
-                # prog_bar.update()
-                (associations_delta, h_bias_delta, v_probs, v_states, h_probs) = self.gibbs_sampling(batch, gibbs_k)
+                prog_bar.update()
+
+                # dropout of the hidden units with 0.5 probability
+                self.dropout = np.array([(0.5 > np.random.random()) for _ in range(self.num_hidden)]).astype(np.int)
+                # gibbs sampling
+                (associations_delta, h_bias_delta, v_probs, v_states, h_probs) = self.gibbs_sampling(batch,
+                                                                                                     gibbs_k,
+                                                                                                     dropout)
 
                 # weights update
                 dw = alpha*(associations_delta / float(batch_size))
                 mdw = dw + m*(dw - last_velocity)
                 self.W += mdw
-                last_velocity = dw
+                last_velocity = mdw
                 # bias updates mean through the batch
                 self.h_bias += alpha * h_bias_delta.mean(axis=0)
                 self.v_bias += alpha * (batch - v_probs).mean(axis=0)  # TODO: try v_states
@@ -128,9 +137,11 @@ class RBM(AbstractRBM):
         end = time.clock()
         print("Training took {:f}s time".format(end - start))
 
-    def gibbs_sampling(self, v_in_0, k):
+    def gibbs_sampling(self, v_in_0, k, dropout=False):
         """Performs k steps of Gibbs Sampling, starting from the visible units input.
         """
+        # Filter hidden units based on dropout
+        filtered_w = utils.filter_dropout(self.W, self.dropout)
 
         # Sample from the hidden units given the visible units - Positive
         # Constrastive Divergence phase

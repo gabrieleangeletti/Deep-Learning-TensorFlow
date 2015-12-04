@@ -29,6 +29,7 @@ class AbstractRBM(object):
               gibbs_k=1,
               alpha_update_rule='constant',
               momentum_update_rule='constant',
+              dropout=False,
               verbose=False,
               display=None):
         """Train the restricted boltzmann machine with the given parameters.
@@ -43,6 +44,7 @@ class AbstractRBM(object):
                linear or exponential
         :param momentum_update_rule: type of update rule for the momentum parameter. Can be constant,
                linear or exponential
+        :param dropout: if True, the dropout regularization technique will be used
         :param verbose: if true display a progress bar through the loop
         :param display: function used to display reconstructed samples
                         after gibbs sampling for each epoch.

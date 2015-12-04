@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 from dbn import DBN
+import utils
 
 __author__ = 'blackecho'
 
@@ -27,6 +28,18 @@ class DBNTest(unittest.TestCase):
         data = np.array([[0, 0, 1, 1, 1, 0, 1]])
         out = deep_net.backward(data)
         self.assertEqual(out.shape, (1, 13))
+
+
+class UtilsTest(unittest.TestCase):
+
+    def test_filter_dropout(self):
+        """Test the filter_dropout function in the utils.
+        """
+        w = np.array([np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 0]) for _ in range(10)])
+        dp = [0, 1, 0, 1, 1, 0, 0, 0, 0, 0]
+        filtered_w = utils.filter_dropout(w, dp)
+        for row in filtered_w:
+            self.assertEqual(row, [2, 4, 5])
 
 
 if __name__ == '__main__':
