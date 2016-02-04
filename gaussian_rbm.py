@@ -2,8 +2,6 @@ from __future__ import print_function
 
 from pyprind import ProgPercent
 import numpy as np
-import click
-import json
 
 from abstract_rbm import AbstractRBM
 import utils
@@ -57,11 +55,12 @@ class GaussianRBM(AbstractRBM):
               validation=None,
               epochs=100,
               batch_size=1,
-              alpha=[0.1],
-              momentum=[0.5],
+              alpha=list([0.1]),
+              momentum=list([0.5]),
               gibbs_k=1,
               alpha_update_rule='constant',
               momentum_update_rule='constant',
+              dropout=False,
               verbose=False,
               display=None):
         """Train the restricted boltzmann machine with the given parameters.
@@ -209,60 +208,19 @@ class GaussianRBM(AbstractRBM):
     def save_configuration(self, outfile):
         """Save a json representation of the RBM object.
         """
-        with open(outfile, 'w') as f:
-            f.write(json.dumps({'W': self.W.tolist(),
-                                'h_bias': self.h_bias.tolist(),
-                                'v_bias': self.v_bias.tolist(),
-                                'num_hidden': self.num_hidden,
-                                'num_visible': self.num_visible,
-                                'costs': self.costs,
-                                'train_free_energies':
-                                    self.train_free_energies,
-                                'validation_free_energies':
-                                    self.validation_free_energies}))
+        np.savez(outfile, num_hidden=self.num_hidden, num_visible=self.num_visible,
+                 W=self.W, h_bias=self.h_bias, v_bias=self.v_bias, costs=self.costs,
+                 train_free_energies=self.train_free_energies, validation_free_energies=self.validation_free_energies)
 
     def load_configuration(self, infile):
         """Load a json representation of the RBM object.
         """
-        with open(infile, 'r') as f:
-            data = json.load(f)
-            self.W = np.array(data['W'])
-            self.h_bias = np.array(data['h_bias'])
-            self.v_bias = np.array(data['v_bias'])
-            self.num_hidden = data['num_hidden']
-            self.num_visible = data['num_visible']
-            self.costs = data['costs']
-            self.train_free_energies = data['train_free_energies']
-            self.validation_free_energies = data['validation_free_energies']
-
-
-@click.command()
-@click.option('--config', default='', help='json with the config of the rbm')
-def main(config):
-    with open(config, 'r') as f:
-        data = json.load(f)
-        num_visible = data['num_visible']
-        num_hidden = data['num_hidden']
-        act_func = data['act_func']
-        dataset = np.array(data['dataset'])
-        epochs = data['epochs']
-        alpha = data['alpha']
-        m = data['m']
-        batch_size = data['batch_size']
-        gibbs_k = data['gibbs_k']
-        verbose = data['verbose']
-        out = data['outfile']
-        # create rbm object
-        grbm = GaussianRBM(num_visible, num_hidden, act_func)
-        grbm.train(dataset,
-                   epochs=epochs,
-                   alpha=alpha,
-                   m=m,
-                   batch_size=batch_size,
-                   gibbs_k=gibbs_k,
-                   verbose=verbose)
-        grbm.save_configuration(out)
-
-
-if __name__ == '__main__':
-    main()
+        data = np.load(infile)
+        self.W = data['W']
+        self.h_bias = data['h_bias']
+        self.v_bias = data['v_bias']
+        self.num_hidden = data['num_hidden'].tolist()
+        self.num_visible = data['num_visible'].tolist()
+        self.costs = data['costs']
+        self.train_free_energies = data['train_free_energies']
+        self.validation_free_energies = data['validation_free_energies']

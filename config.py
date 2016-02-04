@@ -8,7 +8,7 @@ TEST_SET_SIZE = 10000
 NV = 784 			# number of visible units
 NH = 250    		# number of hidden units
 # Train parameters
-EPOCHS = 50         # number of training epochs
+EPOCHS = 5         # number of training epochs
 ALPHA = [0.01]		# learning rate
 M = [0.0]			# momentum parameter
 BATCH_SIZE = 50     # size of each batch

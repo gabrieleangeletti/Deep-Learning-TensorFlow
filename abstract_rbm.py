@@ -24,8 +24,8 @@ class AbstractRBM(object):
               validation=None,
               epochs=100,
               batch_size=10,
-              alpha=[0.1],
-              momentum=[0.5],
+              alpha=list([0.1]),
+              momentum=list([0.5]),
               gibbs_k=1,
               alpha_update_rule='constant',
               momentum_update_rule='constant',
@@ -38,7 +38,7 @@ class AbstractRBM(object):
         :param epochs: number of training steps
         :param batch_size: size of each batch
         :param alpha: learning rate
-        :param m: momentum parameter
+        :param momentum: momentum parameter
         :param gibbs_k: number of gibbs sampling steps
         :param alpha_update_rule: type of update rule for the learning rate. Can be constant,
                linear or exponential

@@ -267,36 +267,26 @@ class MultinomialRBM(AbstractRBM):
         """Save a json representation of the RBM object.
         :param outfile: path of the output file
         """
-        with open(outfile, 'w') as f:
-            f.write(json.dumps({'W': self.W.tolist(),
-                                'h_bias': self.h_bias.tolist(),
-                                'v_bias': self.v_bias.tolist(),
-                                'num_hidden': self.num_hidden,
-                                'num_visible': self.num_visible,
-                                'k_visible': self.k_visible,
-                                'k_hidden': self.k_hidden,
-                                'costs': self.costs,
-                                'train_free_energies':
-                                    self.train_free_energies,
-                                'validation_free_energies':
-                                    self.validation_free_energies}))
+        np.savez(outfile, num_hidden=self.num_hidden, num_visible=self.num_visible,
+                 k_hidden=self.k_hidden, k_visible=self.k_visible,
+                 W=self.W, h_bias=self.h_bias, v_bias=self.v_bias, costs=self.costs,
+                 train_free_energies=self.train_free_energies, validation_free_energies=self.validation_free_energies)
 
     def load_configuration(self, infile):
         """Load a json representation of the RBM object.
         :param infile: path of the input file
         """
-        with open(infile, 'r') as f:
-            data = json.load(f)
-            self.W = np.array(data['W'])
-            self.h_bias = np.array(data['h_bias'])
-            self.v_bias = np.array(data['v_bias'])
-            self.num_hidden = data['num_hidden']
-            self.num_visible = data['num_visible']
-            self.k_hidden = data['k_hidden']
-            self.k_visible = data['k_visible']
-            self.costs = data['costs']
-            self.train_free_energies = data['train_free_energies']
-            self.validation_free_energies = data['validation_free_energies']
+        data = np.load(infile)
+        self.W = data['W']
+        self.h_bias = data['h_bias']
+        self.v_bias = data['v_bias']
+        self.num_hidden = data['num_hidden'].tolist()
+        self.num_visible = data['num_visible'].tolist()
+        self.k_hidden = data['k_hidden'].tolist()
+        self.k_visible = data['k_visible'].tolist()
+        self.costs = data['costs']
+        self.train_free_energies = data['train_free_energies']
+        self.validation_free_energies = data['validation_free_energies']
 
     def _convert_visible_state_to_binary(self, x):
         """Converts the Multinomial state x into binary units
