@@ -1,0 +1,43 @@
+import tensorflow as tf
+import numpy as np
+
+import minhash
+import lsh
+import utils
+
+# #################### #
+#   Flags definition   #
+# #################### #
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+
+# Global configuration
+flags.DEFINE_string('data_path', '', 'Path to the input data, should be a npy file with data encoded by dae or sdae.')
+flags.DEFINE_string('outfile', 'data/lsh/lsh_out.dat', 'Output file path.')
+flags.DEFINE_integer('n_hash', 10, 'Number of hash functions to use in minhash.')
+flags.DEFINE_integer('hash_func_type', 1, 'Type of hash function family. See module minhash.py.')
+flags.DEFINE_float('threshold', 0.8, 'Threshold to use in Locality-Sensitive hashing.')
+flags.DEFINE_integer('rows', 5, 'Rows to use in Locality-Sensitive hashing.')
+flags.DEFINE_integer('bands', 20, 'Bands to use in Locality-Sensitive hashing.')
+
+if __name__ == '__main__':
+
+    # Load data encoded from the denoising autoencoder
+    encoded_data = np.load(FLAGS.data_path)
+
+    # Convert the encoded data to binary
+    bin_data = utils.conv2bin(encoded_data[:500])
+    
+    print('Creating duplicates...')
+    x = utils.create_perfect_duplicates(bin_data, 20)
+
+    # Convert the binary data to a collection of sets
+    sets = utils.bins2sets(x)
+
+    # Apply minhash to obtain the signatures
+    mh = minhash.MinHashing(sets, FLAGS.n_hash, FLAGS.hash_func_type)
+    mh.minhash()
+
+    # Apply Locality-Sensitve hashing
+    ls_hash = lsh.LSH(FLAGS.threshold, FLAGS.bands, FLAGS.rows, sets, mh.signatures)
+    ls_hash.run(FLAGS.outfile)

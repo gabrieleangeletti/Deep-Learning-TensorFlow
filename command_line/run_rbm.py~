@@ -1,0 +1,88 @@
+import tensorflow as tf
+
+import rbm
+import datasets
+
+# #################### #
+#   Flags definition   #
+# #################### #
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+
+# Global configuration
+flags.DEFINE_boolean('encode_train', False, 'Whether to encode and store the training set.')
+flags.DEFINE_boolean('encode_valid', False, 'Whether to encode and store the validation set.')
+flags.DEFINE_boolean('encode_test', False, 'Whether to encode and store the test set.')
+flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10"]')
+flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
+
+# RBM configuration
+flags.DEFINE_integer('nvis', 784, 'Number of visible units.')
+flags.DEFINE_integer('nhid', 250, 'Number of hidden units.')
+flags.DEFINE_string('vis_type', 'bin', 'Type of visible units. ["bin", "gauss"]')
+flags.DEFINE_string('directory_name', 'rbm/', 'Directory to store data relative to the algorithm.')
+flags.DEFINE_string('model_name', '', 'Name for the model.')
+flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
+flags.DEFINE_integer('gibbs_k', 1, 'Number of gibbs sampling steps in Contrastive Divergence.')
+flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
+flags.DEFINE_float('stddev', 0.1, 'Standard deviation for the Gaussian visible units.')
+flags.DEFINE_integer('n_iter', 10, 'Number of epochs.')
+flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
+flags.DEFINE_integer('weight_images', 0, 'Number of weight images to generate.')
+flags.DEFINE_string('img_type', 'grey', 'Grey or color images.')
+flags.DEFINE_integer('transform_gibbs_k', 10, 'Gibbs sampling steps for the transformation of data.')
+
+assert FLAGS.dataset in ['mnist', 'cifar10']
+assert FLAGS.cifar_dir != '' if FLAGS.dataset == 'cifar10' else True
+assert FLAGS.vis_type in ['bin', 'gauss']
+
+if __name__ == '__main__':
+
+    if FLAGS.dataset == 'mnist':
+
+        # ################# #
+        #   MNIST Dataset   #
+        # ################# #
+
+        trX, vlX, teX = datasets.load_mnist_dataset(mode='unsupervised')
+        width, height = 28, 28
+
+    elif FLAGS.dataset == 'cifar10':
+
+        # ################### #
+        #   Cifar10 Dataset   #
+        # ################### #
+
+        trX, teX = datasets.load_cifar10_dataset(FLAGS.cifar_dir, mode='unsupervised')
+        vlX = teX[:5000]  # Validation set is the first half of the test set
+        width, height = 32, 32
+
+    else:  # cannot be reached, just for completeness
+        trX, vlX, teX, width, height = None, None, None, None, None
+
+    # Create the object
+    r = rbm.RBM(nvis=FLAGS.nvis, nhid=FLAGS.nhid, directory_name=FLAGS.directory_name, vis_type=FLAGS.vis_type,
+                learning_rate=FLAGS.learning_rate, n_iter=FLAGS.n_iter, batch_size=FLAGS.batch_size,
+                stddev=FLAGS.stddev, verbose=FLAGS.verbose, gibbs_k=FLAGS.gibbs_k, model_name=FLAGS.model_name)
+
+    # Enhance the training set with noise sample
+    # enhancedX = utils.create_masking_noise_duplicates(trX, 392, 5000)
+
+    # Fit the model
+    print('Start training...')
+    r.fit(trX, teX)
+
+    # Encode the training data and store it
+    if FLAGS.encode_train:
+        print('Transforming training data...')
+        r.transform(trX, name='train', save=FLAGS.encode_train, gibbs_k=FLAGS.transform_gibbs_k)
+
+    if FLAGS.encode_valid:
+        print('Transforming validation data...')
+        r.transform(vlX, name='validation', save=FLAGS.encode_valid, gibbs_k=FLAGS.transform_gibbs_k)
+
+    if FLAGS.encode_test:
+        print('Transforming test data...')
+        r.transform(teX, name='test', save=FLAGS.encode_test, gibbs_k=FLAGS.transform_gibbs_k)
+
+    r.get_weights_as_images(width, height, n_images=FLAGS.weight_images, img_type=FLAGS.img_type)

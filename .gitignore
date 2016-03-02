@@ -57,7 +57,11 @@ docs/_build/
 target/
 
 # Local data
-models/
-imagenet/
-cython/
+MNIST_data/
+data/
+logs/
+stored_models/
+
 .idea/
+
+*.py~

@@ -1,0 +1,75 @@
+import tensorflow as tf
+
+import autoencoder
+import datasets
+
+# #################### #
+#   Flags definition   #
+# #################### #
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+
+# Global configuration
+flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist"]')
+flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
+
+# Stacked Denoising Autoencoder specific parameters
+flags.DEFINE_integer('n_components', 256, 'Number of hidden units in the dae.')
+flags.DEFINE_boolean('tied_weights', True, 'Whether to use tied weights.')
+flags.DEFINE_boolean('dropout', False, 'Whether to use dropout for the hidden units.')
+flags.DEFINE_string('corruption_type', 'none', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
+flags.DEFINE_float('corruption_frac', 0., 'Fraction of the input to corrupt.')
+flags.DEFINE_integer('xavier_init', 1, 'Value for the constant in xavier weights initialization.')
+flags.DEFINE_string('enc_act_func', 'tanh', 'Activation function for the encoder. ["sigmoid", "tanh"]')
+flags.DEFINE_string('dec_act_func', 'none', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
+flags.DEFINE_string('directory_name', 'dae/', 'Directory to store data relative to the algorithm.')
+flags.DEFINE_string('loss_func', 'mean_squared', 'Loss function. ["mean_squared" or "cross_entropy"]')
+flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
+flags.DEFINE_integer('weight_images', '10', 'Number of weight images to generate.')
+flags.DEFINE_string('optimizer', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum"]')
+flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
+flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
+flags.DEFINE_integer('n_iter', 10, 'Number of epochs.')
+flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
+flags.DEFINE_string('batch_policy', 'all', 'Random batch for each epoch or all batches. ["all", "rand"]')
+# TensorFlow configuration
+flags.DEFINE_boolean('allow_soft_placement', False, 'Whether to use soft constraints for device placement.')
+flags.DEFINE_boolean('log_device_placement', False, 'Whether to log device placement.')
+
+assert FLAGS.dataset in ['mnist']
+assert FLAGS.enc_act_func in ['sigmoid', 'tanh']
+assert FLAGS.dec_act_func in ['sigmoid', 'tanh', 'none']
+assert FLAGS.corruption_type in ['masking', 'salt_and_pepper', 'none']
+assert 0. <= FLAGS.corruption_frac <= 1.
+assert FLAGS.loss_func in ['cross_entropy', 'mean_squared']
+assert FLAGS.optimizer in ['gradient_descent', 'ada_grad', 'momentum']
+assert FLAGS.batch_policy in ['rand', 'all']
+
+if __name__ == '__main__':
+
+    if FLAGS.dataset == 'mnist':
+
+        # ################# #
+        #   MNIST Dataset   #
+        # ################# #
+
+        trX, trY, vlX, vlY, teX, teY = datasets.load_mnist_dataset()
+
+        # Create the object
+        sdae = autoencoder.DenoisingAutoencoder(
+            seed=FLAGS.seed,
+            n_components=FLAGS.n_components, tied_weights=FLAGS.tied_weights, enc_act_func=FLAGS.enc_act_func,
+            dec_act_func=FLAGS.dec_act_func, xavier_init=FLAGS.xavier_init, dropout=FLAGS.dropout,
+            corruption_type=FLAGS.corruption_type, corruption_frac=FLAGS.corruption_frac,
+            allow_soft_placement=FLAGS.allow_soft_placement, log_device_placement=FLAGS.log_device_placement,
+            dataset=FLAGS.dataset, loss_func=FLAGS.loss_func, directory_name=FLAGS.directory_name,
+            optimizer=FLAGS.optimizer, learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum,
+            verbose=FLAGS.verbose, n_iter=FLAGS.n_iter, batch_size=FLAGS.batch_size,
+            batch_policy=FLAGS.batch_policy)
+
+        # Fit the model
+        sdae.fit(trX, vlX)
+
+        # save images
+        sdae.get_weights_as_images(28, 28, max_images=FLAGS.weight_images)
+
