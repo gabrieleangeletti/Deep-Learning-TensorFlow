@@ -22,6 +22,29 @@ class DeepAutoencoder(object):
                  opt='gradient_descent', loss_func='mean_squared', model_name='', main_dir='srbm/',
                  dataset='mnist', verbose=1):
 
+        """
+        :param layers: list containing the hidden units for each layer
+        :param do_pretrain: whether to do unsupervised pretraining of the network
+        :param rbm_num_epochs: number of epochs to train each rbm
+        :param rbm_batch_size: batch size each rbm
+        :param rbm_learning_rate: learning rate each rbm
+        :param rbm_names: model name for each rbm
+        :param rbm_gibbs_k: number of gibbs sampling steps for each rbm
+        :param gauss_visible: whether the input layer should have gaussian units
+        :param stddev: standard deviation for the gaussian layer
+        :param learning_rate: Initial learning rate. float, default 0.01
+        :param momentum: 'Momentum parameter. float, default 0.9
+        :param num_epochs: Number of epochs. int, default 10
+        :param batch_size: Size of each mini-batch. int, default 10
+        :param dropout: dropout parameter
+        :param opt: Optimizer to use. string, default 'gradient_descent'. ['gradient_descent', 'ada_grad', 'momentum']
+        :param loss_func: Loss function. ['cross_entropy', 'mean_squared']. string, default 'mean_squared'
+        :param model_name: name of the model, used as filename. string, default 'sdae'
+        :param main_dir: main directory to put the stored_models, data and summary directories
+        :param dataset: Optional name for the dataset. string, default 'mnist'
+        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
+        """
+
         self.layers = layers
         self.n_layers = len(layers)
 
@@ -189,20 +212,21 @@ class DeepAutoencoder(object):
 
         return next_layer_feed
 
-    def _create_decoding_layers(self, encode_output):
+    def _create_decoding_layers(self, decode_input):
 
         """ Create the decoding layres of the model.
-        :param encode_output: output of the last encoding layer
+        :param decode_input: output of the last encoding layer
         :return: output of the last decoding layer
         """
+        decode_output = decode_input
 
         for l in reversed(range(self.n_layers-1)):
-            vprobs = tf.nn.sigmoid(tf.matmul(encode_output, self.W_vars_t[l]) + self.bv_vars[l])
+            vprobs = tf.nn.sigmoid(tf.matmul(decode_output, self.W_vars_t[l]) + self.bv_vars[l])
             vstates = utilities.sample_prob(vprobs, self.vrand[l])
 
-            encode_output = vstates
+            decode_output = vstates
 
-        return encode_output
+        return decode_output
 
     def _create_cost_function_node(self, decode_output):
 
@@ -213,7 +237,7 @@ class DeepAutoencoder(object):
 
         with tf.name_scope("cost"):
             if self.loss_func == 'cross_entropy':
-                self.cost = - tf.reduce_sum(self.x * tf.log(decode_output))
+                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decode_output, self.x))
                 _ = tf.scalar_summary("cross_entropy", self.cost)
 
             elif self.loss_func == 'mean_squared':

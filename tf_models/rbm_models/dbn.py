@@ -20,6 +20,29 @@ class DBN(object):
                  stddev=0.1, learning_rate=0.01, momentum=0.7, num_epochs=10, batch_size=10, dropout=1,
                  opt='gradient_descent', verbose=1, loss_func='mean_squared', main_dir='dbn/', dataset='mnist'):
 
+        """
+        :param layers: list containing the hidden units for each layer
+        :param do_pretrain: whether to do unsupervised pretraining of the network
+        :param rbm_num_epochs: number of epochs to train each rbm
+        :param rbm_batch_size: batch size each rbm
+        :param rbm_learning_rate: learning rate each rbm
+        :param rbm_names: model name for each rbm
+        :param rbm_gibbs_k: number of gibbs sampling steps for each rbm
+        :param gauss_visible: whether the input layer should have gaussian units
+        :param stddev: standard deviation for the gaussian layer
+        :param learning_rate: Initial learning rate. float, default 0.01
+        :param momentum: 'Momentum parameter. float, default 0.9
+        :param num_epochs: Number of epochs. int, default 10
+        :param batch_size: Size of each mini-batch. int, default 10
+        :param dropout: dropout parameter
+        :param opt: Optimizer to use. string, default 'gradient_descent'. ['gradient_descent', 'ada_grad', 'momentum']
+        :param loss_func: Loss function. ['cross_entropy', 'mean_squared']. string, default 'mean_squared'
+        :param model_name: name of the model, used as filename. string, default 'sdae'
+        :param main_dir: main directory to put the stored_models, data and summary directories
+        :param dataset: Optional name for the dataset. string, default 'mnist'
+        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
+        """
+
         self.layers = layers
         self.n_layers = len(layers)
 
@@ -185,8 +208,6 @@ class DBN(object):
 
             hprobs = tf.nn.dropout(tf.nn.sigmoid(tf.matmul(next_train, self.W_vars[l]) + self.bh_vars[l]),
                                    self.keep_prob)
-
-            hstates = utilities.sample_prob(hprobs, self.hrand[l])
             next_train = hprobs
 
         return next_train
@@ -203,7 +224,7 @@ class DBN(object):
         self.softmax_b = tf.Variable(tf.zeros([n_classes]), name='softmax-biases')
 
         with tf.name_scope("softmax_layer"):
-            self.y = tf.nn.softmax(tf.matmul(next_train, self.softmax_W) + self.softmax_b)
+            self.y = tf.matmul(next_train, self.softmax_W) + self.softmax_b
 
     def _create_cost_function_node(self):
 
@@ -213,7 +234,7 @@ class DBN(object):
 
         with tf.name_scope("cost"):
             if self.loss_func == 'cross_entropy':
-                self.cost = -tf.reduce_sum(self.y_ * tf.log(self.y))
+                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.y, self.y_))
                 _ = tf.scalar_summary("cross_entropy", self.cost)
 
             elif self.loss_func == 'mean_squared':

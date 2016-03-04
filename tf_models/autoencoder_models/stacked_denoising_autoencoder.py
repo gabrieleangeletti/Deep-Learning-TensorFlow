@@ -43,8 +43,6 @@ class StackedDenoisingAutoencoder(object):
         :param batch_size: Size of each mini-batch. int, default 10
         :param dataset: Optional name for the dataset. string, default 'mnist'
         :param seed: positive integer for seeding random generators. Ignored if < 0. int, default -1
-
-        :return: self.
         """
 
         self.layers = layers
@@ -171,7 +169,7 @@ class StackedDenoisingAutoencoder(object):
         :return: self
         """
 
-        self.input_data, self.input_labels = self._create_placeholders(n_features, n_classes)
+        self._create_placeholders(n_features, n_classes)
 
         next_train = self._create_encoding_layers()
         self.encode = next_train
@@ -192,10 +190,8 @@ class StackedDenoisingAutoencoder(object):
         :return: input data placeholder, input labels placeholder
         """
 
-        input_data = tf.placeholder('float', [None, n_features], name='x-input')
-        input_labels = tf.placeholder('float', [None, n_classes], name='y-input')
-
-        return input_data, input_labels
+        self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
+        self.input_labels = tf.placeholder('float', [None, n_classes], name='y-input')
 
     def _create_encoding_layers(self):
 
@@ -240,7 +236,7 @@ class StackedDenoisingAutoencoder(object):
         self.softmax_b = tf.Variable(tf.zeros([n_classes]), name='softmax-biases')
 
         with tf.name_scope("softmax_layer"):
-            self.softmax_out = tf.nn.softmax(tf.matmul(last_layer, self.softmax_W) + self.softmax_b)
+            self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b
 
     def _create_cost_function_node(self):
 
@@ -250,7 +246,7 @@ class StackedDenoisingAutoencoder(object):
 
         with tf.name_scope("cost"):
             if self.softmax_loss_func == 'cross_entropy':
-                self.cost = -tf.reduce_sum(self.input_labels * tf.log(self.softmax_out))
+                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.softmax_out, self.input_labels))
                 _ = tf.scalar_summary("cross_entropy", self.cost)
 
             elif self.softmax_loss_func == 'mean_squared':

@@ -108,7 +108,7 @@ class LogisticRegression(object):
 
         with tf.name_scope("cost"):
             if self.loss_func == 'cross_entropy':
-                self.cost = -tf.reduce_sum(self.input_labels * tf.log(self.model_output))
+                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.model_output, self.input_labels))
                 _ = tf.scalar_summary("cross_entropy", self.cost)
 
             elif self.loss_func == 'mean_squared':
