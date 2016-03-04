@@ -10,7 +10,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Global configuration
-flags.DEFINE_string('model_name', '', 'Model name.')
+flags.DEFINE_string('model_name', 'dae', 'Model name.')
 flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10"]')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')

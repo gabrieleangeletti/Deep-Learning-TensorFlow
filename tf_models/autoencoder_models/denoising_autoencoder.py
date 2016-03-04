@@ -100,7 +100,7 @@ class DenoisingAutoencoder(object):
 
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, validation_set)
-            self.tf_saver.save(self.tf_session, self.model_path)
+            self.tf_saver.save(self.tf_session, self.model_path + self.model_name)
 
     def _initialize_tf_utilities_and_ops(self, restore_previous_model):
 
@@ -115,7 +115,7 @@ class DenoisingAutoencoder(object):
         self.tf_session.run(init_op)
 
         if restore_previous_model:
-            self.tf_saver.restore(self.tf_session, self.model_path)
+            self.tf_saver.restore(self.tf_session, self.model_path + self.model_name)
 
         self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
 
@@ -134,9 +134,9 @@ class DenoisingAutoencoder(object):
 
             self._run_train_step(train_set, corruption_ratio)
 
-            if i % 5 == 0:
-                if validation_set is not None:
-                    self._run_validation_error_and_summaries(i, validation_set)
+            # if i % 5 == 0:
+            if validation_set is not None:
+                self._run_validation_error_and_summaries(i, validation_set)
 
     def _run_train_step(self, train_set, corruption_ratio):
 
@@ -242,12 +242,15 @@ class DenoisingAutoencoder(object):
         :return: self
         """
 
-        with tf.name_scope("W_x_bh"):
+        with tf.name_scope("encoder"):
+
+            activation = tf.matmul(self.input_data_corr, self.W_) + self.bh_
+
             if self.enc_act_func == 'sigmoid':
-                self.encode = tf.nn.sigmoid(tf.matmul(self.input_data_corr, self.W_) + self.bh_)
+                self.encode = tf.nn.sigmoid(activation)
 
             elif self.enc_act_func == 'tanh':
-                self.encode = tf.nn.tanh(tf.matmul(self.input_data_corr, self.W_) + self.bh_)
+                self.encode = tf.nn.tanh(activation)
 
             else:
                 self.encode = None
@@ -320,7 +323,7 @@ class DenoisingAutoencoder(object):
 
         with tf.Session() as self.tf_session:
 
-            self.tf_saver.restore(self.tf_session, self.model_path)
+            self.tf_saver.restore(self.tf_session, self.model_path + self.model_name)
 
             encoded_data = self.encode.eval({self.input_data_corr: data})
 
@@ -358,7 +361,7 @@ class DenoisingAutoencoder(object):
         """
         with tf.Session() as self.tf_session:
 
-            self.tf_saver.restore(self.tf_session, self.model_path)
+            self.tf_saver.restore(self.tf_session, self.model_path + self.model_name)
 
             return {
                 'enc_w': self.W_.eval(),
@@ -387,6 +390,7 @@ class DenoisingAutoencoder(object):
         return models_dir, data_dir, summary_dir
 
     def get_weights_as_images(self, width, height, outdir='img/', max_images=10, model_path=None):
+
         """ Save the weights of this autoencoder as images, one image per hidden unit.
         Useful to visualize what the autoencoder has learned.
 
@@ -396,6 +400,7 @@ class DenoisingAutoencoder(object):
         :param max_images: Number of images to return. int, default 10
         :param model_path: if True, restore previous model with the same name of this autoencoder
         """
+
         assert max_images <= self.n_components
 
         outdir = self.data_dir + outdir
@@ -408,7 +413,7 @@ class DenoisingAutoencoder(object):
             if model_path is not None:
                 self.tf_saver.restore(self.tf_session, model_path)
             else:
-                self.tf_saver.restore(self.tf_session, self.model_path)
+                self.tf_saver.restore(self.tf_session, self.model_path + self.model_name)
 
             enc_weights = self.W_.eval()
 
