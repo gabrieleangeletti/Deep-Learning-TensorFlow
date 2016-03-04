@@ -153,127 +153,6 @@ class DBN(object):
 
         return rboltz.transform(train_set), rboltz.transform(validation_set)
 
-    def _build_model(self, n_features, n_classes):
-
-        """ Assume self.W, self.bh and self.bv contains trained parameters.
-        :param n_features: number of features
-        :param n_classes: number of classes
-        :return: self
-        """
-
-        self._create_placeholders(n_features, n_classes)
-        self._create_variables()
-
-        next_train = self._forward_pass()
-        self._create_softmax_layer(next_train, n_classes)
-
-        self._create_cost_function_node()
-        self._create_train_step_node()
-        self._create_test_node()
-
-    def _create_placeholders(self, n_features, n_classes):
-
-        """ Create the TensorFlow placeholders for the model.
-        :param n_features: number of features of the first layer
-        :param n_classes: number of classes
-        :return: self
-        """
-
-        self.keep_prob = tf.placeholder('float')
-        self.hrand = [tf.placeholder('float', [None, self.layers[l+1]]) for l in range(self.n_layers-1)]
-        self.vrand = [tf.placeholder('float', [None, self.layers[l]]) for l in range(self.n_layers-1)]
-
-        self.x = tf.placeholder('float', [None, n_features])
-        self.y_ = tf.placeholder('float', [None, n_classes])
-
-    def _create_variables(self):
-
-        """ Create the TensorFlow variables for the model.
-        :return: self
-        """
-
-        self.W_vars = [tf.Variable(self.W_pretrain[l]) for l in range(self.n_layers-1)]
-        self.bh_vars = [tf.Variable(self.bh_pretrain[l]) for l in range(self.n_layers-1)]
-        self.bv_vars = [tf.Variable(self.bv_pretrain[l]) for l in range(self.n_layers-1)]
-
-    def _forward_pass(self):
-
-        """ Perform a forward pass through the layers of the network.
-        :return: sampled units at the last layer
-        """
-
-        next_train = self.x
-
-        for l in range(self.n_layers-1):
-
-            hprobs = tf.nn.dropout(tf.nn.sigmoid(tf.matmul(next_train, self.W_vars[l]) + self.bh_vars[l]),
-                                   self.keep_prob)
-            next_train = hprobs
-
-        return next_train
-
-    def _create_softmax_layer(self, next_train, n_classes):
-
-        """ Create nodes for the softmax layer build on top of the last layer.
-        :param next_train: sampled units at the last layer
-        :param n_classes: number of classes
-        :return: self
-        """
-
-        self.softmax_W = tf.Variable(tf.zeros([next_train.get_shape()[1], n_classes]), name='softmax-weights')
-        self.softmax_b = tf.Variable(tf.zeros([n_classes]), name='softmax-biases')
-
-        with tf.name_scope("softmax_layer"):
-            self.y = tf.matmul(next_train, self.softmax_W) + self.softmax_b
-
-    def _create_cost_function_node(self):
-
-        """ Create the cost function node.
-        :return: self
-        """
-
-        with tf.name_scope("cost"):
-            if self.loss_func == 'cross_entropy':
-                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.y, self.y_))
-                _ = tf.scalar_summary("cross_entropy", self.cost)
-
-            elif self.loss_func == 'mean_squared':
-                self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.y_ - self.y)))
-                _ = tf.scalar_summary("mean_squared", self.cost)
-
-            else:
-                self.cost = None
-
-    def _create_train_step_node(self):
-
-        """ Create TensorFlow optimizer for the model
-        :return: self
-        """
-
-        with tf.name_scope("train"):
-            if self.opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(self.learning_rate, self.momentum).minimize(self.cost)
-
-            else:
-                self.train_step = None
-
-    def _create_test_node(self):
-
-        """ Create validation testing node.
-        :return: self
-        """
-
-        with tf.name_scope("test"):
-            correct_prediction = tf.equal(tf.argmax(self.y, 1), tf.argmax(self.y_, 1))
-            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-            _ = tf.scalar_summary('accuracy', self.accuracy)
-
     def finetune(self, train_set, train_labels, validation_set=None, validation_labels=None):
 
         """ Perform supervised finetuning of the model.
@@ -348,6 +227,133 @@ class DBN(object):
 
         if self.verbose == 1:
             print("Cost at step %s: %s" % (epoch, err))
+
+    def _build_model(self, n_features, n_classes):
+
+        """ Assume self.W, self.bh and self.bv contains trained parameters.
+        :param n_features: number of features
+        :param n_classes: number of classes
+        :return: self
+        """
+
+        self._create_placeholders(n_features, n_classes)
+        self._create_variables()
+
+        next_train = self._forward_pass('train')
+        self._create_softmax_layer(next_train, n_classes)
+
+        self._create_cost_function_node()
+        self._create_train_step_node()
+        self._create_test_node()
+
+    def _create_placeholders(self, n_features, n_classes):
+
+        """ Create the TensorFlow placeholders for the model.
+        :param n_features: number of features of the first layer
+        :param n_classes: number of classes
+        :return: self
+        """
+
+        self.keep_prob = tf.placeholder('float')
+        self.hrand = [tf.placeholder('float', [None, self.layers[l+1]]) for l in range(self.n_layers-1)]
+        self.vrand = [tf.placeholder('float', [None, self.layers[l]]) for l in range(self.n_layers-1)]
+
+        self.x = tf.placeholder('float', [None, n_features])
+        self.y_ = tf.placeholder('float', [None, n_classes])
+
+    def _create_variables(self):
+
+        """ Create the TensorFlow variables for the model.
+        :return: self
+        """
+
+        self.W_vars = [tf.Variable(self.W_pretrain[l]) for l in range(self.n_layers-1)]
+        self.bh_vars = [tf.Variable(self.bh_pretrain[l]) for l in range(self.n_layers-1)]
+        self.bv_vars = [tf.Variable(self.bv_pretrain[l]) for l in range(self.n_layers-1)]
+
+    def _forward_pass(self, mode):
+
+        """ Perform a forward pass through the layers of the network.
+        :param mode: train or test mode
+        :return: sampled units at the last layer
+        """
+
+        next_train = self.x
+
+        for l in range(self.n_layers-1):
+
+            hprobs = tf.nn.sigmoid(tf.matmul(next_train, self.W_vars[l]) + self.bh_vars[l])
+
+            if mode == 'train':
+                hprobs = tf.nn.dropout(hprobs, self.keep_prob)
+
+            next_train = hprobs
+
+        return next_train
+
+    def _create_softmax_layer(self, next_train, n_classes):
+
+        """ Create nodes for the softmax layer build on top of the last layer.
+        :param next_train: sampled units at the last layer
+        :param n_classes: number of classes
+        :return: self
+        """
+
+        self.softmax_W = tf.Variable(tf.zeros([next_train.get_shape()[1], n_classes]), name='softmax-weights')
+        self.softmax_b = tf.Variable(tf.zeros([n_classes]), name='softmax-biases')
+
+        with tf.name_scope("softmax_layer"):
+            self.y = tf.matmul(next_train, self.softmax_W) + self.softmax_b
+
+    def _create_cost_function_node(self):
+
+        """ Create the cost function node.
+        :return: self
+        """
+
+        with tf.name_scope("cost"):
+            if self.loss_func == 'cross_entropy':
+                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.y, self.y_))
+                _ = tf.scalar_summary("cross_entropy", self.cost)
+
+            elif self.loss_func == 'mean_squared':
+                self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.y_ - self.y)))
+                _ = tf.scalar_summary("mean_squared", self.cost)
+
+            else:
+                self.cost = None
+
+    def _create_train_step_node(self):
+
+        """ Create TensorFlow optimizer for the model
+        :return: self
+        """
+
+        with tf.name_scope("train"):
+            if self.opt == 'gradient_descent':
+                self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
+
+            elif self.opt == 'ada_grad':
+                self.train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.cost)
+
+            elif self.opt == 'momentum':
+                self.train_step = tf.train.MomentumOptimizer(self.learning_rate, self.momentum).minimize(self.cost)
+
+            else:
+                self.train_step = None
+
+    def _create_test_node(self):
+
+        """ Create validation testing node.
+        :return: self
+        """
+
+        with tf.name_scope("test"):
+            next_test = self._forward_pass('test')
+            preds = tf.matmul(next_test, self.softmax_W) + self.softmax_b
+            correct_prediction = tf.equal(tf.argmax(preds, 1), tf.argmax(self.y_, 1))
+            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+            _ = tf.scalar_summary('accuracy', self.accuracy)
 
     def get_model_parameters(self):
 
