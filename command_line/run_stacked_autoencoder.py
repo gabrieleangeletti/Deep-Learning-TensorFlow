@@ -13,6 +13,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10"]')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
+flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pretraining.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('softmax_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
@@ -102,6 +103,7 @@ if __name__ == '__main__':
 
     # Create the object
     sdae = stacked_denoising_autoencoder.StackedDenoisingAutoencoder(
+        do_pretrain=FLAGS.do_pretrain,
         layers=dae_params['layers'], seed=FLAGS.seed, softmax_loss_func=FLAGS.softmax_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,
@@ -113,14 +115,11 @@ if __name__ == '__main__':
         finetune_act_func=FLAGS.finetune_act_func)
 
     # Fit the model (unsupervised pretraining)
-    encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
-
-    import numpy as np
-    np.save('stored_models/sdae/testTRAINX', encoded_X)
-    np.save('stored_models/sdae/testVALX', encoded_vX)
+    if FLAGS.do_pretrain:
+        encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
 
     # Supervised finetuning
-    sdae.finetune(trX, trY, vlX, vlY)
+    sdae.fit(trX, trY, vlX, vlY)
 
     # Test the model
     print('Test set accuracy: {}'.format(sdae.predict(teX, teY)))

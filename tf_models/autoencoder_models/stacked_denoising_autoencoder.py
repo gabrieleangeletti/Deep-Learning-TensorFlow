@@ -21,7 +21,7 @@ class StackedDenoisingAutoencoder(object):
                  learning_rate=list([0.01]), momentum=list([0.5]),  dropout=1, corr_type='none', corr_frac=0.,
                  verbose=1, seed=-1, softmax_loss_func='cross_entropy', finetune_act_func='relu',
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
-                 finetune_batch_size=20):
+                 finetune_batch_size=20, do_pretrain=True):
         """
         :param model_name: name of the model, used as filename. string, default 'sdae'
         :param main_dir: main directory to put the stored_models, data and summary directories
@@ -45,11 +45,13 @@ class StackedDenoisingAutoencoder(object):
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
         :param num_epochs: Number of epochs. int, default 10
         :param batch_size: Size of each mini-batch. int, default 10
+        :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         :param dataset: Optional name for the dataset. string, default 'mnist'
         :param seed: positive integer for seeding random generators. Ignored if < 0. int, default -1
         """
 
         self.layers = layers
+        self.do_pretrain = do_pretrain
 
         # Autoencoder parameters
         self.enc_act_func = enc_act_func
@@ -125,7 +127,6 @@ class StackedDenoisingAutoencoder(object):
         """ Perform unsupervised pretraining of the stack of denoising autoencoders.
         :param train_set: training set
         :param validation_set: validation set
-
         :return: return data encoded by the last layer
         """
 
@@ -150,7 +151,6 @@ class StackedDenoisingAutoencoder(object):
         :param autoenc: autoencoder reference
         :param train_set: training set
         :param validation_set: validation set
-
         :return: encoded train data, encoded validation data
         """
 
@@ -166,14 +166,13 @@ class StackedDenoisingAutoencoder(object):
 
         return next_train, next_valid
 
-    def finetune(self, train_set, train_labels, validation_set=None, validation_labels=None):
+    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None):
 
         """ Fit the model to the data.
         :param train_set: Training data. shape(n_samples, n_features)
         :param train_labels: Labels for the data. shape(n_samples, n_classes)
         :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
         :param validation_labels: optional, default None. Labels for the validation data. shape(nval_samples, n_classes)
-
         :return: self
         """
 
@@ -252,7 +251,6 @@ class StackedDenoisingAutoencoder(object):
         """ Compute the accuracy over the test set.
         :param test_set: Testing data. shape(n_test_samples, n_features)
         :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
-
         :return: accuracy
         """
 
@@ -273,6 +271,7 @@ class StackedDenoisingAutoencoder(object):
         """
 
         self._create_placeholders(n_features, n_classes)
+        self._create_variables(n_features)
 
         next_train = self._create_encoding_layers()
         self.encode = next_train
@@ -289,13 +288,58 @@ class StackedDenoisingAutoencoder(object):
         """ Create the TensorFlow placeholders for the model.
         :param n_features: number of features of the first layer
         :param n_classes: number of classes
-
-        :return: input data placeholder, input labels placeholder, dropout probs
+        :return: self
         """
 
         self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
         self.input_labels = tf.placeholder('float', [None, n_classes], name='y-input')
         self.keep_prob = tf.placeholder('float', name='keep-probs')
+
+    def _create_variables(self, n_features):
+
+        """ Create the TensorFlow variables for the model.
+        :param n_features: number of features
+        :return: self
+        """
+
+        if self.do_pretrain:
+            self._create_variables_pretrain()
+        else:
+            self._create_variables_no_pretrain(n_features)
+
+    def _create_variables_no_pretrain(self, n_features):
+
+        """ Create model variables (no previous unsupervised pretraining)
+        :param n_features: number of features
+        :return: self
+        """
+
+        if not self.xavier_init[0]:
+            xinit = 1
+        else:
+            xinit = self.xavier_init[0]
+
+        self.encoding_w_ = []
+        self.encoding_b_ = []
+
+        for l, layer in enumerate(self.layers):
+
+            if l == 0:
+                self.encoding_w_.append(tf.Variable(utilities.xavier_init(n_features, self.layers[l], xinit)))
+                self.encoding_b_.append(tf.Variable(tf.zeros([self.layers[l]])))
+            else:
+                self.encoding_w_.append(tf.Variable(utilities.xavier_init(self.layers[l-1], self.layers[l], xinit)))
+                self.encoding_b_.append(tf.Variable(tf.zeros([self.layers[l]])))
+
+    def _create_variables_pretrain(self):
+
+        """ Create model variables (previous unsupervised pretraining)
+        :return: self
+        """
+
+        for l, layer in enumerate(self.layers):
+            self.encoding_w_[l] = tf.Variable(self.encoding_w_[l], name='enc-w-{}'.format(l))
+            self.encoding_b_[l] = tf.Variable(self.encoding_b_[l], name='enc-b-{}'.format(l))
 
     def _create_encoding_layers(self):
 
@@ -306,9 +350,6 @@ class StackedDenoisingAutoencoder(object):
         next_train = self.input_data
 
         for l, layer in enumerate(self.layers):
-
-            self.encoding_w_[l] = tf.Variable(self.encoding_w_[l], name='enc-w-{}'.format(l))
-            self.encoding_b_[l] = tf.Variable(self.encoding_b_[l], name='enc-b-{}'.format(l))
 
             with tf.name_scope("encode-{}".format(l)):
 
@@ -339,7 +380,8 @@ class StackedDenoisingAutoencoder(object):
         :return: self
         """
 
-        self.softmax_W = tf.Variable(tf.zeros([last_layer.get_shape()[1], n_classes]), name='softmax-weights')
+        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes]),
+                                     name='softmax-weigths')
         self.softmax_b = tf.Variable(tf.zeros([n_classes]), name='softmax-biases')
 
         with tf.name_scope("softmax_layer"):
@@ -397,7 +439,6 @@ class StackedDenoisingAutoencoder(object):
 
         """ Create the three directories for storing respectively the stored_models,
         the data generated by training and the TensorFlow's summaries.
-
         :return: tuple of strings(models_dir, data_dir, summary_dir)
         """
 

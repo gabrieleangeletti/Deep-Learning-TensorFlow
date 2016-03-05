@@ -188,7 +188,7 @@ class DBN(object):
 
         self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
 
-    def _train_model(self, train_set, train_labels, validation_set, validation_labels):
+    def _train_model(self, train_set, train_labels, validation_set=None, validation_labels=None):
 
         """ Train the model.
         :param train_set: training set
@@ -310,8 +310,8 @@ class DBN(object):
         :param n_classes: number of classes
         :return: self
         """
-
-        self.softmax_W = tf.Variable(tf.zeros([next_train.get_shape()[1], n_classes]), name='softmax-weights')
+        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes]),
+                                     name='softmax-weights')
         self.softmax_b = tf.Variable(tf.zeros([n_classes]), name='softmax-biases')
 
         with tf.name_scope("softmax_layer"):
