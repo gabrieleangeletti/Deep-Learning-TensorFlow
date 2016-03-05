@@ -52,8 +52,6 @@ class RBM(object):
         self.bh_upd8 = None
         self.bv_upd8 = None
 
-        self.encode = None
-
         self.loss_function = None
 
         self.input_data = None
@@ -189,8 +187,6 @@ class RBM(object):
 
         negative = tf.matmul(tf.transpose(vprobs), hprobs1)
 
-        self.encode = hprobs1  # encoded data, used by the transform method
-
         self.w_upd8 = self.W.assign_add(self.learning_rate * (positive - negative))
         self.bh_upd8 = self.bh_.assign_add(self.learning_rate * tf.reduce_mean(hprobs0 - hprobs1, 0))
         self.bv_upd8 = self.bv_.assign_add(self.learning_rate * tf.reduce_mean(self.input_data - vprobs, 0))
@@ -318,8 +314,7 @@ class RBM(object):
         with tf.Session() as self.tf_session:
 
             self.tf_saver.restore(self.tf_session, self.model_path)
-
-            encoded_data = self.encode.eval(self._create_feed_dict(data))
+            encoded_data = self.sample_hidden_from_visible(data)[0].eval()
 
             if save:
                 np.save(self.data_dir + self.model_name + '-' + name, encoded_data)

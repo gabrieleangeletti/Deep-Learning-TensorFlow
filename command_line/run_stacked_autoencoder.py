@@ -18,6 +18,9 @@ flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful 
 flags.DEFINE_string('softmax_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
 flags.DEFINE_integer('finetune_num_epochs', 30, 'Number of epochs for the fine-tuning phase.')
 flags.DEFINE_float('finetune_learning_rate', 0.001, 'Learning rate for the fine-tuning phase.')
+flags.DEFINE_string('finetune_act_func', 'relu', 'Activation function for the fine-tuning phase.'
+                                                 '["sigmoid, "tanh", "relu"]')
+flags.DEFINE_float('dropout', 1, 'Dropout parameter.')
 flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum"]')
 flags.DEFINE_integer('finetune_batch_size', 20, 'Size of each mini-batch for the fine-tuning phase.')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
@@ -27,7 +30,7 @@ flags.DEFINE_float('corr_frac', 0.0, 'Fraction of the input to corrupt.')
 # Autoencoder layers specific parameters
 flags.DEFINE_string('layers', '256,', 'Comma-separated values for the layers in the sdae.')
 flags.DEFINE_string('xavier_init', '1,', 'Value for the constant in xavier weights initialization.')
-flags.DEFINE_string('enc_act_func', 'tanh,', 'Activation function for the encoder. ["sigmoid", "tanh"]')
+flags.DEFINE_string('enc_act_func', 'relu,', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dec_act_func', 'none,', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
 flags.DEFINE_string('loss_func', 'mean_squared,', 'Loss function. ["mean_squared" or "cross_entropy"]')
 flags.DEFINE_string('opt', 'gradient_descent,', '["gradient_descent", "ada_grad", "momentum"]')
@@ -101,12 +104,13 @@ if __name__ == '__main__':
     sdae = stacked_denoising_autoencoder.StackedDenoisingAutoencoder(
         layers=dae_params['layers'], seed=FLAGS.seed, softmax_loss_func=FLAGS.softmax_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
-        finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size,
+        finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,
         enc_act_func=dae_params['enc_act_func'], dec_act_func=dae_params['dec_act_func'],
         xavier_init=dae_params['xavier_init'], corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
         dataset=FLAGS.dataset, loss_func=dae_params['loss_func'], main_dir=FLAGS.main_dir, opt=dae_params['opt'],
         learning_rate=dae_params['learning_rate'], momentum=dae_params['momentum'], verbose=FLAGS.verbose,
-        num_epochs=dae_params['num_epochs'], batch_size=dae_params['batch_size'])
+        num_epochs=dae_params['num_epochs'], batch_size=dae_params['batch_size'],
+        finetune_act_func=FLAGS.finetune_act_func)
 
     # Fit the model (unsupervised pretraining)
     encoded_X, encoded_vX = sdae.pretrain(trX, vlX)

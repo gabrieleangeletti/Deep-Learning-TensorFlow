@@ -18,8 +18,8 @@ class StackedDenoisingAutoencoder(object):
     def __init__(self, layers, model_name='sdae', main_dir='sdae/', enc_act_func=list(['tanh']),
                  dec_act_func=list(['none']), loss_func=list(['mean_squared']), num_epochs=list([10]),
                  batch_size=list([10]), dataset='mnist', xavier_init=list([1]), opt=list(['gradient_descent']),
-                 learning_rate=list([0.01]), momentum=list([0.5]), corr_type='none', corr_frac=0., verbose=1, seed=-1,
-                 softmax_loss_func='cross_entropy', finetune_opt='gradient_descent', finetune_learning_rate=0.001,
+                 learning_rate=list([0.01]), momentum=list([0.5]),  dropout=1, corr_type='none', corr_frac=0., verbose=1, seed=-1,
+                 softmax_loss_func='cross_entropy', finetune_act_func='relu', finetune_opt='gradient_descent', finetune_learning_rate=0.001,
                  finetune_num_epochs=10, finetune_batch_size=20):
         """
         :param model_name: name of the model, used as filename. string, default 'sdae'
@@ -28,7 +28,10 @@ class StackedDenoisingAutoencoder(object):
         :param enc_act_func: Activation function for the encoder. ['sigmoid', 'tanh']
         :param dec_act_func: Activation function for the decoder. ['sigmoid', 'tanh', 'none']
         :param softmax_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
+        :param dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
+        :param finetune_act_func: activation function for the finetuning phase
+        :param finetune_opt: optimizer for the finetuning phase
         :param finetune_num_epochs: Number of epochs for the finetuning. int, default 20
         :param finetune_batch_size: Size of each mini-batch for the finetuning. int, default 20
         :param loss_func: Loss function. ['cross_entropy', 'mean_squared']. string, default 'mean_squared'
@@ -63,9 +66,11 @@ class StackedDenoisingAutoencoder(object):
         self.corr_type = corr_type
         self.corr_frac = corr_frac
         self.main_dir = main_dir
+        self.dropout = dropout
         self.softmax_loss_func = softmax_loss_func
         self.finetune_opt = finetune_opt
         self.finetune_learning_rate = finetune_learning_rate
+        self.finetune_act_func = finetune_act_func
         self.finetune_num_epochs = finetune_num_epochs
         self.finetune_batch_size = finetune_batch_size
         self.dataset = dataset
@@ -81,6 +86,7 @@ class StackedDenoisingAutoencoder(object):
 
         self.input_data = None
         self.input_labels = None
+        self.keep_prob = None
 
         self.encode = None
         self.softmax_out = None
@@ -159,6 +165,102 @@ class StackedDenoisingAutoencoder(object):
 
         return next_train, next_valid
 
+    def finetune(self, train_set, train_labels, validation_set=None, validation_labels=None):
+
+        """ Fit the model to the data.
+        :param train_set: Training data. shape(n_samples, n_features)
+        :param train_labels: Labels for the data. shape(n_samples, n_classes)
+        :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
+        :param validation_labels: optional, default None. Labels for the validation data. shape(nval_samples, n_classes)
+
+        :return: self
+        """
+
+        print('Starting supervised finetuning...')
+
+        n_features = train_set.shape[1]
+        n_classes = train_labels.shape[1]
+
+        self._build_model(n_features, n_classes)
+
+        with tf.Session() as self.tf_session:
+
+            self._initialize_tf_utilities_and_ops()
+            self._train_model(train_set, train_labels, validation_set, validation_labels)
+            self.tf_saver.save(self.tf_session, self.model_path)
+
+    def _initialize_tf_utilities_and_ops(self):
+
+        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
+        """
+
+        self.tf_merged_summaries = tf.merge_all_summaries()
+        init_op = tf.initialize_all_variables()
+        self.tf_saver = tf.train.Saver()
+
+        self.tf_session.run(init_op)
+
+        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
+
+    def _train_model(self, train_set, train_labels, validation_set, validation_labels):
+
+        """ Train the model.
+        :param train_set: training set
+        :param train_labels: training labels
+        :param validation_set: validation set
+        :param validation_labels: validation labels
+        :return: self
+        """
+
+        shuff = zip(train_set, train_labels)
+
+        for i in range(self.finetune_num_epochs):
+
+            np.random.shuffle(shuff)
+            batches = [_ for _ in utilities.gen_batches(shuff, self.finetune_batch_size)]
+
+            for batch in batches:
+                x_batch, y_batch = zip(*batch)
+                self.tf_session.run(self.train_step, feed_dict={self.input_data: x_batch,
+                                                                self.input_labels: y_batch,
+                                                                self.keep_prob: self.dropout})
+
+            if validation_set is not None:
+                self._run_validation_error_and_summaries(i, validation_set, validation_labels)
+
+    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_labels):
+
+        """ Run the summaries and error computation on the validation set.
+        :param epoch: current epoch
+        :param validation_set: validation data
+        :return: self
+        """
+
+        feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
+        result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
+        summary_str = result[0]
+        acc = result[1]
+
+        self.tf_summary_writer.add_summary(summary_str, epoch)
+
+        if self.verbose == 1:
+            print("Accuracy at step %s: %s" % (epoch, acc))
+
+    def predict(self, test_set, test_labels):
+
+        """ Compute the accuracy over the test set.
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
+
+        :return: accuracy
+        """
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            return self.accuracy.eval({self.input_data: test_set,
+                                       self.input_labels: test_labels,
+                                       self.keep_prob: 1})
+
     def _build_model(self, n_features, n_classes):
 
         """ Creates the computational graph.
@@ -187,11 +289,12 @@ class StackedDenoisingAutoencoder(object):
         :param n_features: number of features of the first layer
         :param n_classes: number of classes
 
-        :return: input data placeholder, input labels placeholder
+        :return: input data placeholder, input labels placeholder, dropout probs
         """
 
         self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
         self.input_labels = tf.placeholder('float', [None, n_classes], name='y-input')
+        self.keep_prob = tf.placeholder('float', name='keep-probs')
 
     def _create_encoding_layers(self):
 
@@ -203,24 +306,27 @@ class StackedDenoisingAutoencoder(object):
 
         for l, layer in enumerate(self.layers):
 
-            W = tf.Variable(self.encoding_w_[l], name='enc-w-{}'.format(l))
-            self.encoding_w_[l] = W
+            self.encoding_w_[l] = tf.Variable(self.encoding_w_[l], name='enc-w-{}'.format(l))
+            self.encoding_b_[l] = tf.Variable(self.encoding_b_[l], name='enc-b-{}'.format(l))
 
-            b = tf.Variable(self.encoding_b_[l], name='enc-b-{}'.format(l))
-            self.encoding_b_[l] = b
+            with tf.name_scope("encode-{}".format(l)):
 
-            with tf.name_scope("Wf_x_bh_{}".format(l)):
-                if self.enc_act_func[l] == 'sigmoid':
-                    layer_y = tf.nn.sigmoid(tf.matmul(next_train, W) + b)
+                y_act = tf.matmul(next_train, self.encoding_w_[l]) + self.encoding_b_[l]
 
-                elif self.enc_act_func[l] == 'tanh':
-                    layer_y = tf.nn.tanh(tf.matmul(next_train, W) + b)
+                if self.finetune_act_func == 'sigmoid':
+                    layer_y = tf.nn.sigmoid(y_act)
+
+                elif self.finetune_act_func == 'tanh':
+                    layer_y = tf.nn.tanh(y_act)
+
+                elif self.finetune_act_func == 'relu':
+                    layer_y = tf.nn.relu(y_act)
 
                 else:
                     layer_y = None
 
             # the input to the next layer is the output of this layer
-            next_train = layer_y
+            next_train = tf.nn.dropout(layer_y, self.keep_prob)
 
         return next_train
 
@@ -285,95 +391,6 @@ class StackedDenoisingAutoencoder(object):
             correct_prediction = tf.equal(tf.argmax(self.softmax_out, 1), tf.argmax(self.input_labels, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
             _ = tf.scalar_summary('accuracy', self.accuracy)
-
-    def finetune(self, train_set, train_labels, validation_set=None, validation_labels=None):
-
-        """ Fit the model to the data.
-        :param train_set: Training data. shape(n_samples, n_features)
-        :param train_labels: Labels for the data. shape(n_samples, n_classes)
-        :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
-        :param validation_labels: optional, default None. Labels for the validation data. shape(nval_samples, n_classes)
-
-        :return: self
-        """
-
-        print('Starting supervised finetuning...')
-
-        n_features = train_set.shape[1]
-        n_classes = train_labels.shape[1]
-
-        self._build_model(n_features, n_classes)
-
-        with tf.Session() as self.tf_session:
-
-            self._initialize_tf_utilities_and_ops()
-            self._train_model(train_set, train_labels, validation_set, validation_labels)
-            self.tf_saver.save(self.tf_session, self.model_path)
-
-    def _initialize_tf_utilities_and_ops(self):
-
-        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
-        """
-
-        self.tf_merged_summaries = tf.merge_all_summaries()
-        init_op = tf.initialize_all_variables()
-        self.tf_saver = tf.train.Saver()
-
-        self.tf_session.run(init_op)
-
-        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
-
-    def _train_model(self, train_set, train_labels, validation_set, validation_labels):
-
-        """ Train the model.
-        :param train_set: training set
-        :param train_labels: training labels
-        :param validation_set: validation set
-        :param validation_labels: validation labels
-        :return: self
-        """
-
-        batches = [_ for _ in utilities.gen_batches(zip(train_set, train_labels), self.finetune_batch_size)]
-
-        for i in range(self.finetune_num_epochs):
-
-            for batch in batches:
-                x_batch, y_batch = zip(*batch)
-                self.tf_session.run(self.train_step, feed_dict={self.input_data: x_batch, self.input_labels: y_batch})
-
-            if validation_set is not None:
-                self._run_validation_error_and_summaries(i, validation_set, validation_labels)
-
-    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_labels):
-
-        """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch
-        :param validation_set: validation data
-        :return: self
-        """
-
-        feed = {self.input_data: validation_set, self.input_labels: validation_labels}
-        result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
-        summary_str = result[0]
-        acc = result[1]
-
-        self.tf_summary_writer.add_summary(summary_str, epoch)
-
-        if self.verbose == 1:
-            print("Accuracy at step %s: %s" % (epoch, acc))
-
-    def predict(self, test_set, test_labels):
-
-        """ Compute the accuracy over the test set.
-        :param test_set: Testing data. shape(n_test_samples, n_features)
-        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
-
-        :return: accuracy
-        """
-
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.accuracy.eval({self.input_data: test_set, self.input_labels: test_labels})
 
     def _create_data_directories(self):
 

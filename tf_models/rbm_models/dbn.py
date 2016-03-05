@@ -18,7 +18,8 @@ class DBN(object):
     def __init__(self, layers, do_pretrain=True, rbm_num_epochs=list([10]), rbm_batch_size=list([10]), model_name='',
                  rbm_learning_rate=list([0.01]), rbm_names=list(['']), rbm_gibbs_k=list([1]), gauss_visible=False,
                  stddev=0.1, learning_rate=0.01, momentum=0.7, num_epochs=10, batch_size=10, dropout=1,
-                 opt='gradient_descent', verbose=1, loss_func='mean_squared', main_dir='dbn/', dataset='mnist'):
+                 opt='gradient_descent', verbose=1, act_func='relu', loss_func='mean_squared', main_dir='dbn/',
+                 dataset='mnist'):
 
         """
         :param layers: list containing the hidden units for each layer
@@ -54,9 +55,10 @@ class DBN(object):
         self.rbm_names = rbm_names
         self.rbm_gibbs_k = rbm_gibbs_k
 
-        # Stacked RBM parameters
+        # DBN parameters
         self.gauss_visible = gauss_visible
         self.stddev = stddev
+        self.act_func = act_func
         self.learning_rate = learning_rate
         self.momentum = momentum
         self.num_epochs = num_epochs
@@ -144,7 +146,6 @@ class DBN(object):
         """
 
         rboltz.fit(train_set, validation_set)
-
         params = rboltz.get_model_parameters()
 
         self.W_pretrain.append(params['W'])
@@ -197,9 +198,12 @@ class DBN(object):
         :return:
         """
 
-        batches = [_ for _ in utilities.gen_batches(zip(train_set, train_labels), self.batch_size)]
+        shuff = zip(train_set, train_labels)
 
         for i in range(self.num_epochs):
+
+            np.random.shuffle(shuff)
+            batches = [_ for _ in utilities.gen_batches(shuff, self.batch_size)]
 
             for batch in batches:
                 x_batch, y_batch = zip(*batch)
@@ -218,7 +222,7 @@ class DBN(object):
         :return: self
         """
 
-        feed = self._create_feed(validation_set, validation_labels, self.dropout)
+        feed = self._create_feed(validation_set, validation_labels, 1)
         result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
         summary_str = result[0]
         err = result[1]
@@ -239,7 +243,7 @@ class DBN(object):
         self._create_placeholders(n_features, n_classes)
         self._create_variables()
 
-        next_train = self._forward_pass('train')
+        next_train = self._forward_pass()
         self._create_softmax_layer(next_train, n_classes)
 
         self._create_cost_function_node()
@@ -271,10 +275,9 @@ class DBN(object):
         self.bh_vars = [tf.Variable(self.bh_pretrain[l]) for l in range(self.n_layers-1)]
         self.bv_vars = [tf.Variable(self.bv_pretrain[l]) for l in range(self.n_layers-1)]
 
-    def _forward_pass(self, mode):
+    def _forward_pass(self):
 
         """ Perform a forward pass through the layers of the network.
-        :param mode: train or test mode
         :return: sampled units at the last layer
         """
 
@@ -282,12 +285,21 @@ class DBN(object):
 
         for l in range(self.n_layers-1):
 
-            hprobs = tf.nn.sigmoid(tf.matmul(next_train, self.W_vars[l]) + self.bh_vars[l])
+            activation = tf.matmul(next_train, self.W_vars[l]) + self.bh_vars[l]
 
-            if mode == 'train':
-                hprobs = tf.nn.dropout(hprobs, self.keep_prob)
+            if self.act_func == 'sigmoid':
+                hprobs = tf.nn.sigmoid(activation)
 
-            next_train = hprobs
+            elif self.act_func == 'tanh':
+                hprobs = tf.nn.tanh(activation)
+
+            elif self.act_func == 'relu':
+                hprobs = tf.nn.relu(activation)
+
+            else:
+                hprobs = None
+
+            next_train = tf.nn.dropout(hprobs, self.keep_prob)
 
         return next_train
 
@@ -349,9 +361,7 @@ class DBN(object):
         """
 
         with tf.name_scope("test"):
-            next_test = self._forward_pass('test')
-            preds = tf.matmul(next_test, self.softmax_W) + self.softmax_b
-            correct_prediction = tf.equal(tf.argmax(preds, 1), tf.argmax(self.y_, 1))
+            correct_prediction = tf.equal(tf.argmax(self.y, 1), tf.argmax(self.y_, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
             _ = tf.scalar_summary('accuracy', self.accuracy)
 
@@ -390,7 +400,7 @@ class DBN(object):
         with tf.Session() as self.tf_session:
 
             self.tf_saver.restore(self.tf_session, self.models_dir + self.model_name)
-            feed = self._create_feed(test_set, test_labels, self.dropout)
+            feed = self._create_feed(test_set, test_labels, 1)
 
             return self.accuracy.eval(feed)
 

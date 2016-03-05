@@ -17,7 +17,6 @@ flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('model_name', 'srbm', 'Name of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
 
-# Supervised fine tuning parameters
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_string('main_dir', 'dbn/', 'Directory to store data relative to the algorithm.')
 # RBMs layers specific parameters
@@ -29,7 +28,8 @@ flags.DEFINE_string('rbm_learning_rate', '0.01,', 'Initial learning rate.')
 flags.DEFINE_string('rbm_num_epochs', '10,', 'Number of epochs.')
 flags.DEFINE_string('rbm_batch_size', '10,', 'Size of each mini-batch.')
 flags.DEFINE_string('rbm_gibbs_k', '1,', 'Gibbs sampling steps.')
-
+# Supervised fine tuning parameters
+flags.DEFINE_string('act_func', 'relu', 'Activation function.')
 flags.DEFINE_float('learning_rate', 0.01, 'Learning rate.')
 flags.DEFINE_float('momentum', 0.7, 'Momentum parameter.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
@@ -57,6 +57,7 @@ for p in dae_params:
 
 # Parameters validation
 assert FLAGS.dataset in ['mnist', 'cifar10']
+assert FLAGS.act_func in ['sigmoid', 'tanh', 'relu']
 assert len(layers) > 0
 
 if __name__ == '__main__':
@@ -85,7 +86,7 @@ if __name__ == '__main__':
     # Create the object
     srbm = dbn.DBN(
         model_name=FLAGS.model_name, rbm_names=dae_params['rbm_names'], do_pretrain=FLAGS.do_pretrain,
-        layers=dae_params['layers'], dataset=FLAGS.dataset, main_dir=FLAGS.main_dir,
+        layers=dae_params['layers'], dataset=FLAGS.dataset, main_dir=FLAGS.main_dir, act_func=FLAGS.act_func,
         rbm_learning_rate=dae_params['learning_rate'], rbm_gibbs_k=dae_params['gibbs_k'],
         verbose=FLAGS.verbose, rbm_num_epochs=dae_params['num_epochs'], momentum=FLAGS.momentum,
         rbm_batch_size=dae_params['batch_size'], learning_rate=FLAGS.learning_rate, num_epochs=FLAGS.num_epochs,
