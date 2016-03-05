@@ -128,27 +128,23 @@ class DenoisingAutoencoder(object):
         :return: self
         """
 
-        corruption_ratio = np.round(self.corr_frac * train_set.shape[1]).astype(np.int)
-
         for i in range(self.num_epochs):
 
-            self._run_train_step(train_set, corruption_ratio)
+            self._run_train_step(train_set)
 
             # if i % 5 == 0:
             if validation_set is not None:
                 self._run_validation_error_and_summaries(i, validation_set)
 
-    def _run_train_step(self, train_set, corruption_ratio):
+    def _run_train_step(self, train_set):
 
         """ Run a training step. A training step is made by randomly corrupting the training set,
         randomly shuffling it,  divide it into batches and run the optimizer for each batch.
 
         :param train_set: training set
-        :param corruption_ratio: fraction of elements to corrupt
-
         :return: self
         """
-        x_corrupted = self._corrupt_input(train_set, corruption_ratio)
+        x_corrupted = self._corrupt_input(train_set)
 
         shuff = zip(train_set, x_corrupted)
         np.random.shuffle(shuff)
@@ -160,26 +156,26 @@ class DenoisingAutoencoder(object):
             tr_feed = {self.input_data: x_batch, self.input_data_corr: x_corr_batch}
             self.tf_session.run(self.train_step, feed_dict=tr_feed)
 
-    def _corrupt_input(self, data, v):
+    def _corrupt_input(self, data):
 
-        """ Corrupt a fraction 'v' of 'data' according to the
+        """ Corrupt a fraction of 'data' according to the
         noise method of this autoencoder.
         :return: corrupted data
         """
 
+        corruption_ratio = np.round(self.corr_frac * data.shape[1]).astype(np.int)
+
         if self.corr_type == 'masking':
-            x_corrupted = utilities.masking_noise(data, v)
+            return utilities.masking_noise(data, self.tf_session, self.corr_frac)
 
         elif self.corr_type == 'salt_and_pepper':
-            x_corrupted = utilities.salt_and_pepper_noise(data, v)
+            return utilities.salt_and_pepper_noise(data, corruption_ratio)
 
         elif self.corr_type == 'none':
-            x_corrupted = data
+            return data
 
         else:
-            x_corrupted = None
-
-        return x_corrupted
+            return None
 
     def _run_validation_error_and_summaries(self, epoch, validation_set):
 
@@ -261,15 +257,18 @@ class DenoisingAutoencoder(object):
         :return: self
         """
 
-        with tf.name_scope("Wg_y_bv"):
+        with tf.name_scope("decoder"):
+
+            activation = tf.matmul(self.encode, tf.transpose(self.W_)) + self.bv_
+
             if self.dec_act_func == 'sigmoid':
-                self.decode = tf.nn.sigmoid(tf.matmul(self.encode, tf.transpose(self.W_)) + self.bv_)
+                self.decode = tf.nn.sigmoid(activation)
 
             elif self.dec_act_func == 'tanh':
-                self.decode = tf.nn.tanh(tf.matmul(self.encode, tf.transpose(self.W_)) + self.bv_)
+                self.decode = tf.nn.tanh(activation)
 
             elif self.dec_act_func == 'none':
-                self.decode = tf.matmul(self.encode, tf.transpose(self.W_)) + self.bv_
+                self.decode = activation
 
             else:
                 self.decode = None

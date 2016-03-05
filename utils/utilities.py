@@ -211,37 +211,29 @@ def bins2sets(bin_data):
     return out_data
 
 
-def masking_noise(X, v):
+def masking_noise(data, sess, v):
+
     """ Apply masking noise to data in X, in other words a fraction v of elements of X
     (chosen at random) is forced to zero.
-
-    :param X: array_like, Input data
-    :param v: int, fraction of elements to distort
-
+    :param data: array_like, Input data
+    :param sess: TensorFlow session
+    :param v: fraction of elements to distort, float
     :return: transformed data
     """
-    X_noise = X.copy()
 
-    n_samples = X.shape[0]
-    n_features = X.shape[1]
+    data_noise = data.copy()
+    rand = tf.random_uniform(data.shape)
+    data_noise[sess.run(tf.nn.relu(tf.sign(v - rand))).astype(np.bool)] = 0
 
-    for i in range(n_samples):
-        mask = np.random.randint(0, n_features, v)
-
-        for m in mask:
-            X_noise[i][m] = 0.
-
-    return X_noise
+    return data_noise
 
 
 def salt_and_pepper_noise(X, v):
     """ Apply salt and pepper noise to data in X, in other words a fraction v of elements of X
     (chosen at random) is set to its maximum or minimum value according to a fair coin flip.
     If minimum or maximum are not given, the min (max) value in X is taken.
-
     :param X: array_like, Input data
     :param v: int, fraction of elements to distort
-
     :return: transformed data
     """
     X_noise = X.copy()

@@ -18,9 +18,10 @@ class StackedDenoisingAutoencoder(object):
     def __init__(self, layers, model_name='sdae', main_dir='sdae/', enc_act_func=list(['tanh']),
                  dec_act_func=list(['none']), loss_func=list(['mean_squared']), num_epochs=list([10]),
                  batch_size=list([10]), dataset='mnist', xavier_init=list([1]), opt=list(['gradient_descent']),
-                 learning_rate=list([0.01]), momentum=list([0.5]),  dropout=1, corr_type='none', corr_frac=0., verbose=1, seed=-1,
-                 softmax_loss_func='cross_entropy', finetune_act_func='relu', finetune_opt='gradient_descent', finetune_learning_rate=0.001,
-                 finetune_num_epochs=10, finetune_batch_size=20):
+                 learning_rate=list([0.01]), momentum=list([0.5]),  dropout=1, corr_type='none', corr_frac=0.,
+                 verbose=1, seed=-1, softmax_loss_func='cross_entropy', finetune_act_func='relu',
+                 finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
+                 finetune_batch_size=20):
         """
         :param model_name: name of the model, used as filename. string, default 'sdae'
         :param main_dir: main directory to put the stored_models, data and summary directories
