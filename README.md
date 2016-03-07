@@ -14,6 +14,7 @@ Available models:
 * Deep Autoencoder
 * Denoising Autoencoder
 * Stacked Denoising Autoencoder
+* MultiLayer Perceptron (Stacked Denoising Autoencoder with `--do_pretrain false` is equivalent to a MLP.
 
 The `command_line` package has a run script for each algorithm, where the parameters can be specified.
 Example Usage:
