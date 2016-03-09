@@ -314,19 +314,16 @@ class DenoisingAutoencoder(object):
                 self.train_step = None
 
     def transform(self, data, name='train', save=False):
-        """ Transform data according to the model.
 
+        """ Transform data according to the model.
         :param data: Data to transform
         :param name: Identifier for the data that is being encoded
         :param save: If true, save data to disk
-
         :return: transformed data
         """
 
         with tf.Session() as self.tf_session:
-
             self.tf_saver.restore(self.tf_session, self.model_path)
-
             encoded_data = self.encode.eval({self.input_data_corr: data})
 
             if save:
@@ -335,32 +332,29 @@ class DenoisingAutoencoder(object):
             return encoded_data
 
     def load_model(self, shape, model_path):
-        """ Restore a previously trained model from disk.
 
+        """ Restore a previously trained model from disk.
         :param shape: tuple(n_features, n_components)
         :param model_path: path to the trained model
-
         :return: self, the trained model
         """
+
         self.n_components = shape[1]
-
         self._build_model(shape[0])
-
         init_op = tf.initialize_all_variables()
-
         self.tf_saver = tf.train.Saver()
 
         with tf.Session() as self.tf_session:
 
             self.tf_session.run(init_op)
-
             self.tf_saver.restore(self.tf_session, model_path)
 
     def get_model_parameters(self):
-        """ Return the model parameters in the form of numpy arrays.
 
+        """ Return the model parameters in the form of numpy arrays.
         :return: model parameters
         """
+
         with tf.Session() as self.tf_session:
 
             self.tf_saver.restore(self.tf_session, self.model_path)

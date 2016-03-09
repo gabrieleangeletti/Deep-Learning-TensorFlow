@@ -67,13 +67,11 @@ class RBM(object):
     def fit(self, train_set, validation_set=None, restore_previous_model=False):
 
         """ Fit the model to the training data.
-
         :param train_set: training set
         :param validation_set: validation set. optional, default None
         :param restore_previous_model:
                     if true, a previous trained model
                     with the same name of this model is restored from disk to continue training.
-
         :return: self
         """
 
