@@ -19,7 +19,7 @@ class DeepAutoencoder(object):
     def __init__(self, layers, do_pretrain=True, rbm_num_epochs=list([10]), rbm_batch_size=list([10]),
                  rbm_learning_rate=list([0.01]), rbm_names=list(['']), rbm_gibbs_k=list([1]), gauss_visible=False,
                  stddev=0.1, learning_rate=0.01, momentum=0.7, num_epochs=10, batch_size=10, dropout=1,
-                 opt='gradient_descent', loss_func='mean_squared', model_name='', main_dir='srbm/',
+                 opt='gradient_descent', loss_func='mean_squared', model_name='deepae', main_dir='deepae/',
                  dataset='mnist', verbose=1):
 
         """

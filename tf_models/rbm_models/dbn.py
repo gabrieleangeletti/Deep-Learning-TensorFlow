@@ -15,7 +15,7 @@ class DBN(object):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, layers, do_pretrain=True, rbm_num_epochs=list([10]), rbm_batch_size=list([10]), model_name='',
+    def __init__(self, layers, do_pretrain=True, rbm_num_epochs=list([10]), rbm_batch_size=list([10]), model_name='dbn',
                  rbm_learning_rate=list([0.01]), rbm_names=list(['']), rbm_gibbs_k=list([1]), gauss_visible=False,
                  stddev=0.1, learning_rate=0.01, momentum=0.7, num_epochs=10, batch_size=10, dropout=1,
                  opt='gradient_descent', verbose=1, act_func='relu', loss_func='mean_squared', main_dir='dbn/',
@@ -173,7 +173,7 @@ class DBN(object):
 
             self._initialize_tf_utilities_and_ops()
             self._train_model(train_set, train_labels, validation_set, validation_labels)
-            self.tf_saver.save(self.tf_session, self.models_dir + self.model_name)
+            self.tf_saver.save(self.tf_session, self.model_path)
 
     def _initialize_tf_utilities_and_ops(self):
 
@@ -373,7 +373,7 @@ class DBN(object):
 
         with tf.Session() as self.tf_session:
 
-            self.tf_saver.restore(self.tf_session, self.models_dir + self.model_name)
+            self.tf_saver.restore(self.tf_session, self.model_path)
 
             def eval_tensors(tens, prefix):
                 eval_tens = {}
@@ -399,7 +399,7 @@ class DBN(object):
 
         with tf.Session() as self.tf_session:
 
-            self.tf_saver.restore(self.tf_session, self.models_dir + self.model_name)
+            self.tf_saver.restore(self.tf_session, self.model_path)
             feed = self._create_feed(test_set, test_labels, 1)
 
             return self.accuracy.eval(feed)

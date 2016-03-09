@@ -101,7 +101,7 @@ class DenoisingAutoencoder(object):
 
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, validation_set)
-            self.tf_saver.save(self.tf_session, self.model_path + self.model_name)
+            self.tf_saver.save(self.tf_session, self.model_path)
 
     def _initialize_tf_utilities_and_ops(self, restore_previous_model):
 
@@ -116,7 +116,7 @@ class DenoisingAutoencoder(object):
         self.tf_session.run(init_op)
 
         if restore_previous_model:
-            self.tf_saver.restore(self.tf_session, self.model_path + self.model_name)
+            self.tf_saver.restore(self.tf_session, self.model_path)
 
         self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
 
@@ -325,7 +325,7 @@ class DenoisingAutoencoder(object):
 
         with tf.Session() as self.tf_session:
 
-            self.tf_saver.restore(self.tf_session, self.model_path + self.model_name)
+            self.tf_saver.restore(self.tf_session, self.model_path)
 
             encoded_data = self.encode.eval({self.input_data_corr: data})
 
@@ -363,7 +363,7 @@ class DenoisingAutoencoder(object):
         """
         with tf.Session() as self.tf_session:
 
-            self.tf_saver.restore(self.tf_session, self.model_path + self.model_name)
+            self.tf_saver.restore(self.tf_session, self.model_path)
 
             return {
                 'enc_w': self.W_.eval(),
@@ -415,7 +415,7 @@ class DenoisingAutoencoder(object):
             if model_path is not None:
                 self.tf_saver.restore(self.tf_session, model_path)
             else:
-                self.tf_saver.restore(self.tf_session, self.model_path + self.model_name)
+                self.tf_saver.restore(self.tf_session, self.model_path)
 
             enc_weights = self.W_.eval()
 
