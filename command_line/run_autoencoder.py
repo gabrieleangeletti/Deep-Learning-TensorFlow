@@ -22,6 +22,7 @@ flags.DEFINE_boolean('encode_test', False, 'Whether to encode and store the test
 
 # Stacked Denoising Autoencoder specific parameters
 flags.DEFINE_integer('n_components', 256, 'Number of hidden units in the dae.')
+flags.DEFINE_float('l2reg', 5e-4, 'Regularization parameter. If 0, no regularization.')
 flags.DEFINE_string('corr_type', 'none', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
 flags.DEFINE_float('corr_frac', 0., 'Fraction of the input to corrupt.')
 flags.DEFINE_integer('xavier_init', 1, 'Value for the constant in xavier weights initialization.')
@@ -75,7 +76,7 @@ if __name__ == '__main__':
         enc_act_func=FLAGS.enc_act_func, dec_act_func=FLAGS.dec_act_func, xavier_init=FLAGS.xavier_init,
         corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac, dataset=FLAGS.dataset,
         loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir, opt=FLAGS.opt,
-        learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum,
+        learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, l2reg=FLAGS.l2reg,
         verbose=FLAGS.verbose, num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size)
 
     # Fit the model

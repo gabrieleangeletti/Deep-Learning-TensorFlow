@@ -15,7 +15,7 @@ class DenoisingAutoencoder(object):
     def __init__(self, model_name='dae', n_components=256, main_dir='dae/', enc_act_func='tanh',
                  dec_act_func='none', loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
                  xavier_init=1, opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none',
-                 corr_frac=0., verbose=1, seed=-1):
+                 corr_frac=0., verbose=1, seed=-1, l2reg=5e-4):
         """
         :param model_name: name of the model, used as filename. string, default 'dae'
         :param main_dir: main directory to put the stored_models, data and summary directories
@@ -34,6 +34,7 @@ class DenoisingAutoencoder(object):
         :param batch_size: Size of each mini-batch
         :param dataset: Optional name for the dataset.
         :param seed: positive integer for seeding random generators. Ignored if < 0.
+        :param l2reg: Regularization parameter. If 0, no regularization.
         """
 
         self.model_name = model_name
@@ -53,6 +54,7 @@ class DenoisingAutoencoder(object):
         self.corr_frac = corr_frac
         self.verbose = verbose
         self.seed = seed
+        self.l2reg = l2reg
 
         if self.seed >= 0:
             np.random.seed(self.seed)
@@ -88,7 +90,6 @@ class DenoisingAutoencoder(object):
         :param restore_previous_model:
                     if true, a previous trained model
                     with the same name of this model is restored from disk to continue training.
-
         :return: self
         """
 
@@ -140,7 +141,6 @@ class DenoisingAutoencoder(object):
 
         """ Run a training step. A training step is made by randomly corrupting the training set,
         randomly shuffling it,  divide it into batches and run the optimizer for each batch.
-
         :param train_set: training set
         :return: self
         """
@@ -281,7 +281,7 @@ class DenoisingAutoencoder(object):
 
         with tf.name_scope("cost"):
             if self.loss_func == 'cross_entropy':
-                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.decode, self.input_data))
+                self.cost = - tf.reduce_sum(self.input_data * tf.log(self.decode))
                 _ = tf.scalar_summary("cross_entropy", self.cost)
 
             elif self.loss_func == 'mean_squared':
@@ -290,6 +290,9 @@ class DenoisingAutoencoder(object):
 
             else:
                 self.cost = None
+
+            regularizers = tf.nn.l2_loss(self.W_) + tf.nn.l2_loss(self.bh_)
+            self.cost += self.l2reg * regularizers
 
     def _create_train_step_node(self):
 

@@ -61,6 +61,7 @@ MNIST_data/
 data/
 logs/
 stored_models/
+tf_models/convolutional_models/
 
 .idea/
 
