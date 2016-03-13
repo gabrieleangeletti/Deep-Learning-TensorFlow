@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 from tf_models.rbm_models import rbm
 from utils import datasets
@@ -13,7 +14,10 @@ FLAGS = flags.FLAGS
 flags.DEFINE_boolean('encode_train', False, 'Whether to encode and store the training set.')
 flags.DEFINE_boolean('encode_valid', False, 'Whether to encode and store the validation set.')
 flags.DEFINE_boolean('encode_test', False, 'Whether to encode and store the test set.')
-flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10"]')
+flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10", "custom"]')
+flags.DEFINE_string('train_dataset', '', 'Path to train set .npy file.')
+flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
+flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 
 # RBM configuration
@@ -32,7 +36,7 @@ flags.DEFINE_integer('weight_images', 0, 'Number of weight images to generate.')
 flags.DEFINE_string('img_type', 'grey', 'Grey or color images.')
 flags.DEFINE_integer('transform_gibbs_sampling_steps', 10, 'Gibbs sampling steps for the transformation of data.')
 
-assert FLAGS.dataset in ['mnist', 'cifar10']
+assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert FLAGS.cifar_dir != '' if FLAGS.dataset == 'cifar10' else True
 assert FLAGS.visible_unit_type in ['bin', 'gauss']
 
@@ -57,7 +61,23 @@ if __name__ == '__main__':
         vlX = teX[:5000]  # Validation set is the first half of the test set
         width, height = 32, 32
 
-    else:  # cannot be reached, just for completeness
+    elif FLAGS.dataset == 'custom':
+
+        # ################## #
+        #   Custom Dataset   #
+        # ################## #
+
+        def load_from_np(dataset_path):
+            if dataset_path != '':
+                return np.load(dataset_path)
+            else:
+                return None
+
+        trX = load_from_np(FLAGS.train_dataset)
+        vlX = load_from_np(FLAGS.valid_dataset)
+        teX = load_from_np(FLAGS.test_dataset)
+
+    else:
         trX, vlX, teX, width, height = None, None, None, None, None
 
     # Create the object

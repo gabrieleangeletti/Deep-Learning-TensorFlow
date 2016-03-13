@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 from tf_models.autoencoder_models import stacked_denoising_autoencoder
 from utils import datasets
@@ -10,7 +11,13 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Global configuration
-flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10"]')
+flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10", "custom"]')
+flags.DEFINE_string('train_dataset', '', 'Path to train set .npy file.')
+flags.DEFINE_string('train_labels', '', 'Path to train labels .npy file.')
+flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
+flags.DEFINE_string('valid_labels', '', 'Path to valid labels .npy file.')
+flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
+flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pretraining.')
@@ -65,7 +72,7 @@ for p in dae_params:
 # Parameters validation
 assert 0. <= FLAGS.corr_frac <= 1.
 assert FLAGS.corr_type in ['masking', 'salt_and_pepper', 'none']
-assert FLAGS.dataset in ['mnist', 'cifar10']
+assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert len(layers) > 0
 assert all([af in ['sigmoid', 'tanh'] for af in enc_act_func])
 assert all([af in ['sigmoid', 'tanh', 'none'] for af in dec_act_func])
@@ -93,7 +100,23 @@ if __name__ == '__main__':
         vlX = teX[:5000]
         vlY = teY[:5000]
 
-    else:  # cannot be reached, just for completeness
+    elif FLAGS.dataset == 'custom':
+
+        # ################## #
+        #   Custom Dataset   #
+        # ################## #
+
+        def load_from_np(dataset_path):
+            if dataset_path != '':
+                return np.load(dataset_path)
+            else:
+                return None
+
+        trX, trY = load_from_np(FLAGS.train_dataset), load_from_np(FLAGS.train_labels)
+        vlX, vlY = load_from_np(FLAGS.valid_dataset), load_from_np(FLAGS.valid_labels)
+        teX, teY = load_from_np(FLAGS.test_dataset), load_from_np(FLAGS.test_labels)
+
+    else:
         trX = None
         trY = None
         vlX = None

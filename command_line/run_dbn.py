@@ -12,7 +12,13 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Global configuration
-flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10"]')
+flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10", "custom"]')
+flags.DEFINE_string('train_dataset', '', 'Path to train set .npy file.')
+flags.DEFINE_string('train_labels', '', 'Path to train labels .npy file.')
+flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
+flags.DEFINE_string('valid_labels', '', 'Path to valid labels .npy file.')
+flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
+flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('model_name', 'srbm', 'Name of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
@@ -56,7 +62,7 @@ for p in dae_params:
         dae_params[p] = [dae_params[p][0] for _ in layers]
 
 # Parameters validation
-assert FLAGS.dataset in ['mnist', 'cifar10']
+assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert FLAGS.act_func in ['sigmoid', 'tanh', 'relu']
 assert len(layers) > 0
 
@@ -80,7 +86,23 @@ if __name__ == '__main__':
         vlX = teX[:5000]  # Validation set is the first half of the test set
         vlY = teY[:5000]
 
-    else:  # cannot be reached, just for completeness
+    elif FLAGS.dataset == 'custom':
+
+        # ################## #
+        #   Custom Dataset   #
+        # ################## #
+
+        def load_from_np(dataset_path):
+            if dataset_path != '':
+                return np.load(dataset_path)
+            else:
+                return None
+
+        trX, trY = load_from_np(FLAGS.train_dataset), load_from_np(FLAGS.train_labels)
+        vlX, vlY = load_from_np(FLAGS.valid_dataset), load_from_np(FLAGS.valid_labels)
+        teX, teY = load_from_np(FLAGS.test_dataset), load_from_np(FLAGS.test_labels)
+
+    else:
         trX, trY, vlX, vlY, teX, teY = None, None, None, None, None, None
 
     # Create the object

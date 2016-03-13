@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 from tf_models import logistic_regression
 from utils import datasets
@@ -10,7 +11,13 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Global configuration
-flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10"]')
+flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10", "custom"]')
+flags.DEFINE_string('train_dataset', '', 'Path to train set .npy file.')
+flags.DEFINE_string('train_labels', '', 'Path to train labels .npy file.')
+flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
+flags.DEFINE_string('valid_labels', '', 'Path to valid labels .npy file.')
+flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
+flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('main_dir', 'lr/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_string('loss_func', 'cross_entropy', 'Loss function. ["mean_squared" or "cross_entropy"]')
@@ -19,7 +26,7 @@ flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
 
-assert FLAGS.dataset in ['mnist', 'cifar10']
+assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert FLAGS.loss_func in ['cross_entropy', 'mean_squared']
 
 if __name__ == '__main__':
@@ -43,7 +50,23 @@ if __name__ == '__main__':
         vlX = teX[:5000]
         vlY = teY[:5000]
 
-    else:  # cannot be reached, just for completeness
+    elif FLAGS.dataset == 'custom':
+
+        # ################## #
+        #   Custom Dataset   #
+        # ################## #
+
+        def load_from_np(dataset_path):
+            if dataset_path != '':
+                return np.load(dataset_path)
+            else:
+                return None
+
+        trX, trY = load_from_np(FLAGS.train_dataset), load_from_np(FLAGS.train_labels)
+        vlX, vlY = load_from_np(FLAGS.valid_dataset), load_from_np(FLAGS.valid_labels)
+        teX, teY = load_from_np(FLAGS.test_dataset), load_from_np(FLAGS.test_labels)
+
+    else:
         trX = None
         trY = None
         vlX = None

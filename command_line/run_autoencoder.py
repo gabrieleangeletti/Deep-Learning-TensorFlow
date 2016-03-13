@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 from tf_models.autoencoder_models import denoising_autoencoder
 from utils import datasets
@@ -10,8 +11,11 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # Global configuration
+flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10", "custom"]')
+flags.DEFINE_string('train_dataset', '', 'Path to train set .npy file.')
+flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
+flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('model_name', 'dae', 'Model name.')
-flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10"]')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
@@ -38,7 +42,8 @@ flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
 
-assert FLAGS.dataset in ['mnist', 'cifar10']
+assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
+assert FLAGS.train_dataset != '' if FLAGS.dataset == 'custom' else True
 assert FLAGS.enc_act_func in ['sigmoid', 'tanh']
 assert FLAGS.dec_act_func in ['sigmoid', 'tanh', 'none']
 assert FLAGS.corr_type in ['masking', 'salt_and_pepper', 'none']
@@ -65,7 +70,23 @@ if __name__ == '__main__':
         trX, teX = datasets.load_cifar10_dataset(FLAGS.cifar_dir, mode='unsupervised')
         vlX = teX[:5000]  # Validation set is the first half of the test set
 
-    else:  # cannot be reached, just for completeness
+    elif FLAGS.dataset == 'custom':
+
+        # ################## #
+        #   Custom Dataset   #
+        # ################## #
+
+        def load_from_np(dataset_path):
+            if dataset_path != '':
+                return np.load(dataset_path)
+            else:
+                return None
+
+        trX = load_from_np(FLAGS.train_dataset)
+        vlX = load_from_np(FLAGS.valid_dataset)
+        teX = load_from_np(FLAGS.test_dataset)
+
+    else:
         trX = None
         vlX = None
         teX = None
@@ -84,7 +105,7 @@ if __name__ == '__main__':
 
     # Encode the training data and store it
     dae.transform(trX, name='train', save=FLAGS.encode_train)
-    dae.transform(vlX, name='validation', save=FLAGS.encode_valid)
+    dae.transform(vlX, name='valid', save=FLAGS.encode_valid)
     dae.transform(teX, name='test', save=FLAGS.encode_test)
 
     # save images
