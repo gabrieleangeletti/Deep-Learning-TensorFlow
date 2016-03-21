@@ -181,7 +181,7 @@ class RBM(model.Model):
 
         negative = tf.matmul(tf.transpose(vprobs), hprobs1)
 
-        self.w_upd8 = self.W.assign_add(self.learning_rate * (positive - negative))
+        self.w_upd8 = self.W.assign_add(self.learning_rate * (positive - negative)/tf.shape(self.input_data)[0])
         self.bh_upd8 = self.bh_.assign_add(self.learning_rate * tf.reduce_mean(hprobs0 - hprobs1, 0))
         self.bv_upd8 = self.bv_.assign_add(self.learning_rate * tf.reduce_mean(self.input_data - vprobs, 0))
 
