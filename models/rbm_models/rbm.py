@@ -11,11 +11,10 @@ class RBM(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, num_visible, num_hidden, visible_unit_type='bin', main_dir='rbm', model_name='rbm',
+    def __init__(self, num_hidden, visible_unit_type='bin', main_dir='rbm', model_name='rbm',
                  gibbs_sampling_steps=1, learning_rate=0.01, batch_size=10, num_epochs=10, stddev=0.1, verbose=0):
 
         """
-        :param num_visible: number of visible units
         :param num_hidden: number of hidden units
         :param visible_unit_type: type of the visible units (binary or gaussian)
         :param gibbs_sampling_steps: optional, default 1
@@ -27,7 +26,6 @@ class RBM(model.Model):
         """
         model.Model.__init__(self, model_name, main_dir)
 
-        self.num_visible = num_visible
         self.num_hidden = num_hidden
         self.visible_unit_type = visible_unit_type
         self.gibbs_sampling_steps = gibbs_sampling_steps
@@ -36,9 +34,6 @@ class RBM(model.Model):
         self.num_epochs = num_epochs
         self.stddev = stddev
         self.verbose = verbose
-
-        self.models_dir, self.data_dir, self.summary_dir = model.Model._create_data_directories(self)
-        self.model_path = self.models_dir + self.model_name
 
         self.W = None
         self.bh_ = None
@@ -53,7 +48,6 @@ class RBM(model.Model):
         self.input_data = None
         self.hrand = None
         self.vrand = None
-        self.validation_size = None
 
         self.tf_merged_summaries = None
         self.tf_summary_writer = None
@@ -71,13 +65,7 @@ class RBM(model.Model):
         :return: self
         """
 
-        if validation_set is not None:
-            self.validation_size = validation_set.shape[0]
-
-        self._build_model()
-
         with tf.Session() as self.tf_session:
-
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, validation_set)
             self.tf_saver.save(self.tf_session, self.model_path)
@@ -97,7 +85,7 @@ class RBM(model.Model):
         if restore_previous_model:
             self.tf_saver.restore(self.tf_session, self.model_path)
 
-        self.tf_summary_writer = tf.train.SummaryWriter(self.summary_dir, self.tf_session.graph_def)
+        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
 
     def _train_model(self, train_set, validation_set):
 
@@ -158,66 +146,70 @@ class RBM(model.Model):
         return {
             self.input_data: data,
             self.hrand: np.random.rand(data.shape[0], self.num_hidden),
-            self.vrand: np.random.rand(data.shape[0], self.num_visible)
+            self.vrand: np.random.rand(data.shape[0], data.shape[1])
         }
 
-    def _build_model(self):
+    def build_model(self, n_features):
 
         """ Build the Restricted Boltzmann Machine model in TensorFlow.
+        :param n_features: number of features
         :return: self
         """
 
-        self._create_placeholders()
-        self._create_variables()
+        self._create_placeholders(n_features)
+        self._create_variables(n_features)
 
-        hprobs0, hstates0, vprobs, hprobs1, hstates1 = self.gibbs_sampling_step(self.input_data)
+        hprobs0, hstates0, vprobs, hprobs1, hstates1 = self.gibbs_sampling_step(self.input_data, n_features)
         positive = self.compute_positive_association(self.input_data, hprobs0, hstates0)
 
         nn_input = vprobs
 
         for step in range(self.gibbs_sampling_steps - 1):
-            hprobs, hstates, vprobs, hprobs1, hstates1 = self.gibbs_sampling_step(nn_input)
+            hprobs, hstates, vprobs, hprobs1, hstates1 = self.gibbs_sampling_step(nn_input, n_features)
             nn_input = vprobs
 
         negative = tf.matmul(tf.transpose(vprobs), hprobs1)
 
-        self.w_upd8 = self.W.assign_add(self.learning_rate * (positive - negative)/tf.shape(self.input_data)[0])
+        self.w_upd8 = self.W.assign_add(self.learning_rate * (positive - negative) / self.batch_size)
         self.bh_upd8 = self.bh_.assign_add(self.learning_rate * tf.reduce_mean(hprobs0 - hprobs1, 0))
         self.bv_upd8 = self.bv_.assign_add(self.learning_rate * tf.reduce_mean(self.input_data - vprobs, 0))
 
         self.loss_function = tf.sqrt(tf.reduce_mean(tf.square(self.input_data - vprobs)))
         _ = tf.scalar_summary("cost", self.loss_function)
 
-    def _create_placeholders(self):
+    def _create_placeholders(self, n_features):
 
         """ Create the TensorFlow placeholders for the model.
+        :param n_features: number of features
         :return: self
         """
 
-        self.input_data = tf.placeholder('float', [None, self.num_visible], name='x-input')
+        self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
         self.hrand = tf.placeholder('float', [None, self.num_hidden], name='hrand')
-        self.vrand = tf.placeholder('float', [None, self.num_visible], name='vrand')
+        self.vrand = tf.placeholder('float', [None, n_features], name='vrand')
 
-    def _create_variables(self):
+    def _create_variables(self, n_features):
 
         """ Create the TensorFlow variables for the model.
+        :param n_features: number of features
         :return: self
         """
 
-        self.W = tf.Variable(tf.random_normal((self.num_visible, self.num_hidden), mean=0.0, stddev=0.01), name='weights')
+        self.W = tf.Variable(tf.random_normal((n_features, self.num_hidden), mean=0.0, stddev=0.01), name='weights')
         self.bh_ = tf.Variable(tf.zeros([self.num_hidden]), name='hidden-bias')
-        self.bv_ = tf.Variable(tf.zeros([self.num_visible]), name='visible-bias')
+        self.bv_ = tf.Variable(tf.zeros([n_features]), name='visible-bias')
 
-    def gibbs_sampling_step(self, visible):
+    def gibbs_sampling_step(self, visible, n_features):
 
         """ Performs one step of gibbs sampling.
         :param visible: activations of the visible units
+        :param n_features: number of features
         :return: tuple(hidden probs, hidden states, visible probs,
                        new hidden probs, new hidden states)
         """
 
         hprobs, hstates = self.sample_hidden_from_visible(visible)
-        vprobs = self.sample_visible_from_hidden(hprobs)
+        vprobs = self.sample_visible_from_hidden(hprobs, n_features)
         hprobs1, hstates1 = self.sample_hidden_from_visible(vprobs)
 
         return hprobs, hstates, vprobs, hprobs1, hstates1
@@ -236,11 +228,12 @@ class RBM(model.Model):
 
         return hprobs, hstates
 
-    def sample_visible_from_hidden(self, hidden):
+    def sample_visible_from_hidden(self, hidden, n_features):
 
         """ Sample the visible units from the hidden units.
         This is the Negative phase of the Contrastive Divergence algorithm.
         :param hidden: activations of the hidden units
+        :param n_features: number of features
         :return: visible probabilities
         """
 
@@ -250,7 +243,7 @@ class RBM(model.Model):
             vprobs = tf.nn.sigmoid(visible_activation)
 
         elif self.visible_unit_type == 'gauss':
-            vprobs = tf.truncated_normal((1, self.num_visible), mean=visible_activation, stddev=self.stddev)
+            vprobs = tf.truncated_normal((1, n_features), mean=visible_activation, stddev=self.stddev)
 
         else:
             vprobs = None
@@ -307,10 +300,10 @@ class RBM(model.Model):
         :return: self
         """
 
-        self.num_visible, self.num_hidden = shape[0], shape[1]
+        n_features, self.num_hidden = shape[0], shape[1]
         self.gibbs_sampling_steps = gibbs_sampling_steps
 
-        self._build_model()
+        self.build_model(n_features)
 
         init_op = tf.initialize_all_variables()
         self.tf_saver = tf.train.Saver()

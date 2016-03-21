@@ -101,6 +101,7 @@ if __name__ == '__main__':
         verbose=FLAGS.verbose, num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size)
 
     # Fit the model
+    dae.build_model(trX.shape[1])
     dae.fit(trX, teX, restore_previous_model=FLAGS.restore_previous_model)
 
     # Encode the training data and store it

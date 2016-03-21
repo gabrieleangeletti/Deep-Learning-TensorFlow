@@ -142,6 +142,7 @@ if __name__ == '__main__':
         encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
 
     # Supervised finetuning
+    sdae.build_model(trX.shape[1], trY.shape[1])
     sdae.fit(trX, trY, vlX, vlY)
 
     # Test the model

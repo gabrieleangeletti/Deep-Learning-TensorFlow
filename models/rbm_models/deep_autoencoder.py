@@ -66,9 +66,6 @@ class DeepAutoencoder(model.Model):
         self.dataset = dataset
         self.verbose = verbose
 
-        self.models_dir, self.data_dir, self.tf_summary_dir = model.Model._create_data_directories(self)
-        self.model_path = self.models_dir + self.model_name
-
         self.W = None
         self.bh = None
         self.bv = None
@@ -79,6 +76,7 @@ class DeepAutoencoder(model.Model):
         self.bv_vars = None
 
         # Model traning and evaluation
+        self.encode = None
         self.cost = None
         self.train_step = None
 
@@ -92,7 +90,7 @@ class DeepAutoencoder(model.Model):
 
             self.rbms = []
 
-            for l in range(self.n_layers - 1):
+            for l in range(self.n_layers):
 
                 if l == 0 and self.gauss_visible:
 
@@ -100,7 +98,7 @@ class DeepAutoencoder(model.Model):
 
                     self.rbms.append(rbm.RBM(
                         visible_unit_type='gauss', stddev=self.stddev,
-                        model_name=self.rbm_names[l] + str(l), num_visible=self.layers[l], num_hidden=self.layers[l+1],
+                        model_name=self.rbm_names[l] + str(l), num_hidden=self.layers[l],
                         main_dir=self.main_dir, learning_rate=self.rbm_learning_rate[l],
                         verbose=self.verbose, num_epochs=self.rbm_num_epochs[l], batch_size=self.rbm_batch_size[l]))
 
@@ -109,7 +107,7 @@ class DeepAutoencoder(model.Model):
                     # Binary RBMs
 
                     self.rbms.append(rbm.RBM(
-                        model_name=self.rbm_names[l] + str(l), num_visible=self.layers[l], num_hidden=self.layers[l+1],
+                        model_name=self.rbm_names[l] + str(l), num_hidden=self.layers[l],
                         main_dir=self.main_dir, learning_rate=self.rbm_learning_rate[l],
                         verbose=self.verbose, num_epochs=self.rbm_num_epochs[l], batch_size=self.rbm_batch_size[l]))
 
@@ -132,6 +130,7 @@ class DeepAutoencoder(model.Model):
             print('Training layer {}...'.format(l+1))
 
             # Training this layer
+            rboltz.build_model(next_layer_feed.shape[1])
             rboltz.fit(next_layer_feed, next_layer_validation)
 
             # Model parameters
@@ -147,7 +146,72 @@ class DeepAutoencoder(model.Model):
             # Reset tensorflow's default graph between different autoencoders
             ops.reset_default_graph()
 
-    def _build_model(self, n_features):
+    def fit(self, train_set, validation_set=None):
+
+        """ Perform finetuning procedure of the deep autoencoder.
+        :param train_set: trainin set
+        :param validation_set: validation set
+        :return: self
+        """
+
+        with tf.Session() as self.tf_session:
+            self._initialize_tf_utilities_and_ops()
+            self._train_model(train_set, validation_set)
+            self.tf_saver.save(self.tf_session, self.model_path)
+
+    def _initialize_tf_utilities_and_ops(self):
+
+        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
+        """
+
+        self.tf_merged_summaries = tf.merge_all_summaries()
+        init_op = tf.initialize_all_variables()
+        self.tf_saver = tf.train.Saver()
+
+        self.tf_session.run(init_op)
+
+        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
+
+    def _train_model(self, train_set, validation_set):
+
+        """ Train the model.
+        :param train_set: training set
+        :param validation_set: validation set
+        :return: self
+        """
+
+        batches = [_ for _ in utilities.gen_batches(train_set, self.batch_size)]
+
+        for i in range(self.num_epochs):
+
+            for batch in batches:
+                feed = self._create_feed(batch, self.dropout)
+                self.tf_session.run(self.train_step, feed_dict=feed)
+
+            if i % 5 == 0:
+                if validation_set is not None:
+                    self._run_validation_error_and_summaries(i, validation_set)
+
+    def _run_validation_error_and_summaries(self, epoch, validation_set):
+
+        """ Run the summaries and error computation on the validation set.
+        :param epoch: current epoch
+        :param validation_set: validation data
+
+        :return: self
+        """
+
+        feed = self._create_feed(validation_set, self.dropout)
+        result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
+        summary_str = result[0]
+        err = result[1]
+
+        self.tf_summary_writer.add_summary(summary_str, epoch)
+
+        if self.verbose == 1:
+            print("Cost at step %s: %s" % (epoch, err))
+
+    def build_model(self, n_features):
 
         """ Creates the computational graph.
         This graph is intented to be created for finetuning,
@@ -260,76 +324,6 @@ class DeepAutoencoder(model.Model):
 
             else:
                 self.train_step = None
-
-    def finetune(self, train_set, validation_set=None):
-
-        """ Perform finetuning procedure of the deep autoencoder.
-        :param train_set: trainin set
-        :param validation_set: validation set
-        :return: self
-        """
-
-        n_features = train_set.shape[1]
-
-        self._build_model(n_features)
-
-        with tf.Session() as self.tf_session:
-
-            self._initialize_tf_utilities_and_ops()
-            self._train_model(train_set, validation_set)
-            self.tf_saver.save(self.tf_session, self.model_path)
-
-    def _initialize_tf_utilities_and_ops(self):
-
-        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
-        """
-
-        self.tf_merged_summaries = tf.merge_all_summaries()
-        init_op = tf.initialize_all_variables()
-        self.tf_saver = tf.train.Saver()
-
-        self.tf_session.run(init_op)
-
-        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
-
-    def _train_model(self, train_set, validation_set):
-
-        """ Train the model.
-        :param train_set: training set
-        :param validation_set: validation set
-        :return: self
-        """
-
-        batches = [_ for _ in utilities.gen_batches(train_set, self.batch_size)]
-
-        for i in range(self.num_epochs):
-
-            for batch in batches:
-                feed = self._create_feed(batch, self.dropout)
-                self.tf_session.run(self.train_step, feed_dict=feed)
-
-            if i % 5 == 0:
-                if validation_set is not None:
-                    self._run_validation_error_and_summaries(i, validation_set)
-
-    def _run_validation_error_and_summaries(self, epoch, validation_set):
-
-        """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch
-        :param validation_set: validation data
-
-        :return: self
-        """
-
-        feed = self._create_feed(validation_set, self.dropout)
-        result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
-        summary_str = result[0]
-        err = result[1]
-
-        self.tf_summary_writer.add_summary(summary_str, epoch)
-
-        if self.verbose == 1:
-            print("Cost at step %s: %s" % (epoch, err))
 
     def get_model_parameters(self):
 

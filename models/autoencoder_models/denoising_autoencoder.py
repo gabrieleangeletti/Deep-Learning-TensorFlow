@@ -57,9 +57,6 @@ class DenoisingAutoencoder(model.Model):
             np.random.seed(self.seed)
             tf.set_random_seed(self.seed)
 
-        self.models_dir, self.data_dir, self.tf_summary_dir = model.Model._create_data_directories(self)
-        self.model_path = self.models_dir + self.model_name
-
         self.input_data = None
         self.input_data_corr = None
 
@@ -89,12 +86,7 @@ class DenoisingAutoencoder(model.Model):
         :return: self
         """
 
-        n_features = train_set.shape[1]
-
-        self._build_model(n_features)
-
         with tf.Session() as self.tf_session:
-
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, validation_set)
             self.tf_saver.save(self.tf_session, self.model_path)
@@ -121,6 +113,7 @@ class DenoisingAutoencoder(model.Model):
         """Train the model.
         :param train_set: training set
         :param validation_set: validation set. optional, default None
+
         :return: self
         """
 
@@ -175,8 +168,10 @@ class DenoisingAutoencoder(model.Model):
     def _run_validation_error_and_summaries(self, epoch, validation_set):
 
         """ Run the summaries and error computation on the validation set.
+
         :param epoch: current epoch
         :param validation_set: validation data
+
         :return: self
         """
 
@@ -190,7 +185,7 @@ class DenoisingAutoencoder(model.Model):
         if self.verbose == 1:
             print("Validation cost at step %s: %s" % (epoch, err))
 
-    def _build_model(self, n_features):
+    def build_model(self, n_features):
 
         """ Creates the computational graph.
         :param n_features: Number of features.
@@ -333,7 +328,7 @@ class DenoisingAutoencoder(model.Model):
         """
 
         self.n_components = shape[1]
-        self._build_model(shape[0])
+        self.build_model(shape[0])
         init_op = tf.initialize_all_variables()
         self.tf_saver = tf.train.Saver()
 
@@ -362,6 +357,7 @@ class DenoisingAutoencoder(model.Model):
 
         """ Save the weights of this autoencoder as images, one image per hidden unit.
         Useful to visualize what the autoencoder has learned.
+
         :param width: Width of the images. int
         :param height: Height of the images. int
         :param outdir: Output directory for the images. This path is appended to self.data_dir. string, default 'img/'

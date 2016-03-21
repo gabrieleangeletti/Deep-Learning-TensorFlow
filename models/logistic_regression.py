@@ -22,18 +22,14 @@ class LogisticRegression(model.Model):
         :param batch_size: Size of each mini-batch. int, default 10
         :param dataset: Optional name for the dataset. string, default 'mnist'
         """
+        model.Model.__init__(self, model_name, main_dir)
 
-        self.main_dir = main_dir
-        self.model_name = model_name
         self.loss_func = loss_func
         self.learning_rate = learning_rate
         self.verbose = verbose
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.dataset = dataset
-
-        self.models_dir, self.data_dir, self.summary_dir = model.Model._create_data_directories(self)
-        self.model_path = self.models_dir + self.model_name
 
         # Computational graph nodes
         self.input_data = None
@@ -55,7 +51,7 @@ class LogisticRegression(model.Model):
         self.tf_session = None
         self.tf_saver = None
 
-    def _build_model(self, n_features, n_classes):
+    def build_model(self, n_features, n_classes):
 
         """ Creates the computational graph.
         :param n_features: number of features
@@ -133,13 +129,7 @@ class LogisticRegression(model.Model):
         :return: self
         """
 
-        n_features = train_set.shape[1]
-        n_classes = train_labels.shape[1]
-
-        self._build_model(n_features, n_classes)
-
         with tf.Session() as self.tf_session:
-
             self._initialize_tf_utilities_and_ops()
             self._train_model(train_set, train_labels, validation_set, validation_labels)
             self.tf_saver.save(self.tf_session, self.models_dir + self.model_name)
@@ -155,7 +145,7 @@ class LogisticRegression(model.Model):
 
         self.tf_session.run(init_op)
 
-        self.tf_summary_writer = tf.train.SummaryWriter(self.summary_dir, self.tf_session.graph_def)
+        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
 
     def _train_model(self, train_set, train_labels, validation_set, validation_labels):
 

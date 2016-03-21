@@ -1,3 +1,4 @@
+import tensorflow as tf
 import config
 import os
 
@@ -16,6 +17,8 @@ class Model(object):
 
         self.model_name = model_name
         self.main_dir = main_dir
+        self.models_dir, self.data_dir, self.tf_summary_dir = self._create_data_directories()
+        self.model_path = self.models_dir + self.model_name
 
     def _create_data_directories(self):
 

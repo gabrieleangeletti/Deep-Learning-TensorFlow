@@ -21,7 +21,6 @@ flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 
 # RBM configuration
-flags.DEFINE_integer('num_visible', 784, 'Number of visible units.')
 flags.DEFINE_integer('num_hidden', 250, 'Number of hidden units.')
 flags.DEFINE_string('visible_unit_type', 'bin', 'Type of visible units. ["bin", "gauss"]')
 flags.DEFINE_string('main_dir', 'rbm/', 'Directory to store data relative to the algorithm.')
@@ -81,13 +80,14 @@ if __name__ == '__main__':
         trX, vlX, teX, width, height = None, None, None, None, None
 
     # Create the object
-    r = rbm.RBM(num_visible=FLAGS.num_visible, num_hidden=FLAGS.num_hidden, main_dir=FLAGS.main_dir,
+    r = rbm.RBM(num_hidden=FLAGS.num_hidden, main_dir=FLAGS.main_dir,
                 visible_unit_type=FLAGS.visible_unit_type, learning_rate=FLAGS.learning_rate,
                 num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, stddev=FLAGS.stddev, verbose=FLAGS.verbose,
                 gibbs_sampling_steps=FLAGS.gibbs_sampling_steps, model_name=FLAGS.model_name)
 
     # Fit the model
     print('Start training...')
+    r.build_model(trX.shape[1])
     r.fit(trX, teX)
 
     # Encode the training data and store it
@@ -103,4 +103,4 @@ if __name__ == '__main__':
         print('Transforming test data...')
         r.transform(teX, name='test', save=FLAGS.encode_test)
 
-    r.get_weights_as_images(width, height, n_images=FLAGS.weight_images, img_type=FLAGS.img_type)
+    r.get_weights_as_images(28, 28, n_images=FLAGS.weight_images, img_type=FLAGS.img_type)

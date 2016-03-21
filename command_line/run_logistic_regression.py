@@ -80,6 +80,7 @@ if __name__ == '__main__':
         learning_rate=FLAGS.learning_rate, num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size)
 
     # Fit the model
+    l.build_model(trX.shape[1], trY.shape[1])
     l.fit(trX, trY, vlX, vlY)
 
     # Test the model

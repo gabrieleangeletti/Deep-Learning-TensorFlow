@@ -66,9 +66,6 @@ class DBN(model.Model):
         self.dataset = dataset
         self.verbose = verbose
 
-        self.models_dir, self.data_dir, self.tf_summary_dir = model.Model._create_data_directories(self)
-        self.model_path = self.models_dir + self.model_name
-
         self.W_pretrain = None
         self.bh_pretrain = None
         self.bv_pretrain = None
@@ -86,7 +83,7 @@ class DBN(model.Model):
 
             self.rbms = []
 
-            for l in range(self.n_layers - 1):
+            for l in range(self.n_layers):
 
                 if l == 0 and self.gauss_visible:
 
@@ -94,7 +91,7 @@ class DBN(model.Model):
 
                     self.rbms.append(rbm.RBM(
                         visible_unit_type='gauss', stddev=self.stddev,
-                        model_name=self.rbm_names[l] + str(l), num_visible=self.layers[l], num_hidden=self.layers[l+1],
+                        model_name=self.rbm_names[l] + str(l), num_hidden=self.layers[l],
                         main_dir=self.main_dir, learning_rate=self.rbm_learning_rate[l],
                         verbose=self.verbose, num_epochs=self.rbm_num_epochs[l], batch_size=self.rbm_batch_size[l]))
 
@@ -103,7 +100,7 @@ class DBN(model.Model):
                     # Binary RBMs
 
                     self.rbms.append(rbm.RBM(
-                        model_name=self.rbm_names[l] + str(l), num_visible=self.layers[l], num_hidden=self.layers[l+1],
+                        model_name=self.rbm_names[l] + str(l), num_hidden=self.layers[l],
                         main_dir=self.main_dir, learning_rate=self.rbm_learning_rate[l],
                         verbose=self.verbose, num_epochs=self.rbm_num_epochs[l], batch_size=self.rbm_batch_size[l]))
 
@@ -140,6 +137,7 @@ class DBN(model.Model):
         :return: encoded train data, encoded validation data
         """
 
+        rboltz.build_model(train_set.shape[1])
         rboltz.fit(train_set, validation_set)
         params = rboltz.get_model_parameters()
 
@@ -149,7 +147,7 @@ class DBN(model.Model):
 
         return rboltz.transform(train_set), rboltz.transform(validation_set)
 
-    def finetune(self, train_set, train_labels, validation_set=None, validation_labels=None):
+    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None):
 
         """ Perform supervised finetuning of the model.
         :param train_set: training set
@@ -159,13 +157,7 @@ class DBN(model.Model):
         :return: self
         """
 
-        n_features = train_set.shape[1]
-        n_classes = train_labels.shape[1]
-
-        self._build_model(n_features, n_classes)
-
         with tf.Session() as self.tf_session:
-
             self._initialize_tf_utilities_and_ops()
             self._train_model(train_set, train_labels, validation_set, validation_labels)
             self.tf_saver.save(self.tf_session, self.model_path)
@@ -227,7 +219,7 @@ class DBN(model.Model):
         if self.verbose == 1:
             print("Cost at step %s: %s" % (epoch, err))
 
-    def _build_model(self, n_features, n_classes):
+    def build_model(self, n_features, n_classes):
 
         """ Assume self.W, self.bh and self.bv contains trained parameters.
         :param n_features: number of features

@@ -79,9 +79,6 @@ class StackedDenoisingAutoencoder(model.Model):
             np.random.seed(self.seed)
             tf.set_random_seed(self.seed)
 
-        self.models_dir, self.data_dir, self.tf_summary_dir = model.Model._create_data_directories(self)
-        self.model_path = self.models_dir + self.model_name
-
         self.input_data = None
         self.input_labels = None
         self.keep_prob = None
@@ -173,13 +170,7 @@ class StackedDenoisingAutoencoder(model.Model):
 
         print('Starting supervised finetuning...')
 
-        n_features = train_set.shape[1]
-        n_classes = train_labels.shape[1]
-
-        self._build_model(n_features, n_classes)
-
         with tf.Session() as self.tf_session:
-
             self._initialize_tf_utilities_and_ops()
             self._train_model(train_set, train_labels, validation_set, validation_labels)
             self.tf_saver.save(self.tf_session, self.model_path)
@@ -255,7 +246,7 @@ class StackedDenoisingAutoencoder(model.Model):
                                        self.input_labels: test_labels,
                                        self.keep_prob: 1})
 
-    def _build_model(self, n_features, n_classes):
+    def build_model(self, n_features, n_classes):
 
         """ Creates the computational graph.
         This graph is intented to be created for finetuning,

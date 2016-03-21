@@ -117,7 +117,8 @@ if __name__ == '__main__':
 
     # finetuning
     print('Start deep autoencoder finetuning...')
-    srbm.finetune(trX, vlX)
+    srbm.build_model(trX.shape[1])
+    srbm.fit(trX, vlX)
 
     params = srbm.get_model_parameters()
 
