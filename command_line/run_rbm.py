@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-from tf_models.rbm_models import rbm
+from models.rbm_models import rbm
 from utils import datasets
 
 # #################### #

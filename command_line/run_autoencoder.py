@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-from tf_models.autoencoder_models import denoising_autoencoder
+from models.autoencoder_models import denoising_autoencoder
 from utils import datasets
 
 # #################### #

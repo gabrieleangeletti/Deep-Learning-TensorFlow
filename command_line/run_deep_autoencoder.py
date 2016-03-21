@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
 
-from tf_models.rbm_models import deep_autoencoder
+from models.rbm_models import deep_autoencoder
 from utils import datasets
 
 # #################### #

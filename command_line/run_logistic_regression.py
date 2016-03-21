@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-from tf_models import logistic_regression
+from models import logistic_regression
 from utils import datasets
 
 # #################### #
