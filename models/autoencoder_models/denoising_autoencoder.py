@@ -153,17 +153,18 @@ class DenoisingAutoencoder(model.Model):
 
         corruption_ratio = np.round(self.corr_frac * data.shape[1]).astype(np.int)
 
-        if self.corr_type == 'masking':
-            return utilities.masking_noise(data, self.tf_session, self.corr_frac)
+        if self.corr_frac > 0.0:
+            if self.corr_type == 'masking':
+                return utilities.masking_noise(data, self.tf_session, self.corr_frac)
 
-        elif self.corr_type == 'salt_and_pepper':
-            return utilities.salt_and_pepper_noise(data, corruption_ratio)
+            elif self.corr_type == 'salt_and_pepper':
+                return utilities.salt_and_pepper_noise(data, corruption_ratio)
 
-        elif self.corr_type == 'none':
-            return data
+            elif self.corr_type == 'none':
+                return data
 
-        else:
-            return None
+            else:
+                return None
 
     def _run_validation_error_and_summaries(self, epoch, validation_set):
 
