@@ -146,6 +146,7 @@ class StackedDenoisingAutoencoder(model.Model):
         :return: encoded train data, encoded validation data
         """
 
+        autoenc.build_model(train_set.shape[1])
         autoenc.fit(train_set, validation_set)
 
         params = autoenc.get_model_parameters()
