@@ -111,7 +111,8 @@ if __name__ == '__main__':
         gauss_visible=FLAGS.gauss_visible, stddev=FLAGS.stddev)
 
     # Fit the model (unsupervised pretraining)
-    srbm.pretrain(trX, vlX)
+    if FLAGS.do_pretrain:
+        srbm.pretrain(trX, vlX)
 
     ops.reset_default_graph()
 

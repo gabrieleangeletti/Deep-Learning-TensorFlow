@@ -66,9 +66,9 @@ class DeepAutoencoder(model.Model):
         self.dataset = dataset
         self.verbose = verbose
 
-        self.W = None
-        self.bh = None
-        self.bv = None
+        self.W_pretrain = None
+        self.bh_pretrain = None
+        self.bv_pretrain = None
 
         self.W_vars = None
         self.W_vars_t = None
@@ -119,32 +119,40 @@ class DeepAutoencoder(model.Model):
         :return: self
         """
 
-        self.W = []
-        self.bh = []
-        self.bv = []
+        self.W_pretrain = []
+        self.bh_pretrain = []
+        self.bv_pretrain = []
 
-        next_layer_feed = train_set
-        next_layer_validation = validation_set
+        next_train = train_set
+        next_valid = validation_set
 
         for l, rboltz in enumerate(self.rbms):
             print('Training layer {}...'.format(l+1))
+            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rboltz, next_train, next_valid)
 
-            # Training this layer
-            rboltz.build_model(next_layer_feed.shape[1])
-            rboltz.fit(next_layer_feed, next_layer_validation)
-
-            # Model parameters
-            params = rboltz.get_model_parameters()
-            self.W.append(params['W'])
-            self.bh.append(params['bh_'])
-            self.bv.append(params['bv_'])
-
-            # Encoding the features for the higher level
-            next_layer_feed = rboltz.transform(next_layer_feed, models_dir=self.models_dir)
-            next_layer_validation = rboltz.transform(next_layer_validation, models_dir=self.models_dir)
-
-            # Reset tensorflow's default graph between different autoencoders
+            # Reset tensorflow's default graph between different models
             ops.reset_default_graph()
+
+        return next_train, next_valid
+
+    def _pretrain_rbm_and_gen_feed(self, rboltz, train_set, validation_set):
+
+        """ Pretrain a single rbm and encode the data for the next layer.
+        :param rboltz: rbm reference
+        :param train_set: training set
+        :param validation_set: validation set
+        :return: encoded train data, encoded validation data
+        """
+
+        rboltz.build_model(train_set.shape[1])
+        rboltz.fit(train_set, validation_set)
+        params = rboltz.get_model_parameters()
+
+        self.W_pretrain.append(params['W'])
+        self.bh_pretrain.append(params['bh_'])
+        self.bv_pretrain.append(params['bv_'])
+
+        return rboltz.transform(train_set), rboltz.transform(validation_set)
 
     def fit(self, train_set, validation_set=None):
 
@@ -197,7 +205,6 @@ class DeepAutoencoder(model.Model):
         """ Run the summaries and error computation on the validation set.
         :param epoch: current epoch
         :param validation_set: validation data
-
         :return: self
         """
 
@@ -248,10 +255,10 @@ class DeepAutoencoder(model.Model):
         :return: W_vars, W_vars_t, bh_vars, bv_vars
         """
 
-        self.W_vars = [tf.Variable(self.W[l]) for l in range(self.n_layers-1)]
-        self.W_vars_t = [tf.Variable(self.W[l].T) for l in range(self.n_layers-1)]
-        self.bh_vars = [tf.Variable(self.bh[l]) for l in range(self.n_layers-1)]
-        self.bv_vars = [tf.Variable(self.bv[l]) for l in range(self.n_layers-1)]
+        self.W_vars = [tf.Variable(self.W_pretrain[l]) for l in range(self.n_layers-1)]
+        self.W_vars_t = [tf.Variable(self.W_pretrain[l].T) for l in range(self.n_layers-1)]
+        self.bh_vars = [tf.Variable(self.bh_pretrain[l]) for l in range(self.n_layers-1)]
+        self.bv_vars = [tf.Variable(self.bv_pretrain[l]) for l in range(self.n_layers-1)]
 
     def _create_encoding_layers(self):
 
