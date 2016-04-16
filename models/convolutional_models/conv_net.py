@@ -1,0 +1,357 @@
+import tensorflow as tf
+import numpy as np
+
+from utils import utilities
+import model
+
+
+class ConvolutionalNetwork(model.Model):
+
+    """ Implementation of Convolutional Neural Networks using TensorFlow.
+    The interface of the class is sklearn-like.
+    """
+
+    def __init__(self, layers, model_name='convnet', main_dir='convnet',
+                 loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
+                 opt='gradient_descent', learning_rate=0.01, momentum=0.5, dropout=0.5, verbose=1):
+        """
+        :param layers: string used to build the model.
+            This string is a comma-separate specification of the layers of the network.
+            Supported values:
+                conv2d-FX-FY-Z-S: 2d convolution with Z feature maps as output and FX x FY filters. S is the strides size
+                maxpool-X: max pooling on the previous layer. X is the size of the max pooling
+                full-X: fully connected layer with X units
+                softmax: softmax layer
+            For example:
+                conv2d-5-5-32,maxpool-2,conv2d-5-5-64,maxpool-2,full-128,full-128,softmax
+        :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
+        :param num_epochs: Number of epochs
+        :param batch_size: Size of each mini-batch
+        :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom']
+        :param opt: Which tensorflow optimizer to use. ['gradient_descent', 'momentum', 'ada_grad']
+        :param learning_rate: Initial learning rate
+        :param momentum: Momentum parameter
+        :param dropout: Dropout parameter
+        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
+        """
+        model.Model.__init__(self, model_name, main_dir)
+
+        self.layers = layers
+        self.loss_func = loss_func
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.dataset = dataset
+        self.opt = opt
+        self.learning_rate = learning_rate
+        self.momentum = momentum
+        self.dropout = dropout
+        self.verbose = verbose
+
+        self.input_data = None
+        self.input_labels = None
+
+        self.W_vars = None
+        self.B_vars = None
+
+        self.softmax_out = None
+        self.train_step = None
+        self.accuracy = None
+        self.keep_prob = None
+
+        self.tf_session = None
+        self.tf_saver = None
+        self.tf_merged_summaries = None
+        self.tf_summary_writer = None
+
+    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None):
+
+        """ Fit the model to the data.
+        :param train_set: Training data. shape(n_samples, n_features)
+        :param train_labels: Labels for the data. shape(n_samples, n_classes)
+        :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
+        :param validation_labels: optional, default None. Labels for the validation data. shape(nval_samples, n_classes)
+        :return: self
+        """
+
+        print('Starting training...')
+
+        with tf.Session() as self.tf_session:
+            self._initialize_tf_utilities_and_ops()
+            self._train_model(train_set, train_labels, validation_set, validation_labels)
+            self.tf_saver.save(self.tf_session, self.model_path)
+
+    def _initialize_tf_utilities_and_ops(self):
+
+        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
+        """
+
+        self.tf_merged_summaries = tf.merge_all_summaries()
+        init_op = tf.initialize_all_variables()
+        self.tf_saver = tf.train.Saver()
+
+        self.tf_session.run(init_op)
+
+        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
+
+    def _train_model(self, train_set, train_labels, validation_set, validation_labels):
+
+        """ Train the model.
+        :param train_set: training set
+        :param train_labels: training labels
+        :param validation_set: validation set
+        :param validation_labels: validation labels
+        :return: self
+        """
+
+        shuff = zip(train_set, train_labels)
+
+        for i in range(self.num_epochs):
+
+            np.random.shuffle(shuff)
+            batches = [_ for _ in utilities.gen_batches(shuff, self.batch_size)]
+
+            for batch in batches:
+                x_batch, y_batch = zip(*batch)
+                self.tf_session.run(self.train_step, feed_dict={self.input_data: x_batch,
+                                                                self.input_labels: y_batch,
+                                                                self.keep_prob: self.dropout})
+
+            if validation_set is not None:
+                self._run_validation_error_and_summaries(i, validation_set, validation_labels)
+
+    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_labels):
+
+        """ Run the summaries and error computation on the validation set.
+        :param epoch: current epoch
+        :param validation_set: validation data
+        :return: self
+        """
+
+        feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
+        result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
+        summary_str = result[0]
+        acc = result[1]
+
+        self.tf_summary_writer.add_summary(summary_str, epoch)
+
+        if self.verbose == 1:
+            print("Accuracy at step %s: %s" % (epoch, acc))
+
+    def predict(self, test_set, test_labels):
+
+        """ Compute the accuracy over the test set.
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
+        :return: accuracy
+        """
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            return self.accuracy.eval({self.input_data: test_set,
+                                       self.input_labels: test_labels,
+                                       self.keep_prob: 1})
+
+    def build_model(self, n_features, n_classes, original_shape):
+
+        """ Creates the computational graph of the model.
+        :param n_features: Number of features.
+        :param n_classes: number of classes.
+        :param original_shape: original shape of the images.
+        :return: self
+        """
+
+        self._create_placeholders(n_features, n_classes)
+        self._create_layers(n_classes, original_shape)
+
+        self._create_cost_function_node()
+        self._create_train_step_node()
+
+        self._create_test_node()
+
+    def _create_placeholders(self, n_features, n_classes):
+
+        """ Create the TensorFlow placeholders for the model.
+        :param n_features: number of features of the first layer
+        :param n_classes: number of classes
+        :return: self
+        """
+
+        self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
+        self.input_labels = tf.placeholder('float', [None, n_classes], name='y-input')
+        self.keep_prob = tf.placeholder('float', name='keep-probs')
+
+    def _create_layers(self, n_classes, original_shape):
+
+        """ Create the layers of the model from self.layers.
+        :param n_classes: number of classes
+        :param original_shape: original shape of the images. [width, height, channels]
+        :return: self
+        """
+
+        next_layer_feed = tf.reshape(self.input_data, [-1, original_shape[0], original_shape[1], original_shape[2]])
+        prev_output_dim = original_shape[2]
+        first_full = True  # this flags indicates whether we are building the first fully connected layer
+
+        self.W_vars = []
+        self.B_vars = []
+
+        for i, l in enumerate(self.layers.split(',')):
+
+            node = l.split('-')
+            node_type = node[0]
+
+            if node_type == 'conv2d':
+
+                # ################### #
+                # Convolutional Layer #
+                # ################### #
+
+                # fx, fy = shape of the convolutional filter
+                # feature_maps = number of output dimensions
+                fx, fy, feature_maps, stride = int(node[1]), int(node[2]), int(node[3]), int(node[4])
+
+                # Create weights and biases
+                W_conv = self.weight_variable([fx, fy, prev_output_dim, feature_maps])
+                b_conv = self.bias_variable([feature_maps])
+                self.W_vars.append(W_conv)
+                self.B_vars.append(b_conv)
+
+                # Convolution and Activation function
+                h_conv = tf.nn.relu(self.conv2d(next_layer_feed, W_conv, stride) + b_conv)
+
+                # keep track of the number of output dims of the previous conv. layer
+                prev_output_dim = feature_maps
+                # output node of the last layer
+                next_layer_feed = h_conv
+
+            elif node_type == 'maxpool':
+
+                # ################# #
+                # Max Pooling Layer #
+                # ################# #
+
+                ksize = int(node[1])
+                h_maxp = self.max_pool(next_layer_feed, ksize)
+                next_layer_feed = h_maxp
+
+            elif node_type == 'full':
+
+                # ####################### #
+                # Densely Connected Layer #
+                # ####################### #
+
+                if first_full:  # first fully connected layer
+
+                    dim = int(node[1])
+                    shp = next_layer_feed.get_shape()
+                    tmpx = shp[1].value
+                    tmpy = shp[2].value
+
+                    W_fc = self.weight_variable([tmpx * tmpy * prev_output_dim, dim])
+                    b_fc = self.bias_variable([dim])
+                    self.W_vars.append(W_fc)
+                    self.B_vars.append(b_fc)
+
+                    h_pool_flat = tf.reshape(next_layer_feed, [-1, tmpx * tmpy * prev_output_dim])
+                    h_fc = tf.nn.relu(tf.matmul(h_pool_flat, W_fc) + b_fc)
+                    h_fc_drop = tf.nn.dropout(h_fc, self.keep_prob)
+
+                    prev_output_dim = dim
+                    next_layer_feed = h_fc_drop
+
+                    first_full = False
+
+                else:  # not first fully connected layer
+
+                    dim = int(node[1])
+                    W_fc = self.weight_variable([prev_output_dim, dim])
+                    b_fc = self.bias_variable([dim])
+                    self.W_vars.append(W_fc)
+                    self.B_vars.append(b_fc)
+
+                    h_fc = tf.nn.relu(tf.matmul(next_layer_feed, W_fc) + b_fc)
+
+                    h_fc_drop = tf.nn.dropout(h_fc, self.keep_prob)
+
+                    prev_output_dim = dim
+                    next_layer_feed = h_fc_drop
+
+            elif node_type == 'softmax':
+
+                # ############# #
+                # Softmax Layer #
+                # ############# #
+
+                W_sm = self.weight_variable([prev_output_dim, n_classes])
+                b_sm = self.bias_variable([n_classes])
+                self.W_vars.append(W_sm)
+                self.B_vars.append(b_sm)
+
+                self.softmax_out = tf.nn.softmax(tf.matmul(next_layer_feed, W_sm) + b_sm)
+
+    def _create_cost_function_node(self):
+
+        """ Create the cost function node.
+        :return: self
+        """
+
+        with tf.name_scope("cost"):
+            if self.loss_func == 'cross_entropy':
+                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.softmax_out, self.input_labels))
+                _ = tf.scalar_summary("cross_entropy", self.cost)
+
+            elif self.loss_func == 'mean_squared':
+                self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.input_labels - self.softmax_out)))
+                _ = tf.scalar_summary("mean_squared", self.cost)
+
+            else:
+                self.cost = None
+
+    def _create_train_step_node(self):
+
+        """ Create the training step node of the network.
+        :return: self
+        """
+
+        with tf.name_scope("train"):
+            if self.opt == 'gradient_descent':
+                self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
+
+            elif self.opt == 'ada_grad':
+                self.train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.cost)
+
+            elif self.opt == 'momentum':
+                self.train_step = tf.train.MomentumOptimizer(self.learning_rate, self.momentum).minimize(
+                    self.cost)
+
+            else:
+                self.train_step = None
+
+    def _create_test_node(self):
+
+        """ Create the test node of the network.
+        :return: self
+        """
+
+        with tf.name_scope("test"):
+            correct_prediction = tf.equal(tf.argmax(self.softmax_out, 1), tf.argmax(self.input_labels, 1))
+            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+            _ = tf.scalar_summary('accuracy', self.accuracy)
+
+    @staticmethod
+    def weight_variable(shape):
+        initial = tf.truncated_normal(shape=shape, stddev=0.01)
+        return tf.Variable(initial)
+
+    @staticmethod
+    def bias_variable(shape):
+        initial = tf.constant(0.01, shape=shape)
+        return tf.Variable(initial)
+
+    @staticmethod
+    def conv2d(x, W, stride):
+        return tf.nn.conv2d(x, W, strides=[1, stride, stride, 1], padding='SAME')
+
+    @staticmethod
+    def max_pool(x, dim, pad='SAME'):
+        return tf.nn.max_pool(x, ksize=[1, dim, dim, 1], strides=[1, dim, dim, 1], padding=pad)
