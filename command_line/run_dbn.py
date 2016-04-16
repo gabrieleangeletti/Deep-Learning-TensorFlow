@@ -126,11 +126,5 @@ if __name__ == '__main__':
     srbm.build_model(trX.shape[1], trY.shape[1])
     srbm.fit(trX, trY, vlX, vlY)
 
-    params = srbm.get_model_parameters()
-
-    np.savez('data/dbn/{}_W_params'.format(FLAGS.model_name), params['W'])
-    np.savez('data/dbn/{}_bh_params'.format(FLAGS.model_name), params['bh'])
-    np.savez('data/dbn/{}_bv_params'.format(FLAGS.model_name), params['bv'])
-
     # Test the model
     print('Test set accuracy: {}'.format(srbm.predict(teX, teY)))

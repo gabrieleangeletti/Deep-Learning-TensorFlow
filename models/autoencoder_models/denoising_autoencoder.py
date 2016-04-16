@@ -30,7 +30,7 @@ class DenoisingAutoencoder(model.Model):
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         :param num_epochs: Number of epochs
         :param batch_size: Size of each mini-batch
-        :param dataset: Optional name for the dataset.
+        :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom'].
         :param seed: positive integer for seeding random generators. Ignored if < 0.
         :param l2reg: Regularization parameter. If 0, no regularization.
         """
