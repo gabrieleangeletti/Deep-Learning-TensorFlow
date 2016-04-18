@@ -91,7 +91,7 @@ class ConvolutionalNetwork(model.Model):
 
         self.tf_session.run(init_op)
 
-        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
+        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
     def _train_model(self, train_set, train_labels, validation_set, validation_labels):
 

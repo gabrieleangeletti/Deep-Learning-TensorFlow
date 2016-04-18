@@ -85,7 +85,7 @@ class RBM(model.Model):
         if restore_previous_model:
             self.tf_saver.restore(self.tf_session, self.model_path)
 
-        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph_def)
+        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
     def _train_model(self, train_set, validation_set):
 
