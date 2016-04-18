@@ -12,7 +12,7 @@ class ConvolutionalNetwork(model.Model):
     """
 
     def __init__(self, layers, model_name='convnet', main_dir='convnet',
-                 loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
+                 loss_func='cross_entropy', num_epochs=10, batch_size=10, dataset='mnist',
                  opt='gradient_descent', learning_rate=0.01, momentum=0.5, dropout=0.5, verbose=1):
         """
         :param layers: string used to build the model.
@@ -28,7 +28,7 @@ class ConvolutionalNetwork(model.Model):
         :param num_epochs: Number of epochs
         :param batch_size: Size of each mini-batch
         :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom']
-        :param opt: Which tensorflow optimizer to use. ['gradient_descent', 'momentum', 'ada_grad']
+        :param opt: Which tensorflow optimizer to use. ['gradient_descent', 'momentum', 'ada_grad', 'adam']
         :param learning_rate: Initial learning rate
         :param momentum: Momentum parameter
         :param dropout: Dropout parameter
@@ -210,6 +210,9 @@ class ConvolutionalNetwork(model.Model):
                 # feature_maps = number of output dimensions
                 fx, fy, feature_maps, stride = int(node[1]), int(node[2]), int(node[3]), int(node[4])
 
+                print('Building Convolutional layer with %d input channels and %d %dx%d filters with stride %d' %
+                      (prev_output_dim, feature_maps, fx, fy, stride))
+
                 # Create weights and biases
                 W_conv = self.weight_variable([fx, fy, prev_output_dim, feature_maps])
                 b_conv = self.bias_variable([feature_maps])
@@ -231,8 +234,10 @@ class ConvolutionalNetwork(model.Model):
                 # ################# #
 
                 ksize = int(node[1])
-                h_maxp = self.max_pool(next_layer_feed, ksize)
-                next_layer_feed = h_maxp
+
+                print('Building Max Pooling layer with size %d' % ksize)
+
+                next_layer_feed = self.max_pool(next_layer_feed, ksize)
 
             elif node_type == 'full':
 
@@ -246,13 +251,17 @@ class ConvolutionalNetwork(model.Model):
                     shp = next_layer_feed.get_shape()
                     tmpx = shp[1].value
                     tmpy = shp[2].value
+                    fanin = tmpx * tmpy * prev_output_dim
 
-                    W_fc = self.weight_variable([tmpx * tmpy * prev_output_dim, dim])
+                    print('Building fully connected layer with %d in units and %d out units' %
+                          (fanin, dim))
+
+                    W_fc = self.weight_variable([fanin, dim])
                     b_fc = self.bias_variable([dim])
                     self.W_vars.append(W_fc)
                     self.B_vars.append(b_fc)
 
-                    h_pool_flat = tf.reshape(next_layer_feed, [-1, tmpx * tmpy * prev_output_dim])
+                    h_pool_flat = tf.reshape(next_layer_feed, [-1, fanin])
                     h_fc = tf.nn.relu(tf.matmul(h_pool_flat, W_fc) + b_fc)
                     h_fc_drop = tf.nn.dropout(h_fc, self.keep_prob)
 
@@ -270,7 +279,6 @@ class ConvolutionalNetwork(model.Model):
                     self.B_vars.append(b_fc)
 
                     h_fc = tf.nn.relu(tf.matmul(next_layer_feed, W_fc) + b_fc)
-
                     h_fc_drop = tf.nn.dropout(h_fc, self.keep_prob)
 
                     prev_output_dim = dim
@@ -281,6 +289,9 @@ class ConvolutionalNetwork(model.Model):
                 # ############# #
                 # Softmax Layer #
                 # ############# #
+
+                print('Building softmax layer with %d in units and %d out units' %
+                      (prev_output_dim, n_classes))
 
                 W_sm = self.weight_variable([prev_output_dim, n_classes])
                 b_sm = self.bias_variable([n_classes])
@@ -297,7 +308,8 @@ class ConvolutionalNetwork(model.Model):
 
         with tf.name_scope("cost"):
             if self.loss_func == 'cross_entropy':
-                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.softmax_out, self.input_labels))
+                self.cost = - tf.reduce_mean(self.input_labels * tf.log(self.softmax_out) +
+                                             (1 - self.input_labels) * tf.log(1 - self.softmax_out))
                 _ = tf.scalar_summary("cross_entropy", self.cost)
 
             elif self.loss_func == 'mean_squared':
@@ -323,6 +335,9 @@ class ConvolutionalNetwork(model.Model):
             elif self.opt == 'momentum':
                 self.train_step = tf.train.MomentumOptimizer(self.learning_rate, self.momentum).minimize(
                     self.cost)
+
+            elif self.opt == 'adam':
+                self.train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(self.cost)
 
             else:
                 self.train_step = None
@@ -353,5 +368,5 @@ class ConvolutionalNetwork(model.Model):
         return tf.nn.conv2d(x, W, strides=[1, stride, stride, 1], padding='SAME')
 
     @staticmethod
-    def max_pool(x, dim, pad='SAME'):
-        return tf.nn.max_pool(x, ksize=[1, dim, dim, 1], strides=[1, dim, dim, 1], padding=pad)
+    def max_pool(x, dim):
+        return tf.nn.max_pool(x, ksize=[1, dim, dim, 1], strides=[1, dim, dim, 1], padding='SAME')

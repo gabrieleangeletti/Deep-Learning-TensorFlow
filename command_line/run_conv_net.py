@@ -30,12 +30,13 @@ flags.DEFINE_string('layers', '', 'String representing the architecture of the n
 flags.DEFINE_string('loss_func', 'cross_entropy', 'Loss function. ["mean_squared" or "cross_entropy"]')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
-flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum"]')
+flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 flags.DEFINE_float('dropout', 1, 'Dropout parameter.')
 
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
+assert FLAGS.opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
 
 if __name__ == '__main__':
 
@@ -87,7 +88,7 @@ if __name__ == '__main__':
     # Model training
     print('Start Convolutional Network training...')
     convnet.build_model(trX.shape[1], trY.shape[1], [int(i) for i in FLAGS.original_shape.split(',')])
-    convnet.fit(trX[:1000], trY[:1000], vlX, vlY)
+    convnet.fit(trX[:5000], trY[:5000], vlX, vlY)
 
     # Test the model
     print('Test set accuracy: {}'.format(convnet.predict(teX, teY)))
