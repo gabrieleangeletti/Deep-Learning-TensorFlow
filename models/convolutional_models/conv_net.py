@@ -54,6 +54,7 @@ class ConvolutionalNetwork(model.Model):
         self.B_vars = None
 
         self.softmax_out = None
+        self.cost = None
         self.train_step = None
         self.accuracy = None
         self.keep_prob = None
@@ -163,8 +164,8 @@ class ConvolutionalNetwork(model.Model):
         self._create_placeholders(n_features, n_classes)
         self._create_layers(n_classes, original_shape)
 
-        self._create_cost_function_node()
-        self._create_train_step_node()
+        self.cost = self._create_cost_function_node(self.loss_func, self.softmax_out, self.input_labels)
+        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
 
         self._create_test_node()
 
@@ -299,48 +300,6 @@ class ConvolutionalNetwork(model.Model):
                 self.B_vars.append(b_sm)
 
                 self.softmax_out = tf.nn.softmax(tf.matmul(next_layer_feed, W_sm) + b_sm)
-
-    def _create_cost_function_node(self):
-
-        """ Create the cost function node.
-        :return: self
-        """
-
-        with tf.name_scope("cost"):
-            if self.loss_func == 'cross_entropy':
-                self.cost = - tf.reduce_mean(self.input_labels * tf.log(self.softmax_out) +
-                                             (1 - self.input_labels) * tf.log(1 - self.softmax_out))
-                _ = tf.scalar_summary("cross_entropy", self.cost)
-
-            elif self.loss_func == 'mean_squared':
-                self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.input_labels - self.softmax_out)))
-                _ = tf.scalar_summary("mean_squared", self.cost)
-
-            else:
-                self.cost = None
-
-    def _create_train_step_node(self):
-
-        """ Create the training step node of the network.
-        :return: self
-        """
-
-        with tf.name_scope("train"):
-            if self.opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(self.learning_rate, self.momentum).minimize(
-                    self.cost)
-
-            elif self.opt == 'adam':
-                self.train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(self.cost)
-
-            else:
-                self.train_step = None
 
     def _create_test_node(self):
 

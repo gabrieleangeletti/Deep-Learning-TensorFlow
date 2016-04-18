@@ -234,8 +234,8 @@ class DeepAutoencoder(model.Model):
         self.encode = encode_output
         decode_output = self._create_decoding_layers(encode_output)
 
-        self._create_cost_function_node(decode_output)
-        self._create_train_step_node()
+        self.cost = self._create_cost_function_node(self.loss_func, decode_output, self.x)
+        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
 
     def _create_placeholders(self, n_features):
 
@@ -293,44 +293,6 @@ class DeepAutoencoder(model.Model):
             decode_output = vstates
 
         return decode_output
-
-    def _create_cost_function_node(self, decode_output):
-
-        """ Create the cost function node.
-        :param decode_output: output of the last decoding layer
-        :return: self
-        """
-
-        with tf.name_scope("cost"):
-            if self.loss_func == 'cross_entropy':
-                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(decode_output, self.x))
-                _ = tf.scalar_summary("cross_entropy", self.cost)
-
-            elif self.loss_func == 'mean_squared':
-                self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.x - decode_output)))
-                _ = tf.scalar_summary("mean_squared", self.cost)
-
-            else:
-                self.cost = None
-
-    def _create_train_step_node(self):
-
-        """ Create the training step node of the network.
-        :return: self
-        """
-
-        with tf.name_scope("train"):
-            if self.opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(self.learning_rate, self.momentum).minimize(self.cost)
-
-            else:
-                self.train_step = None
 
     def get_model_parameters(self):
 

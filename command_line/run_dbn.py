@@ -40,7 +40,7 @@ flags.DEFINE_float('learning_rate', 0.01, 'Learning rate.')
 flags.DEFINE_float('momentum', 0.7, 'Momentum parameter.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
-flags.DEFINE_string('opt', 'gradient_descent', 'Which optimizer to use.')
+flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
 flags.DEFINE_string('loss_func', 'mean_squared', 'Loss function.')
 flags.DEFINE_float('dropout', 1, 'Dropout parameter.')
 

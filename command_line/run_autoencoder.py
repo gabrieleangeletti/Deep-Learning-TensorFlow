@@ -36,7 +36,7 @@ flags.DEFINE_string('main_dir', 'dae/', 'Directory to store data relative to the
 flags.DEFINE_string('loss_func', 'mean_squared', 'Loss function. ["mean_squared" or "cross_entropy"]')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_integer('weight_images', 0, 'Number of weight images to generate.')
-flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum"]')
+flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
@@ -49,7 +49,7 @@ assert FLAGS.dec_act_func in ['sigmoid', 'tanh', 'none']
 assert FLAGS.corr_type in ['masking', 'salt_and_pepper', 'none']
 assert 0. <= FLAGS.corr_frac <= 1.
 assert FLAGS.loss_func in ['cross_entropy', 'mean_squared']
-assert FLAGS.opt in ['gradient_descent', 'ada_grad', 'momentum']
+assert FLAGS.opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
 
 if __name__ == '__main__':
 

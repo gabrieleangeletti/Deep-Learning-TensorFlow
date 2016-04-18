@@ -64,7 +64,7 @@ class LogisticRegression(model.Model):
 
         self.model_output = tf.nn.softmax(tf.matmul(self.input_data, self.W_) + self.b_)
 
-        self._create_cost_function_node()
+        self.cost = self._create_cost_function_node(self.loss_func, self.model_output, self.input_labels)
         self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
         self._create_test_node()
 
@@ -89,24 +89,6 @@ class LogisticRegression(model.Model):
 
         self.W_ = tf.Variable(tf.zeros([n_features, n_classes]), name='weights')
         self.b_ = tf.Variable(tf.zeros([n_classes]), name='biases')
-
-    def _create_cost_function_node(self):
-
-        """ Create the cost function node of the network.
-        :return: self
-        """
-
-        with tf.name_scope("cost"):
-            if self.loss_func == 'cross_entropy':
-                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.model_output, self.input_labels))
-                _ = tf.scalar_summary("cross_entropy", self.cost)
-
-            elif self.loss_func == 'mean_squared':
-                self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.input_labels - self.model_output)))
-                _ = tf.scalar_summary("mean_squared", self.cost)
-
-            else:
-                self.cost = None
 
     def _create_test_node(self):
 

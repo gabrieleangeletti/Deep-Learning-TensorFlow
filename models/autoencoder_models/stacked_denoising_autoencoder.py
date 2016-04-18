@@ -265,8 +265,8 @@ class StackedDenoisingAutoencoder(model.Model):
 
         self._create_softmax_layer(next_train, n_classes)
 
-        self._create_cost_function_node()
-        self._create_train_step_node()
+        self.cost = self._create_cost_function_node(self.loss_func, self.softmax_out, self.input_labels)
+        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
 
         self._create_test_node()
 
@@ -373,43 +373,6 @@ class StackedDenoisingAutoencoder(model.Model):
 
         with tf.name_scope("softmax_layer"):
             self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b
-
-    def _create_cost_function_node(self):
-
-        """ Create the cost function node.
-        :return: self
-        """
-
-        with tf.name_scope("cost"):
-            if self.softmax_loss_func == 'cross_entropy':
-                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.softmax_out, self.input_labels))
-                _ = tf.scalar_summary("cross_entropy", self.cost)
-
-            elif self.softmax_loss_func == 'mean_squared':
-                self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.input_labels - self.softmax_out)))
-                _ = tf.scalar_summary("mean_squared", self.cost)
-
-            else:
-                self.cost = None
-
-    def _create_train_step_node(self):
-
-        """ Create the training step node of the network.
-        :return: self
-        """
-
-        with tf.name_scope("train"):
-            if self.finetune_opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(self.finetune_learning_rate).minimize(self.cost)
-
-            elif self.finetune_opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(self.finetune_learning_rate).minimize(self.cost)
-
-            elif self.finetune_opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(self.finetune_learning_rate, self.momentum).minimize(self.cost)
-
-            else:
-                self.train_step = None
 
     def _create_test_node(self):
 

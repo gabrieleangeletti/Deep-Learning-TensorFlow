@@ -41,7 +41,7 @@ flags.DEFINE_string('xavier_init', '1,', 'Value for the constant in xavier weigh
 flags.DEFINE_string('enc_act_func', 'relu,', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dec_act_func', 'none,', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
 flags.DEFINE_string('loss_func', 'mean_squared,', 'Loss function. ["mean_squared" or "cross_entropy"]')
-flags.DEFINE_string('opt', 'gradient_descent,', '["gradient_descent", "ada_grad", "momentum"]')
+flags.DEFINE_string('opt', 'gradient_descent,', '["gradient_descent", "ada_grad", "momentum", "adam"]')
 flags.DEFINE_string('learning_rate', '0.01,', 'Initial learning rate.')
 flags.DEFINE_string('momentum', '0.5,', 'Momentum parameter.')
 flags.DEFINE_string('num_epochs', '10,', 'Number of epochs.')
@@ -77,7 +77,7 @@ assert len(layers) > 0
 assert all([af in ['sigmoid', 'tanh'] for af in enc_act_func])
 assert all([af in ['sigmoid', 'tanh', 'none'] for af in dec_act_func])
 assert all([lf in ['cross_entropy', 'mean_squared'] for lf in loss_func])
-assert all([o in ['gradient_descent', 'ada_grad', 'momentum'] for o in opt])
+assert all([o in ['gradient_descent', 'ada_grad', 'momentum', 'adam'] for o in opt])
 
 if __name__ == '__main__':
 

@@ -77,4 +77,3 @@ Just train a Stacked Denoising Autoencoder of Deep Belief Network with the `--do
 
 #### TODO list
 * Reinforcement Learning implementation (Deep Q-Learning)
-* Convolutional Networks implementation

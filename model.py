@@ -36,3 +36,53 @@ class Model(object):
                 os.mkdir(d)
 
         return models_dir, data_dir, summary_dir
+
+    def _create_cost_function_node(self, loss_func, model_output, ref_input):
+
+        """ Create the cost function node.
+        :param loss_func: cost function. ['cross_entropy', 'mean_squared']
+        :param model_output: model output node
+        :param ref_input: reference input placeholder node
+        :return: cost function node
+        """
+
+        with tf.name_scope("cost"):
+            if loss_func == 'cross_entropy':
+                cost = - tf.reduce_mean(ref_input * tf.log(model_output) +
+                                             (1 - ref_input) * tf.log(1 - model_output))
+                _ = tf.scalar_summary("cross_entropy", cost)
+                return cost
+
+            elif loss_func == 'mean_squared':
+                cost = tf.sqrt(tf.reduce_mean(tf.square(ref_input - model_output)))
+                _ = tf.scalar_summary("mean_squared", cost)
+                return cost
+
+            else:
+                return None
+
+    def _create_train_step_node(self, opt, learning_rate, cost, momentum=None):
+
+        """ Create the training step node of the network.
+        :param opt: tensorflow optimizer
+        :param learning_rate: learning rate parameter
+        :param cost: cost function node
+        :param momentum: momentum parameter (used only for momentum optimizer)
+        :return: train step node
+        """
+
+        with tf.name_scope("train"):
+            if opt == 'gradient_descent':
+                return tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
+
+            elif opt == 'ada_grad':
+                return tf.train.AdagradOptimizer(learning_rate).minimize(cost)
+
+            elif opt == 'momentum':
+                return tf.train.MomentumOptimizer(learning_rate, momentum).minimize(cost)
+
+            elif opt == 'adam':
+                return tf.train.AdamOptimizer(learning_rate).minimize(cost)
+
+            else:
+                return None

@@ -199,8 +199,8 @@ class DenoisingAutoencoder(model.Model):
         self._create_encode_layer()
         self._create_decode_layer()
 
-        self._create_cost_function_node()
-        self._create_train_step_node()
+        self.cost = self._create_cost_function_node(self.loss_func, self.decode, self.input_data)
+        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
 
     def _create_placeholders(self, n_features):
 
@@ -261,47 +261,6 @@ class DenoisingAutoencoder(model.Model):
 
             else:
                 self.decode = None
-
-    def _create_cost_function_node(self):
-
-        """ Create the cost function node of the network.
-        :return: self
-        """
-
-        with tf.name_scope("cost"):
-            if self.loss_func == 'cross_entropy':
-                self.cost = - tf.reduce_mean(self.input_data * tf.log(self.decode) +
-                                            (1 - self.input_data) * tf.log(1 - self.decode))
-                _ = tf.scalar_summary("cross_entropy", self.cost)
-
-            elif self.loss_func == 'mean_squared':
-                self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.input_data - self.decode)))
-                _ = tf.scalar_summary("mean_squared", self.cost)
-
-            else:
-                self.cost = None
-
-            regularizers = tf.nn.l2_loss(self.W_) + tf.nn.l2_loss(self.bh_)
-            self.cost += self.l2reg * regularizers
-
-    def _create_train_step_node(self):
-
-        """ Create the training step node of the network.
-        :return: self
-        """
-
-        with tf.name_scope("train"):
-            if self.opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(self.learning_rate, self.momentum).minimize(self.cost)
-
-            else:
-                self.train_step = None
 
     def transform(self, data, name='train', save=False):
 

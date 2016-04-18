@@ -233,8 +233,8 @@ class DBN(model.Model):
         next_train = self._forward_pass()
         self._create_softmax_layer(next_train, n_classes)
 
-        self._create_cost_function_node()
-        self._create_train_step_node()
+        self.cost = self._create_cost_function_node(self.loss_func, self.y, self.y_)
+        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
         self._create_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
@@ -303,43 +303,6 @@ class DBN(model.Model):
 
         with tf.name_scope("softmax_layer"):
             self.y = tf.matmul(next_train, self.softmax_W) + self.softmax_b
-
-    def _create_cost_function_node(self):
-
-        """ Create the cost function node.
-        :return: self
-        """
-
-        with tf.name_scope("cost"):
-            if self.loss_func == 'cross_entropy':
-                self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.y, self.y_))
-                _ = tf.scalar_summary("cross_entropy", self.cost)
-
-            elif self.loss_func == 'mean_squared':
-                self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.y_ - self.y)))
-                _ = tf.scalar_summary("mean_squared", self.cost)
-
-            else:
-                self.cost = None
-
-    def _create_train_step_node(self):
-
-        """ Create TensorFlow optimizer for the model
-        :return: self
-        """
-
-        with tf.name_scope("train"):
-            if self.opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(self.learning_rate, self.momentum).minimize(self.cost)
-
-            else:
-                self.train_step = None
 
     def _create_test_node(self):
 
