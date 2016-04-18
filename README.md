@@ -17,6 +17,23 @@ evaluate popular Deep Learning models and maybe use them as benchmark/baseline i
 
 Available models:
 
+#### Convolutional Networks
+Example usage:
+
+    python command_line/run_conv_net.py --dataset custom --main_dir convnet-models --model_name my.Awesome.CONVNET --train_dataset path/to/train_set.npy --valid_dataset path/to/valid_set.npy --test_set path/to/test_set.npy --layers conv2d-5-5-32-1,maxpool-2,conv2d-5-5-64-1,maxpool-2,full-128,softmax --batch_size 50 --verbose 1 --learning_rate 0.001 --dropout 0.5
+
+This command trains a Convolutional Network using the provided training, validation and testing sets, and the specified training parameters.
+The architecture of the model, as specified by the `--layer` argument, is:
+
+* 2D Convolution layer with 5x5 filters with 32 feature maps and stride of size 1
+* Max Pooling layer of size 2
+* 2D Convolution layer with 5x5 filters with 64 feature maps and stride of size 1
+* Max Pooling layer of size 2
+* Fully connected layer with 128 units
+* Softmax layer
+
+For the default training parameters please see `command_line/run_conv_net.py`. The TensorFlow trained model will be saved in `config.models_dir/convnet-models/my.Awesome.CONVNET`.
+
 #### Restricted Boltzmann Machine
 Example usage:
 
