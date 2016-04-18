@@ -6,7 +6,7 @@ evaluate popular Deep Learning models and maybe use them as benchmark/baseline i
 
 ### Requirements:
 
-* tensorflow >= 0.6 (tested on tensorflow 0.6 and 0.7.1)
+* tensorflow >= 0.6 (tested on tensorflow 0.6, 0.7.1 and 0.8)
 
 ### Configuration:
 
@@ -20,7 +20,7 @@ Available models:
 #### Convolutional Networks
 Example usage:
 
-    python command_line/run_conv_net.py --dataset custom --main_dir convnet-models --model_name my.Awesome.CONVNET --train_dataset path/to/train_set.npy --valid_dataset path/to/valid_set.npy --test_set path/to/test_set.npy --layers conv2d-5-5-32-1,maxpool-2,conv2d-5-5-64-1,maxpool-2,full-1024,softmax --batch_size 50 --verbose 1 --learning_rate 0.001 --dropout 0.5
+    python command_line/run_conv_net.py --dataset custom --main_dir convnet-models --model_name my.Awesome.CONVNET --train_dataset path/to/train_set.npy --valid_dataset path/to/valid_set.npy --test_set path/to/test_set.npy --layers conv2d-5-5-32-1,maxpool-2,conv2d-5-5-64-1,maxpool-2,full-1024,softmax --batch_size 50 --verbose 1 --learning_rate 1e-4 --opt adam --dropout 0.5
 
 This command trains a Convolutional Network using the provided training, validation and testing sets, and the specified training parameters.
 The architecture of the model, as specified by the `--layer` argument, is:
