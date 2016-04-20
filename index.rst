@@ -2,13 +2,26 @@
 Deep Learning with Tensorflow Documentation
 ===========================================
 
-This repository is a collection of various Deep Learning algorithms implemented using the TensorFlow library. This package is intended as a command line utility you can use to quickly train and evaluate popular Deep Learning models and maybe use them as benchmark/baseline in comparison to your custom models/datasets.
+This project_ is a collection of various Deep Learning algorithms implemented using the TensorFlow library. This package is intended as a command line utility you can use to quickly train and evaluate popular Deep Learning models and maybe use them as benchmark/baseline in comparison to your custom models/datasets.
+
+.. _project: https://github.com/blackecho/Deep-Learning-TensorFlow/
 
 ============
 Requirements
 ============
 
 tensorflow >= 0.6 (tested on tensorflow 0.6, 0.7.1 and 0.8)
+
+============
+Installation
+============
+
+Through github:
+
+* cd in a directory where you want to store the project, e.g. ``/home/me``
+* clone the repository: ``git clone https://github.com/blackecho/Deep-Learning-TensorFlow.git``
+* ``cd Deep-Learning-TensorFlow/dlmodels``
+* now you can configure (see below) the software and run the models!
 
 =============
 Configuration
