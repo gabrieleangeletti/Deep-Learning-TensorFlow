@@ -8,6 +8,15 @@ evaluate popular Deep Learning models and maybe use them as benchmark/baseline i
 
 * tensorflow >= 0.6 (tested on tensorflow 0.6, 0.7.1 and 0.8)
 
+### Installation
+
+Through github:
+
+* cd in a directory where you want to store the project, e.g. ``/home/me``
+* clone the repository: ``git clone https://github.com/blackecho/Deep-Learning-TensorFlow.git``
+* ``cd Deep-Learning-TensorFlow/dlmodels``
+* now you can configure the software and run the models (see the [documentation](http://deep-learning-tensorflow.readthedocs.org/en/latest/)!
+
 ### Documentation:
 
 You can find the documentation for this project at this [link](http://deep-learning-tensorflow.readthedocs.org/en/latest/).
