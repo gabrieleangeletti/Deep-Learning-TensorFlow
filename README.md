@@ -15,7 +15,7 @@ Through github:
 * cd in a directory where you want to store the project, e.g. ``/home/me``
 * clone the repository: ``git clone https://github.com/blackecho/Deep-Learning-TensorFlow.git``
 * ``cd Deep-Learning-TensorFlow/dlmodels``
-* now you can configure the software and run the models (see the [documentation](http://deep-learning-tensorflow.readthedocs.org/en/latest/)!
+* now you can configure the software and run the models (see the [documentation](http://deep-learning-tensorflow.readthedocs.org/en/latest/))!
 
 ### Documentation:
 
