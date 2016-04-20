@@ -48,7 +48,7 @@ Restricted Boltzmann Machine
 
 Example usage::
 
-python command_line/run_rbm.py --dataset custom --main_dir rbm-models --model_name my.Awesome.RBM --train_dataset path/to/train_set.npy --valid_dataset path/to/valid_set.npy --num_hidden 250 --num_epochs 10 --batch_size 128 --learning_rate 0.0001 --gibbs_sampling_steps 3 --verbose 1
+  python command_line/run_rbm.py --dataset custom --main_dir rbm-models --model_name my.Awesome.RBM --train_dataset path/to/train_set.npy --valid_dataset path/to/valid_set.npy --num_hidden 250 --num_epochs 10 --batch_size 128 --learning_rate 0.0001 --gibbs_sampling_steps 3 --verbose 1
 
 This command trains a RBM with 250 hidden units using the provided training and validation sets, and the specified training parameters. For the default training parameters please see command_line/run_rbm.py. The TensorFlow trained model will be saved in config.models_dir/rbm-models/my.Awesome.RBM.
 
@@ -58,7 +58,7 @@ Deep Belief Network
 
 Example usage::
 
-python command_line/run_dbn.py --dataset mnist --main_dir dbn-models --model_name my-deeper-dbn --layers 512,256 --rbm_num_epochs 15 --rbm_batch_size 25 --batch_size 25 --rbm_learning_rate 0.005 --learning_rate 0.001 --num_epochs 10 --verbose 1 --loss_func cross_entropy --dropout 0.7 --act_func relu
+  python command_line/run_dbn.py --dataset mnist --main_dir dbn-models --model_name my-deeper-dbn --layers 512,256 --rbm_num_epochs 15 --rbm_batch_size 25 --batch_size 25 --rbm_learning_rate 0.005 --learning_rate 0.001 --num_epochs 10 --verbose 1 --loss_func cross_entropy --dropout 0.7 --act_func relu
 
 This command trains a DBN on the MNIST dataset. Two RBMs are used in the pretraining phase, the first is 784-512 and the second is 512-256. The training parameters of the RBMs can be specified layer-wise: for example we can specify the learning rate for each layer with: --rbm_learning_rate 0.005,0.1. In this case the fine-tuning phase uses dropout and the ReLU activation function.
 
@@ -68,7 +68,7 @@ Deep Autoencoder
 
 Example usage::
 
-python command_line/run_deep_autoencoder.py --dataset cifar10 --cifar_dir path/to/cifar10 --main_dir deep-autoencoder --model_name deeper-is-better --layers 8192,2048,512,256
+  python command_line/run_deep_autoencoder.py --dataset cifar10 --cifar_dir path/to/cifar10 --main_dir deep-autoencoder --model_name deeper-is-better --layers 8192,2048,512,256
 This command trains a Deep Autoencoder built as a stack of RBMs on the cifar10 dataset. The layers in the finetuning phase are 3072 -> 8192 -> 2048 -> 512 -> 256 -> 512 -> 2048 -> 8192 -> 3072, that's pretty deep.
 
 =====================
@@ -77,7 +77,8 @@ Denoising Autoencoder
 
 Example usage::
 
-python command_line/run_autoencoder.py --n_components 1024 --batch_size 64 --num_epochs 20 --verbose 1 --learning_rate 0.05 --corr_type masking --corr_frac 0.5 --enc_act_func sigmoid --dec_act_func sigmoid --loss_func cross_entropy --opt momentum --momentum 0.9 --main_dir dae-models --model_name dae1024 --weight_images 200
+  python command_line/run_autoencoder.py --n_components 1024 --batch_size 64 --num_epochs 20 --verbose 1 --learning_rate 0.05 --corr_type masking --corr_frac 0.5 --enc_act_func sigmoid --dec_act_func sigmoid --loss_func cross_entropy --opt momentum --momentum 0.9 --main_dir dae-models --model_name dae1024 --weight_images 200
+
 This command trains a Denoising Autoencoder on MNIST with 1024 hidden units, sigmoid activation function for the encoder and the decoder, and 50% masking noise. The --weight_images 200 save 200 random hidden units as images in config.data_dir/dae-models/img/ so that you can visualize the learned filters.
 
 =============================
@@ -86,7 +87,7 @@ Stacked Denoising Autoencoder
 
 Example usage:
 
-python command_line/run_stacked_autoencoder.py --layers 1024,784,512,256 --batch_size 25 --num_epochs 5 --verbose 1 --corr_type masking --corr_frac 0.0 --finetune_learning_rate 0.002 --finetune_num_epochs 25 --opt momentum --momentum 0.9 --learning_rate 0.05 --enc_act_func sigmoid --finetune_act_func relu --dropout 0.7
+  python command_line/run_stacked_autoencoder.py --layers 1024,784,512,256 --batch_size 25 --num_epochs 5 --verbose 1 --corr_type masking --corr_frac 0.0 --finetune_learning_rate 0.002 --finetune_num_epochs 25 --opt momentum --momentum 0.9 --learning_rate 0.05 --enc_act_func sigmoid --finetune_act_func relu --dropout 0.7
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 1024, 1024 <-> 784, 784 <-> 512, 512 <-> 256, and then performs supervised finetuning with ReLUs.
 
