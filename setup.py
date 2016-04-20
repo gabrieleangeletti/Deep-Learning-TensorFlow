@@ -1,8 +1,8 @@
 from distutils.core import setup
 
 setup(
-    name = 'pydeep',
-    packages = ['pydeep'],
+    name = 'dlmodels',
+    packages = ['dlmodels'],
     version = '0.1',
     description = 'Train Deep Learning models from the command line.',
     author = 'Gabriele Angeletti',
