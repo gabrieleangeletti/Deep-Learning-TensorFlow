@@ -8,6 +8,16 @@ evaluate popular Deep Learning models and maybe use them as benchmark/baseline i
 
 * tensorflow >= 0.6 (tested on tensorflow 0.6, 0.7.1 and 0.8)
 
+### List of available models:
+
+* Convolutional Networks
+* Restricted Boltzmann Machine
+* Deep Belief Network
+* Deep Autoencoder
+* Denoising Autoencoder
+* Stacked Denoising Autoencoder
+* MultiLayer Perceptron
+
 ### Installation
 
 Through github:
