@@ -80,7 +80,7 @@ assert len(layers) > 0
 assert all([af in ['sigmoid', 'tanh'] for af in enc_act_func])
 assert all([af in ['sigmoid', 'tanh', 'none'] for af in dec_act_func])
 assert all([lf in ['cross_entropy', 'mean_squared'] for lf in loss_func])
-assert FLAGS.opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
+assert FLAGS.finetune_opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
 
 if __name__ == '__main__':
 
