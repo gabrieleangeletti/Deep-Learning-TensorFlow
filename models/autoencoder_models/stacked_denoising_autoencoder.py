@@ -83,7 +83,6 @@ class StackedDenoisingAutoencoder(model.Model):
         self.input_labels = None
         self.keep_prob = None
 
-        self.encode = None
         self.layer_nodes = []  # list of layers of the final network
         self.softmax_out = None
 
@@ -287,7 +286,6 @@ class StackedDenoisingAutoencoder(model.Model):
         self._create_variables(n_features)
 
         next_train = self._create_encoding_layers()
-        self.encode = next_train
 
         self._create_softmax_layer(next_train, n_classes)
 
