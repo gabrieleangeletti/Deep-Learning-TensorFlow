@@ -87,8 +87,8 @@ class StackedDenoisingAutoencoder(model.Model):
         self.softmax_out = None
 
         # Model parameters
-        self.encoding_w_ = None  # list of matrices of encoding weights (one per layer)
-        self.encoding_b_ = None  # list of arrays of encoding biases (one per layer)
+        self.encoding_w_ = []  # list of matrices of encoding weights (one per layer)
+        self.encoding_b_ = []  # list of arrays of encoding biases (one per layer)
 
         self.softmax_W = None
         self.softmax_b = None
@@ -121,9 +121,6 @@ class StackedDenoisingAutoencoder(model.Model):
         :param validation_set: validation set
         :return: return data encoded by the last layer
         """
-
-        self.encoding_w_ = []
-        self.encoding_b_ = []
 
         next_train = train_set
         next_valid = validation_set
@@ -233,7 +230,19 @@ class StackedDenoisingAutoencoder(model.Model):
         if self.verbose == 1:
             print("Accuracy at step %s: %s" % (epoch, acc))
 
-    def predict(self, test_set, test_labels):
+    def predict(self, test_set):
+
+        """ Predict the labels for the test set.
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :return: labels
+        """
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            return self.model_predictions.eval({self.input_data: test_set,
+                                                self.keep_prob: 1})
+
+    def compute_accuracy(self, test_set, test_labels):
 
         """ Compute the accuracy over the test set.
         :param test_set: Testing data. shape(n_test_samples, n_features)
@@ -265,8 +274,8 @@ class StackedDenoisingAutoencoder(model.Model):
 
         self._create_softmax_layer(next_train, n_classes)
 
-        self.cost = self._create_cost_function_node(self.loss_func, self.softmax_out, self.input_labels)
-        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
+        self.cost = self._create_cost_function_node(self.softmax_loss_func, self.softmax_out, self.input_labels)
+        self.train_step = self._create_train_step_node(self.finetune_opt, self.finetune_learning_rate, self.cost, self.momentum)
 
         self._create_test_node()
 
@@ -381,6 +390,7 @@ class StackedDenoisingAutoencoder(model.Model):
         """
 
         with tf.name_scope("test"):
-            correct_prediction = tf.equal(tf.argmax(self.softmax_out, 1), tf.argmax(self.input_labels, 1))
+            self.model_predictions = tf.argmax(self.softmax_out, 1)
+            correct_prediction = tf.equal(self.model_predictions, tf.argmax(self.input_labels, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
             _ = tf.scalar_summary('accuracy', self.accuracy)

@@ -21,6 +21,7 @@ flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pretraining.')
+flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('softmax_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
@@ -53,7 +54,6 @@ xavier_init = [int(_) for _ in FLAGS.xavier_init.split(',') if _]
 enc_act_func = [_ for _ in FLAGS.enc_act_func.split(',') if _]
 dec_act_func = [_ for _ in FLAGS.dec_act_func.split(',') if _]
 loss_func = [_ for _ in FLAGS.loss_func.split(',') if _]
-opt = [_ for _ in FLAGS.opt.split(',') if _]
 learning_rate = [float(_) for _ in FLAGS.learning_rate.split(',') if _]
 momentum = [float(_) for _ in FLAGS.momentum.split(',') if _]
 num_epochs = [int(_) for _ in FLAGS.num_epochs.split(',') if _]
@@ -61,8 +61,8 @@ batch_size = [int(_) for _ in FLAGS.batch_size.split(',') if _]
 
 # Parameters normalization: if a parameter is not specified, it must be made of the same length of the others
 dae_params = {'layers': layers, 'xavier_init': xavier_init, 'enc_act_func': enc_act_func,
-              'dec_act_func': dec_act_func, 'loss_func': loss_func, 'opt': opt,
-              'learning_rate': learning_rate, 'momentum': momentum, 'num_epochs': num_epochs, 'batch_size': batch_size}
+              'dec_act_func': dec_act_func, 'loss_func': loss_func, 'learning_rate': learning_rate,
+              'momentum': momentum, 'num_epochs': num_epochs, 'batch_size': batch_size}
 
 for p in dae_params:
     if len(dae_params[p]) != len(layers):
@@ -77,7 +77,7 @@ assert len(layers) > 0
 assert all([af in ['sigmoid', 'tanh'] for af in enc_act_func])
 assert all([af in ['sigmoid', 'tanh', 'none'] for af in dec_act_func])
 assert all([lf in ['cross_entropy', 'mean_squared'] for lf in loss_func])
-assert all([o in ['gradient_descent', 'ada_grad', 'momentum', 'adam'] for o in opt])
+assert FLAGS.opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
 
 if __name__ == '__main__':
 
@@ -132,7 +132,7 @@ if __name__ == '__main__':
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,
         enc_act_func=dae_params['enc_act_func'], dec_act_func=dae_params['dec_act_func'],
         xavier_init=dae_params['xavier_init'], corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
-        dataset=FLAGS.dataset, loss_func=dae_params['loss_func'], main_dir=FLAGS.main_dir, opt=dae_params['opt'],
+        dataset=FLAGS.dataset, loss_func=dae_params['loss_func'], main_dir=FLAGS.main_dir, opt=FLAGS.opt,
         learning_rate=dae_params['learning_rate'], momentum=dae_params['momentum'], verbose=FLAGS.verbose,
         num_epochs=dae_params['num_epochs'], batch_size=dae_params['batch_size'],
         finetune_act_func=FLAGS.finetune_act_func)
@@ -145,5 +145,9 @@ if __name__ == '__main__':
     sdae.build_model(trX.shape[1], trY.shape[1])
     sdae.fit(trX, trY, vlX, vlY)
 
-    # Test the model
-    print('Test set accuracy: {}'.format(sdae.predict(teX, teY)))
+    # Compute the accuracy of the model
+    print('Test set accuracy: {}'.format(sdae.compute_accuracy(teX, teY)))
+
+    # Save the predictions of the model
+    if FLAGS.save_predictions:
+        np.save(FLAGS.save_predictions, sdae.predict(teX))
