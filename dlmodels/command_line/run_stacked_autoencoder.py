@@ -22,6 +22,7 @@ flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pretraining.')
 flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
+flags.DEFINE_string('save_layers_output', '', 'Path to a .npy file to save output from all the layers of the model.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('softmax_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
@@ -150,4 +151,12 @@ if __name__ == '__main__':
 
     # Save the predictions of the model
     if FLAGS.save_predictions:
+        print('Saving the predictions for the test set...')
         np.save(FLAGS.save_predictions, sdae.predict(teX))
+
+    # Save output from each layer of the model
+    if FLAGS.save_layers_output:
+        print('Saving the output of each layer for the test set')
+        out = sdae.get_layers_output(teX)
+        for i, o in enumerate(out):
+            np.save(FLAGS.save_layers_output + '-layer-' + str(i+1), o)

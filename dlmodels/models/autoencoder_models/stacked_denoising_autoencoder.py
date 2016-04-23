@@ -84,6 +84,7 @@ class StackedDenoisingAutoencoder(model.Model):
         self.keep_prob = None
 
         self.encode = None
+        self.layer_nodes = []  # list of layers of the final network
         self.softmax_out = None
 
         # Model parameters
@@ -230,6 +231,22 @@ class StackedDenoisingAutoencoder(model.Model):
         if self.verbose == 1:
             print("Accuracy at step %s: %s" % (epoch, acc))
 
+    def get_layers_output(self, dataset):
+
+        """ Get output from each layer of the network.
+        :param dataset: input data
+        :return: list of np array, element i in the list is the output of layer i
+        """
+
+        layers_out = []
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            for l in self.layer_nodes:
+                layers_out.append(l.eval({self.input_data: dataset,
+                                          self.keep_prob: 1}))
+        return layers_out
+
     def predict(self, test_set):
 
         """ Predict the labels for the test set.
@@ -344,6 +361,7 @@ class StackedDenoisingAutoencoder(model.Model):
         """
 
         next_train = self.input_data
+        self.layer_nodes = []
 
         for l, layer in enumerate(self.layers):
 
@@ -365,6 +383,7 @@ class StackedDenoisingAutoencoder(model.Model):
 
             # the input to the next layer is the output of this layer
             next_train = tf.nn.dropout(layer_y, self.keep_prob)
+            self.layer_nodes.append(next_train)
 
         return next_train
 
@@ -382,6 +401,7 @@ class StackedDenoisingAutoencoder(model.Model):
 
         with tf.name_scope("softmax_layer"):
             self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b
+            self.layer_nodes.append(self.softmax_out)
 
     def _create_test_node(self):
 
