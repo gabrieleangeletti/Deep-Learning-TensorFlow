@@ -322,10 +322,10 @@ class StackedDenoisingAutoencoder(model.Model):
 
             if l == 0:
                 self.encoding_w_.append(tf.Variable(utilities.xavier_init(n_features, self.layers[l], xinit)))
-                self.encoding_b_.append(tf.Variable(tf.zeros([self.layers[l]])))
+                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.01)))
             else:
                 self.encoding_w_.append(tf.Variable(utilities.xavier_init(self.layers[l-1], self.layers[l], xinit)))
-                self.encoding_b_.append(tf.Variable(tf.zeros([self.layers[l]])))
+                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.01)))
 
     def _create_variables_pretrain(self):
 
