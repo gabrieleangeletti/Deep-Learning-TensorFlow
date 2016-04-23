@@ -54,6 +54,7 @@ layers = [int(_) for _ in FLAGS.layers.split(',') if _]
 xavier_init = [int(_) for _ in FLAGS.xavier_init.split(',') if _]
 enc_act_func = [_ for _ in FLAGS.enc_act_func.split(',') if _]
 dec_act_func = [_ for _ in FLAGS.dec_act_func.split(',') if _]
+opt = [_ for _ in FLAGS.opt.split(',') if _]
 loss_func = [_ for _ in FLAGS.loss_func.split(',') if _]
 learning_rate = [float(_) for _ in FLAGS.learning_rate.split(',') if _]
 momentum = [float(_) for _ in FLAGS.momentum.split(',') if _]
@@ -63,6 +64,7 @@ batch_size = [int(_) for _ in FLAGS.batch_size.split(',') if _]
 # Parameters normalization: if a parameter is not specified, it must be made of the same length of the others
 dae_params = {'layers': layers, 'xavier_init': xavier_init, 'enc_act_func': enc_act_func,
               'dec_act_func': dec_act_func, 'loss_func': loss_func, 'learning_rate': learning_rate,
+              'opt': opt,
               'momentum': momentum, 'num_epochs': num_epochs, 'batch_size': batch_size}
 
 for p in dae_params:
@@ -133,7 +135,7 @@ if __name__ == '__main__':
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,
         enc_act_func=dae_params['enc_act_func'], dec_act_func=dae_params['dec_act_func'],
         xavier_init=dae_params['xavier_init'], corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
-        dataset=FLAGS.dataset, loss_func=dae_params['loss_func'], main_dir=FLAGS.main_dir, opt=FLAGS.opt,
+        dataset=FLAGS.dataset, loss_func=dae_params['loss_func'], main_dir=FLAGS.main_dir, opt=dae_params['opt'],
         learning_rate=dae_params['learning_rate'], momentum=dae_params['momentum'], verbose=FLAGS.verbose,
         num_epochs=dae_params['num_epochs'], batch_size=dae_params['batch_size'],
         finetune_act_func=FLAGS.finetune_act_func)
