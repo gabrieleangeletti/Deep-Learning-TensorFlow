@@ -22,6 +22,9 @@ flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous
 flags.DEFINE_boolean('encode_train', False, 'Whether to encode and store the training set.')
 flags.DEFINE_boolean('encode_valid', False, 'Whether to encode and store the validation set.')
 flags.DEFINE_boolean('encode_test', False, 'Whether to encode and store the test set.')
+flags.DEFINE_string('weights', None, 'Path to a numpy array containing the weights of the autoencoder.')
+flags.DEFINE_string('h_bias', None, 'Path to a numpy array containing the encoder bias vector.')
+flags.DEFINE_string('v_bias', None, 'Path to a numpy array containing the decoder bias vector.')
 
 
 # Stacked Denoising Autoencoder specific parameters
@@ -101,7 +104,19 @@ if __name__ == '__main__':
         verbose=FLAGS.verbose, num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size)
 
     # Fit the model
-    dae.build_model(trX.shape[1])
+    W = None
+    if FLAGS.weights:
+        W = np.load(FLAGS.weights)
+
+    bh = None
+    if FLAGS.h_bias:
+        bh = np.load(FLAGS.h_bias)
+
+    bv = None
+    if FLAGS.v_bias:
+        bv = np.load(FLAGS.v_bias)
+
+    dae.build_model(trX.shape[1], W, bh, bv)
     dae.fit(trX, teX, restore_previous_model=FLAGS.restore_previous_model)
 
     # Encode the training data and store it

@@ -186,15 +186,18 @@ class DenoisingAutoencoder(model.Model):
         if self.verbose == 1:
             print("Validation cost at step %s: %s" % (epoch, err))
 
-    def build_model(self, n_features):
+    def build_model(self, n_features, W_=None, bh_=None, bv_=None):
 
         """ Creates the computational graph.
         :param n_features: Number of features.
+        :param W_: weight matrix np array
+        :param bh_: hidden bias np array
+        :param bv_: visible bias np array
         :return: self
         """
 
         self._create_placeholders(n_features)
-        self._create_variables(n_features)
+        self._create_variables(n_features, W_, bh_, bv_)
 
         self._create_encode_layer()
         self._create_decode_layer()
@@ -211,15 +214,26 @@ class DenoisingAutoencoder(model.Model):
         self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
         self.input_data_corr = tf.placeholder('float', [None, n_features], name='x-corr-input')
 
-    def _create_variables(self, n_features):
+    def _create_variables(self, n_features, W_=None, bh_=None, bv_=None):
 
         """ Create the TensorFlow variables for the model.
         :return: self
         """
 
-        self.W_ = tf.Variable(utilities.xavier_init(n_features, self.n_components, self.xavier_init), name='enc-w')
-        self.bh_ = tf.Variable(tf.zeros([self.n_components]), name='hidden-bias')
-        self.bv_ = tf.Variable(tf.zeros([n_features]), name='visible-bias')
+        if W_:
+            self.W_ = tf.Variable(W_, name='enc-w')
+        else:
+            self.W_ = tf.Variable(utilities.xavier_init(n_features, self.n_components, self.xavier_init), name='enc-w')
+
+        if bh_:
+            self.bh_ = tf.Variable(bh_, name='hidden-bias')
+        else:
+            self.bh_ = tf.Variable(tf.zeros([self.n_components]), name='hidden-bias')
+
+        if bv_:
+            self.bv_ = tf.Variable(bv_, name='visible-bias')
+        else:
+            self.bv_ = tf.Variable(tf.zeros([n_features]), name='visible-bias')
 
     def _create_encode_layer(self):
 
