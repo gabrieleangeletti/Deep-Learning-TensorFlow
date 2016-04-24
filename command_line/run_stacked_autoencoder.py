@@ -25,7 +25,7 @@ flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predict
 flags.DEFINE_string('save_layers_output', '', 'Path to a .npy file to save output from all the layers of the model.')
 
 # Supervised fine tuning parameters
-flags.DEFINE_string('softmax_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
+flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
 flags.DEFINE_integer('finetune_num_epochs', 30, 'Number of epochs for the fine-tuning phase.')
 flags.DEFINE_float('finetune_learning_rate', 0.001, 'Learning rate for the fine-tuning phase.')
 flags.DEFINE_string('finetune_act_func', 'relu', 'Activation function for the fine-tuning phase.'
@@ -128,9 +128,11 @@ if __name__ == '__main__':
         teY = None
 
     # Create the object
+    sdae = None
+
     sdae = stacked_denoising_autoencoder.StackedDenoisingAutoencoder(
         do_pretrain=FLAGS.do_pretrain,
-        layers=dae_params['layers'], seed=FLAGS.seed, softmax_loss_func=FLAGS.softmax_loss_func,
+        layers=dae_params['layers'], seed=FLAGS.seed, finetune_loss_func=FLAGS.finetune_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,
         enc_act_func=dae_params['enc_act_func'], dec_act_func=dae_params['dec_act_func'],
@@ -145,9 +147,8 @@ if __name__ == '__main__':
         encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
 
     # Supervised finetuning
-    sdae.build_model(trX.shape[1], trY.shape[1])
-    sdae.fit(trX, trY, vlX, vlY)
-
+    sdae.build_supervised_model(trX.shape[1], trY.shape[1])
+    sdae.fit(trX, trY, vlX, vlY, mode='supervised')
     # Compute the accuracy of the model
     print('Test set accuracy: {}'.format(sdae.compute_accuracy(teX, teY)))
 
@@ -161,4 +162,7 @@ if __name__ == '__main__':
         print('Saving the output of each layer for the test set')
         out = sdae.get_layers_output(teX)
         for i, o in enumerate(out):
-            np.save(FLAGS.save_layers_output + '-layer-' + str(i+1), o)
+            np.save(FLAGS.save_layers_output + '-layer-' + str(i + 1), o)
+
+
+
