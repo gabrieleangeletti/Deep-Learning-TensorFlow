@@ -23,6 +23,8 @@ flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful 
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pretraining.')
 flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the reconstructions of the model.')
 flags.DEFINE_string('save_layers_output', '', 'Path to a .npy file to save output from all the layers of the model.')
+flags.DEFINE_string('encweights', None, 'Path to a npz array containing the weights of the encoding layers.')
+flags.DEFINE_string('encbiases', None, 'Path to a npz array containing the encoding layers biases.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
@@ -154,12 +156,25 @@ if __name__ == '__main__':
         num_epochs=dae_params['num_epochs'], batch_size=dae_params['batch_size'],
         finetune_act_func=FLAGS.finetune_act_func)
 
+    def load_params_npz(npzfilepath):
+        params = []
+        npzfile = np.load(npzfilepath)
+        for f in npzfile.files:
+            params.append(npzfile[f])
+        return params
+
+    encodingw = None
+    encodingb = None
+
     # Fit the model (unsupervised pretraining)
-    if FLAGS.do_pretrain:
+    if FLAGS.encweights and FLAGS.encbiases:
+        encodingw = load_params_npz(FLAGS.encweights)
+        encodingb = load_params_npz(FLAGS.encbiases)
+    elif FLAGS.do_pretrain:
         encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
 
     # Supervised finetuning
-    sdae.build_model(trX.shape[1])
+    sdae.build_model(trX.shape[1], encodingw, encodingb)
     sdae.fit(trX, trRef, vlX, vlRef)
 
     # Compute the reconstruction loss of the model

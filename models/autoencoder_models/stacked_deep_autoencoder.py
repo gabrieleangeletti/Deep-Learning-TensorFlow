@@ -275,15 +275,22 @@ class StackedDeepAutoencoder(model.Model):
                                    self.input_labels: test_ref,
                                    self.keep_prob: 1})
 
-    def build_model(self, n_features):
+    def build_model(self, n_features, encoding_w=None, encoding_b=None):
 
         """ Creates the computational graph for the reconstruction task.
         :param n_features: Number of features
+        :param encoding_w: list of weights for the encoding layers.
+        :param encoding_b: list of biases for the encoding layers.
         :return: self
         """
 
         self._create_placeholders(n_features, n_features)
-        self._create_variables(n_features)
+
+        if encoding_w and encoding_b:
+            self.encoding_w_ = encoding_w
+            self.encoding_b_ = encoding_b
+        else:
+            self._create_variables(n_features)
 
         next_train = self._create_encoding_layers()
         self.reconstruction = self._create_decoding_layers(next_train)

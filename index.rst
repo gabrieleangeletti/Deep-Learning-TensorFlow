@@ -101,6 +101,7 @@ This command trains a Denoising Autoencoder on MNIST with 1024 hidden units, sig
 You can also initialize an Autoencoder to an already trained model by passing the parameters to its `build_model()` method. If
  you are using the command line, you can add the options `--weights /path/to/file.npy`, `--h_bias /path/to/file.npy` and `--v_bias /path/to/file.npy`.
  If you want to save the reconstructions of your model, you can add the option `--save_reconstructions /path/to/file.npy` and the reconstruction of the test set will be saved.
+ You can also save the parameters of the model by adding the option `--save_paramenters /path/to/file`. Three files will be generated: `file-enc_w.npy`, `file-enc_b.npy` and `file-dec_b.npy`.
 
 =============================
 Stacked Denoising Autoencoder
