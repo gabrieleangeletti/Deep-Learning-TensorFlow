@@ -10,7 +10,7 @@ This project_ is a collection of various Deep Learning algorithms implemented us
 Requirements
 ============
 
-tensorflow >= 0.6 (tested on tensorflow 0.6, 0.7.1 and 0.8)
+tensorflow >= 0.8 (tested on tensorflow 0.8)
 
 ============
 Installation
