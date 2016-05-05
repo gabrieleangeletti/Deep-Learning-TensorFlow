@@ -93,6 +93,8 @@ Example usage::
   python command_line/run_autoencoder.py --n_components 1024 --batch_size 64 --num_epochs 20 --verbose 1 --learning_rate 0.05 --corr_type masking --corr_frac 0.5 --enc_act_func sigmoid --dec_act_func sigmoid --loss_func cross_entropy --opt momentum --momentum 0.9 --main_dir dae-models --model_name dae1024 --weight_images 200
 
 This command trains a Denoising Autoencoder on MNIST with 1024 hidden units, sigmoid activation function for the encoder and the decoder, and 50% masking noise. The --weight_images 200 save 200 random hidden units as images in config.data_dir/dae-models/img/ so that you can visualize the learned filters.
+You can also initialize an Autoencoder to an already trained model by passing the parameters to its `build_model()` method. If
+ you are using the command line, you can add the options `--weights /path/to/file.npy`, `--h_bias /path/to/file.npy` and `--v_bias /path/to/file.npy`.
 
 =============================
 Stacked Denoising Autoencoder
