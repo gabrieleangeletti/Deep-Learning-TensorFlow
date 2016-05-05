@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-from models.autoencoder_models import stacked_denoising_autoencoder
+from models.autoencoder_models import stacked_deep_autoencoder
 from utils import datasets
 
 # #################### #
@@ -12,16 +12,16 @@ FLAGS = flags.FLAGS
 
 # Global configuration
 flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar10", "custom"]')
-flags.DEFINE_string('train_dataset', '', 'Path to train set .npy file.')
-flags.DEFINE_string('train_labels', '', 'Path to train labels .npy file.')
+flags.DEFINE_string('train_dataset', '', 'Path to train set data .npy file.')
+flags.DEFINE_string('train_ref', '', 'Path to train reference .npy file.')
 flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
-flags.DEFINE_string('valid_labels', '', 'Path to valid labels .npy file.')
+flags.DEFINE_string('valid_ref', '', 'Path to valid reference data .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
-flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
+flags.DEFINE_string('test_ref', '', 'Path to test reference data .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pretraining.')
-flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
+flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the reconstructions of the model.')
 flags.DEFINE_string('save_layers_output', '', 'Path to a .npy file to save output from all the layers of the model.')
 
 # Supervised fine tuning parameters
@@ -90,7 +90,10 @@ if __name__ == '__main__':
         #   MNIST Dataset   #
         # ################# #
 
-        trX, trY, vlX, vlY, teX, teY = datasets.load_mnist_dataset(mode='supervised')
+        trX, vlX, teX = datasets.load_mnist_dataset(mode='unsupervised')
+        trRef = trX
+        vlRef = vlX
+        teRef = teX
 
     elif FLAGS.dataset == 'cifar10':
 
@@ -98,10 +101,12 @@ if __name__ == '__main__':
         #   Cifar10 Dataset   #
         # ################### #
 
-        trX, trY, teX, teY = datasets.load_cifar10_dataset(FLAGS.cifar_dir, mode='supervised')
+        trX, teX = datasets.load_cifar10_dataset(FLAGS.cifar_dir, mode='unsupervised')
         # Validation set is the first half of the test set
         vlX = teX[:5000]
-        vlY = teY[:5000]
+        trRef = trX
+        vlRef = vlX
+        teRef = teX
 
     elif FLAGS.dataset == 'custom':
 
@@ -115,22 +120,29 @@ if __name__ == '__main__':
             else:
                 return None
 
-        trX, trY = load_from_np(FLAGS.train_dataset), load_from_np(FLAGS.train_labels)
-        vlX, vlY = load_from_np(FLAGS.valid_dataset), load_from_np(FLAGS.valid_labels)
-        teX, teY = load_from_np(FLAGS.test_dataset), load_from_np(FLAGS.test_labels)
+        trX, trRef = load_from_np(FLAGS.train_dataset), load_from_np(FLAGS.train_ref)
+        vlX, vlRef = load_from_np(FLAGS.valid_dataset), load_from_np(FLAGS.valid_ref)
+        teX, teRef = load_from_np(FLAGS.test_dataset), load_from_np(FLAGS.test_ref)
+
+        if not trRef:
+            trRef = trX
+        if not vlRef:
+            vlRef = vlX
+        if not teRef:
+            teRef = teX
 
     else:
         trX = None
-        trY = None
+        trRef = None
         vlX = None
-        vlY = None
+        vlRef = None
         teX = None
-        teY = None
+        teRef = None
 
     # Create the object
     sdae = None
 
-    sdae = stacked_denoising_autoencoder.StackedDenoisingAutoencoder(
+    sdae = stacked_deep_autoencoder.StackedDeepAutoencoder(
         do_pretrain=FLAGS.do_pretrain,
         layers=dae_params['layers'], seed=FLAGS.seed, finetune_loss_func=FLAGS.finetune_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
@@ -147,15 +159,16 @@ if __name__ == '__main__':
         encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
 
     # Supervised finetuning
-    sdae.build_supervised_model(trX.shape[1], trY.shape[1])
-    sdae.fit(trX, trY, vlX, vlY, mode='supervised')
-    # Compute the accuracy of the model
-    print('Test set accuracy: {}'.format(sdae.compute_accuracy(teX, teY)))
+    sdae.build_model(trX.shape[1])
+    sdae.fit(trX, trRef, vlX, vlRef)
+
+    # Compute the reconstruction loss of the model
+    print('Test set reconstruction loss: {}'.format(sdae.compute_reconstruction_loss(teX, teRef)))
 
     # Save the predictions of the model
-    if FLAGS.save_predictions:
-        print('Saving the predictions for the test set...')
-        np.save(FLAGS.save_predictions, sdae.predict(teX))
+    if FLAGS.save_reconstructions:
+        print('Saving the reconstructions for the test set...')
+        np.save(FLAGS.save_reconstructions, sdae.reconstruct(teX))
 
     # Save output from each layer of the model
     if FLAGS.save_layers_output:

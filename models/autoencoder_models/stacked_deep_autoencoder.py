@@ -7,13 +7,13 @@ import model
 from utils import utilities
 
 
-class StackedDenoisingAutoencoder(model.Model):
+class StackedDeepAutoencoder(model.Model):
 
-    """ Implementation of Stacked Denoising Autoencoders for Supervised Learning using TensorFlow.
+    """ Implementation of Stacked Denoising Autoencoders for Unsupervised Learning using TensorFlow.
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, layers, model_name='sdae', main_dir='sdae/', enc_act_func=list(['tanh']),
+    def __init__(self, layers, model_name='un_sdae', main_dir='un_sdae/', enc_act_func=list(['tanh']),
                  dec_act_func=list(['none']), loss_func=list(['mean_squared']), num_epochs=list([10]),
                  batch_size=list([10]), dataset='mnist', xavier_init=list([1]), opt=list(['gradient_descent']),
                  learning_rate=list([0.01]), momentum=list([0.5]),  dropout=1, corr_type='none', corr_frac=0.,
@@ -80,18 +80,20 @@ class StackedDenoisingAutoencoder(model.Model):
             tf.set_random_seed(self.seed)
 
         self.input_data = None
-        self.input_labels = None
+        self.input_ref = None
+
         self.keep_prob = None
 
         self.layer_nodes = []  # list of layers of the final network
-        self.softmax_out = None
 
         # Model parameters
         self.encoding_w_ = []  # list of matrices of encoding weights (one per layer)
         self.encoding_b_ = []  # list of arrays of encoding biases (one per layer)
 
-        self.softmax_W = None
-        self.softmax_b = None
+        self.decoding_w = []  # list of matrices of decoding weights (one per layer)
+        self.decoding_b = []  # list of arrays of decoding biases (one per layer)
+
+        self.reconstruction = None
 
         # Model traning and evaluation
         self.train_step = None
@@ -156,22 +158,21 @@ class StackedDenoisingAutoencoder(model.Model):
 
         return next_train, next_valid
 
-    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None):
+    def fit(self, train_set, train_ref, validation_set=None, validation_ref=None):
 
         """ Fit the model to the data.
         :param train_set: Training data. shape(n_samples, n_features)
-        :param train_labels: Labels for the data. shape(n_samples, n_classes)
+        :param train_ref: Reference data. shape(n_samples, n_features)
         :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
-        :param validation_labels: optional, default None. Labels for the validation data. shape(nval_samples, n_classes)
-        :param mode: 'supervised' or 'reconstruction'
+        :param validation_ref: optional, default None. Reference validation data. shape(nval_samples, n_features)
         :return: self
         """
 
-        print('Starting Supervised finetuning...')
+        print('Starting Reconstruction finetuning...')
 
         with tf.Session() as self.tf_session:
             self._initialize_tf_utilities_and_ops()
-            self._train_model(train_set, train_labels, validation_set, validation_labels)
+            self._train_model(train_set, train_ref, validation_set, validation_ref)
             self.tf_saver.save(self.tf_session, self.model_path)
 
     def _initialize_tf_utilities_and_ops(self):
@@ -187,17 +188,17 @@ class StackedDenoisingAutoencoder(model.Model):
 
         self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
-    def _train_model(self, train_set, train_labels, validation_set, validation_labels):
+    def _train_model(self, train_set, train_ref, validation_set, validation_ref):
 
         """ Train the model.
         :param train_set: training set
-        :param train_labels: training labels
+        :param train_ref: training reference data
         :param validation_set: validation set
-        :param validation_labels: validation labels
+        :param validation_ref: validation reference data
         :return: self
         """
 
-        shuff = zip(train_set, train_labels)
+        shuff = zip(train_set, train_ref)
 
         for i in range(self.finetune_num_epochs):
 
@@ -211,18 +212,18 @@ class StackedDenoisingAutoencoder(model.Model):
                                                                 self.keep_prob: self.dropout})
 
             if validation_set is not None:
-                self._run_validation_error_and_summaries(i, validation_set, validation_labels)
+                self._run_validation_error_and_summaries(i, validation_set, validation_ref)
 
-    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_labels):
+    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_ref):
 
         """ Run the summaries and error computation on the validation set.
         :param epoch: current epoch
-        :param validation_set: validation data
+        :param validation_ref: validation reference data
         :return: self
         """
 
-        feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
-        result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
+        feed = {self.input_data: validation_set, self.input_labels: validation_ref, self.keep_prob: 1}
+        result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
 
         summary_str = result[0]
         acc = result[1]
@@ -230,7 +231,7 @@ class StackedDenoisingAutoencoder(model.Model):
         self.tf_summary_writer.add_summary(summary_str, epoch)
 
         if self.verbose == 1:
-            print("Accuracy at step %s: %s" % (epoch, acc))
+            print("Reconstruction loss at step %s: %s" % (epoch, acc))
 
     def get_layers_output(self, dataset):
 
@@ -248,53 +249,48 @@ class StackedDenoisingAutoencoder(model.Model):
                                           self.keep_prob: 1}))
         return layers_out
 
-    def predict(self, test_set):
+    def reconstruct(self, test_set):
 
-        """ Predict the labels for the test set.
+        """ Reconstruct the test set data using the learned model.
         :param test_set: Testing data. shape(n_test_samples, n_features)
         :return: labels
         """
 
         with tf.Session() as self.tf_session:
             self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.model_predictions.eval({self.input_data: test_set,
-                                                self.keep_prob: 1})
+            return self.reconstruction.eval({self.input_data: test_set,
+                                             self.keep_prob: 1})
 
-    def compute_accuracy(self, test_set, test_labels):
+    def compute_reconstruction_loss(self, test_set, test_ref):
 
-        """ Compute the accuracy over the test set.
+        """ Compute the reconstruction loss over the test set.
         :param test_set: Testing data. shape(n_test_samples, n_features)
-        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
-        :return: accuracy
+        :param test_ref: Reference test data. shape(n_test_samples, n_features)
+        :return: reconstruction loss
         """
 
         with tf.Session() as self.tf_session:
             self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.accuracy.eval({self.input_data: test_set,
-                                       self.input_labels: test_labels,
-                                       self.keep_prob: 1})
+            return self.cost.eval({self.input_data: test_set,
+                                   self.input_labels: test_ref,
+                                   self.keep_prob: 1})
 
-    def build_model(self, n_features, n_classes):
+    def build_model(self, n_features):
 
-        """ Creates the computational graph.
-        This graph is intented to be created for finetuning,
-        i.e. after unsupervised pretraining.
-        :param n_features: Number of features.
-        :param n_classes: number of classes.
+        """ Creates the computational graph for the reconstruction task.
+        :param n_features: Number of features
         :return: self
         """
 
-        self._create_placeholders(n_features, n_classes)
+        self._create_placeholders(n_features, n_features)
         self._create_variables(n_features)
 
         next_train = self._create_encoding_layers()
+        self.reconstruction = self._create_decoding_layers(next_train)
 
-        self._create_softmax_layer(next_train, n_classes)
-
-        self.cost = self._create_cost_function_node(self.finetune_loss_func, self.softmax_out, self.input_labels)
-        self.train_step = self._create_train_step_node(self.finetune_opt, self.finetune_learning_rate, self.cost, self.momentum)
-
-        self._create_test_node()
+        self.cost = self._create_cost_function_node(self.finetune_loss_func, self.reconstruction, self.input_labels)
+        self.train_step = self._create_train_step_node(self.finetune_opt, self.finetune_learning_rate, self.cost,
+                                                       self.momentum)
 
     def _create_placeholders(self, n_features, n_classes):
 
@@ -388,30 +384,42 @@ class StackedDenoisingAutoencoder(model.Model):
 
         return next_train
 
-    def _create_softmax_layer(self, last_layer, n_classes):
+    def _create_decoding_layers(self, last_encode):
 
-        """ Create the softmax layer for finetuning.
-        :param last_layer: last layer output node
-        :param n_classes: number of classes
-        :return: self
+        """ Create the decoding layers for reconstruction finetuning.
+        :param last_encode: output of the last encoding layer
+        :return: output of the final encoding layer.
         """
 
-        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes]),
-                                     name='softmax-weigths')
-        self.softmax_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='softmax-biases')
+        next_decode = last_encode
 
-        with tf.name_scope("softmax_layer"):
-            self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b
-            self.layer_nodes.append(self.softmax_out)
+        for l, layer in enumerate(reversed(self.layers)):
 
-    def _create_test_node(self):
+            with tf.name_scope("decode-{}".format(l)):
 
-        """ Create the test node of the network.
-        :return: self
-        """
+                # Create decoding variables
+                dec_w = tf.Variable(tf.transpose(self.encoding_w_[l].initialized_value()))
+                dec_b = tf.Variable(tf.constant(0.01, shape=[dec_w.get_shape().dims[1].value]))
+                self.decoding_w.append(dec_w)
+                self.decoding_b.append(dec_b)
 
-        with tf.name_scope("test"):
-            self.model_predictions = tf.argmax(self.softmax_out, 1)
-            correct_prediction = tf.equal(self.model_predictions, tf.argmax(self.input_labels, 1))
-            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-            _ = tf.scalar_summary('accuracy', self.accuracy)
+                y_act = tf.matmul(next_decode, dec_w) + dec_b
+
+                if self.finetune_act_func == 'sigmoid':
+                    layer_y = tf.nn.sigmoid(y_act)
+
+                elif self.finetune_act_func == 'tanh':
+                    layer_y = tf.nn.tanh(y_act)
+
+                elif self.finetune_act_func == 'relu':
+                    layer_y = tf.nn.relu(y_act)
+
+                else:
+                    layer_y = None
+
+                # the input to the next layer is the output of this layer
+                next_decode = tf.nn.dropout(layer_y, self.keep_prob)
+
+            self.layer_nodes.append(next_decode)
+
+        return next_decode

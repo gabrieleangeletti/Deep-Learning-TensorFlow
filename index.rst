@@ -10,7 +10,8 @@ This project_ is a collection of various Deep Learning algorithms implemented us
 Requirements
 ============
 
-tensorflow >= 0.8 (tested on tensorflow 0.8)
+* python 2.7
+* tensorflow >= 0.8 (tested on tensorflow 0.8)
 
 ============
 Installation
@@ -69,6 +70,8 @@ This command trains a RBM with 250 hidden units using the provided training and 
 Deep Belief Network
 ===================
 
+Stack of Restricted Boltzmann Machines used to build a Deep Network for supervised learning.
+
 Example usage::
 
   python command_line/run_dbn.py --dataset mnist --main_dir dbn-models --model_name my-deeper-dbn --layers 512,256 --rbm_num_epochs 15 --rbm_batch_size 25 --batch_size 25 --rbm_learning_rate 0.005 --learning_rate 0.001 --num_epochs 10 --verbose 1 --loss_func cross_entropy --dropout 0.7 --act_func relu
@@ -78,6 +81,8 @@ This command trains a DBN on the MNIST dataset. Two RBMs are used in the pretrai
 ================
 Deep Autoencoder
 ================
+
+Stack of Restricted Boltzmann Machines used to build a Deep Network for unsupervised learning.
 
 Example usage::
 
@@ -100,15 +105,35 @@ You can also initialize an Autoencoder to an already trained model by passing th
 Stacked Denoising Autoencoder
 =============================
 
-Example usage:
+Stack of Denoising Autoencoders used to build a Deep Network for supervised learning.
 
-  python command_line/run_stacked_autoencoder.py --layers 1024,784,512,256 --batch_size 25 --num_epochs 5 --verbose 1 --corr_type masking --corr_frac 0.0 --finetune_learning_rate 0.002 --finetune_num_epochs 25 --opt momentum --momentum 0.9 --learning_rate 0.05 --enc_act_func sigmoid --finetune_act_func relu --dropout 0.7
+Example usage::
+
+  python command_line/run_stacked_autoencoder_supervised.py --layers 1024,784,512,256 --batch_size 25 --num_epochs 5 --verbose 1 --corr_type masking --corr_frac 0.0 --finetune_learning_rate 0.002 --finetune_num_epochs 25 --opt momentum --momentum 0.9 --learning_rate 0.05 --enc_act_func sigmoid --finetune_act_func relu --dropout 0.7
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 1024, 1024 <-> 784, 784 <-> 512, 512 <-> 256, and then performs supervised finetuning with ReLU units.
 This basic command trains the model on the training set (MNIST in this case), and print the accuracy on the test set. If in addition to the accuracy
-you want also the predicted labels on the test set, just add the `--save_predictions /path/to/file.npy`.
+you want also the predicted labels on the test set, just add the option `--save_predictions /path/to/file.npy`.
 You can also get the output of each layer on the test set. This can be useful to analyze the learned model and to visualized the learned features.
 This can be done by adding the `--save_layers_output /path/to/file`. The files will be saved in the form `file-layer-1.npy`, `file-layer-n.npy`.
+
+========================
+Stacked Deep Autoencoder
+========================
+
+Stack of Denoising Autoencoders used to build a Deep Network for unsupervised learning.
+
+Example usage::
+
+  python command_line/run_stacked_autoencoder_unsupervised.py --layers 512,256,128 --batch_size 25 --num_epochs 5 --verbose 1 --corr_type masking --corr_frac 0.0 --finetune_learning_rate 0.001 --finetune_num_epochs 25 --opt gradient_descent --learning_rate 0.05 --enc_act_func sigmoid --dec_act_func sigmoid --loss_func cross_entropy --finetune_act_func tanh --dropout 0.7
+
+This command trains a Stack of Denoising Autoencoders 784 <-> 512, 512 <-> 256, 256 <-> 128, and from there it constructs the Deep Autoencoder model.
+The final architecture of the model is 784 <-> 512, 512 <-> 256, 256 <-> 128, 128 <-> 256, 256 <-> 512, 512 <-> 784.
+If you want to get the reconstructions of the test set performed by the trained model you can add the option `--save_reconstructions /path/to/file.npy`.
+Like for the Stacked Denoising Autoencoder, you can get the layers output by calling `--save_layers_output /path/to/file`.
+The Deep Autoencoder accepts, in addition to train validation and test sets, reference sets. These are used as reference samples for the model.
+For example, if you want to reconstruct frontal faces from non-frontal faces, you can pass the non-frontal faces as train/valid/test set and the
+ frontal faces as train/valid/test reference. If you don't pass reference sets, they will be set equal to the train/valid/test set.
 
 =====================
 MultiLayer Perceptron
