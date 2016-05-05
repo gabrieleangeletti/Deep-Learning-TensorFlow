@@ -102,7 +102,11 @@ Example usage:
 
   python command_line/run_stacked_autoencoder.py --layers 1024,784,512,256 --batch_size 25 --num_epochs 5 --verbose 1 --corr_type masking --corr_frac 0.0 --finetune_learning_rate 0.002 --finetune_num_epochs 25 --opt momentum --momentum 0.9 --learning_rate 0.05 --enc_act_func sigmoid --finetune_act_func relu --dropout 0.7
 
-This command trains a Stack of Denoising Autoencoders 784 <-> 1024, 1024 <-> 784, 784 <-> 512, 512 <-> 256, and then performs supervised finetuning with ReLUs.
+This command trains a Stack of Denoising Autoencoders 784 <-> 1024, 1024 <-> 784, 784 <-> 512, 512 <-> 256, and then performs supervised finetuning with ReLU units.
+This basic command trains the model on the training set (MNIST in this case), and print the accuracy on the test set. If in addition to the accuracy
+you want also the predicted labels on the test set, just add the `--save_predictions /path/to/file.npy`.
+You can also get the output of each layer on the test set. This can be useful to analyze the learned model and to visualized the learned features.
+This can be done by adding the `--save_layers_output /path/to/file`. The files will be saved in the form `file-layer-1.npy`, `file-layer-n.npy`.
 
 =====================
 MultiLayer Perceptron
