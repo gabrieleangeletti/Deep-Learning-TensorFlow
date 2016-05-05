@@ -22,6 +22,7 @@ flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous
 flags.DEFINE_boolean('encode_train', False, 'Whether to encode and store the training set.')
 flags.DEFINE_boolean('encode_valid', False, 'Whether to encode and store the validation set.')
 flags.DEFINE_boolean('encode_test', False, 'Whether to encode and store the test set.')
+flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the reconstructions of the model.')
 flags.DEFINE_string('weights', None, 'Path to a numpy array containing the weights of the autoencoder.')
 flags.DEFINE_string('h_bias', None, 'Path to a numpy array containing the encoder bias vector.')
 flags.DEFINE_string('v_bias', None, 'Path to a numpy array containing the decoder bias vector.')
@@ -118,6 +119,11 @@ if __name__ == '__main__':
 
     dae.build_model(trX.shape[1], W, bh, bv)
     dae.fit(trX, teX, restore_previous_model=FLAGS.restore_previous_model)
+
+    # Save the predictions of the model
+    if FLAGS.save_reconstructions:
+        print('Saving the reconstructions for the test set...')
+        np.save(FLAGS.save_reconstructions, dae.reconstruct(teX))
 
     # Encode the training data and store it
     dae.transform(trX, name='train', save=FLAGS.encode_train)

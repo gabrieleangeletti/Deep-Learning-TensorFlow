@@ -100,6 +100,7 @@ Example usage::
 This command trains a Denoising Autoencoder on MNIST with 1024 hidden units, sigmoid activation function for the encoder and the decoder, and 50% masking noise. The --weight_images 200 save 200 random hidden units as images in config.data_dir/dae-models/img/ so that you can visualize the learned filters.
 You can also initialize an Autoencoder to an already trained model by passing the parameters to its `build_model()` method. If
  you are using the command line, you can add the options `--weights /path/to/file.npy`, `--h_bias /path/to/file.npy` and `--v_bias /path/to/file.npy`.
+ If you want to save the reconstructions of your model, you can add the option `--save_reconstructions /path/to/file.npy` and the reconstruction of the test set will be saved.
 
 =============================
 Stacked Denoising Autoencoder
