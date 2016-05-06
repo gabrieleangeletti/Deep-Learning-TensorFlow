@@ -33,41 +33,37 @@ flags.DEFINE_float('finetune_learning_rate', 0.001, 'Learning rate for the fine-
 flags.DEFINE_string('finetune_act_func', 'relu', 'Activation function for the fine-tuning phase.'
                                                  '["sigmoid, "tanh", "relu"]')
 flags.DEFINE_float('dropout', 1, 'Dropout parameter.')
-flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum"]')
+flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
 flags.DEFINE_integer('finetune_batch_size', 20, 'Size of each mini-batch for the fine-tuning phase.')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_string('main_dir', 'sdae/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_string('corr_type', 'none', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
 flags.DEFINE_float('corr_frac', 0.0, 'Fraction of the input to corrupt.')
+flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 # Autoencoder layers specific parameters
 flags.DEFINE_string('layers', '256,', 'Comma-separated values for the layers in the sdae.')
-flags.DEFINE_string('xavier_init', '1,', 'Value for the constant in xavier weights initialization.')
 flags.DEFINE_string('enc_act_func', 'sigmoid,', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dec_act_func', 'none,', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
 flags.DEFINE_string('loss_func', 'mean_squared,', 'Loss function. ["mean_squared" or "cross_entropy"]')
 flags.DEFINE_string('opt', 'gradient_descent,', '["gradient_descent", "ada_grad", "momentum", "adam"]')
 flags.DEFINE_string('learning_rate', '0.01,', 'Initial learning rate.')
-flags.DEFINE_string('momentum', '0.5,', 'Momentum parameter.')
 flags.DEFINE_string('num_epochs', '10,', 'Number of epochs.')
 flags.DEFINE_string('batch_size', '10,', 'Size of each mini-batch.')
 
 # Conversion of Autoencoder layers parameters from string to their specific type
 layers = [int(_) for _ in FLAGS.layers.split(',') if _]
-xavier_init = [int(_) for _ in FLAGS.xavier_init.split(',') if _]
 enc_act_func = [_ for _ in FLAGS.enc_act_func.split(',') if _]
 dec_act_func = [_ for _ in FLAGS.dec_act_func.split(',') if _]
 opt = [_ for _ in FLAGS.opt.split(',') if _]
 loss_func = [_ for _ in FLAGS.loss_func.split(',') if _]
 learning_rate = [float(_) for _ in FLAGS.learning_rate.split(',') if _]
-momentum = [float(_) for _ in FLAGS.momentum.split(',') if _]
 num_epochs = [int(_) for _ in FLAGS.num_epochs.split(',') if _]
 batch_size = [int(_) for _ in FLAGS.batch_size.split(',') if _]
 
 # Parameters normalization: if a parameter is not specified, it must be made of the same length of the others
-dae_params = {'layers': layers, 'xavier_init': xavier_init, 'enc_act_func': enc_act_func,
+dae_params = {'layers': layers, 'enc_act_func': enc_act_func,
               'dec_act_func': dec_act_func, 'loss_func': loss_func, 'learning_rate': learning_rate,
-              'opt': opt,
-              'momentum': momentum, 'num_epochs': num_epochs, 'batch_size': batch_size}
+              'opt': opt, 'num_epochs': num_epochs, 'batch_size': batch_size}
 
 for p in dae_params:
     if len(dae_params[p]) != len(layers):
@@ -140,9 +136,9 @@ if __name__ == '__main__':
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,
         enc_act_func=dae_params['enc_act_func'], dec_act_func=dae_params['dec_act_func'],
-        xavier_init=dae_params['xavier_init'], corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
+        corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
         dataset=FLAGS.dataset, loss_func=dae_params['loss_func'], main_dir=FLAGS.main_dir, opt=dae_params['opt'],
-        learning_rate=dae_params['learning_rate'], momentum=dae_params['momentum'], verbose=FLAGS.verbose,
+        learning_rate=dae_params['learning_rate'], momentum=FLAGS.momentum, verbose=FLAGS.verbose,
         num_epochs=dae_params['num_epochs'], batch_size=dae_params['batch_size'],
         finetune_act_func=FLAGS.finetune_act_func)
 
@@ -152,6 +148,7 @@ if __name__ == '__main__':
 
     # Supervised finetuning
     sdae.build_model(trX.shape[1], trY.shape[1])
+
     sdae.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Compute the accuracy of the model

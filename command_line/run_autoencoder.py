@@ -34,7 +34,6 @@ flags.DEFINE_integer('n_components', 256, 'Number of hidden units in the dae.')
 flags.DEFINE_float('l2reg', 5e-4, 'Regularization parameter. If 0, no regularization.')
 flags.DEFINE_string('corr_type', 'none', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
 flags.DEFINE_float('corr_frac', 0., 'Fraction of the input to corrupt.')
-flags.DEFINE_integer('xavier_init', 1, 'Value for the constant in xavier weights initialization.')
 flags.DEFINE_string('enc_act_func', 'tanh', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dec_act_func', 'none', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
 flags.DEFINE_string('main_dir', 'dae/', 'Directory to store data relative to the algorithm.')
@@ -101,7 +100,7 @@ if __name__ == '__main__':
     # Create the object
     dae = denoising_autoencoder.DenoisingAutoencoder(
         model_name=FLAGS.model_name, n_components=FLAGS.n_components,
-        enc_act_func=FLAGS.enc_act_func, dec_act_func=FLAGS.dec_act_func, xavier_init=FLAGS.xavier_init,
+        enc_act_func=FLAGS.enc_act_func, dec_act_func=FLAGS.dec_act_func,
         corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac, dataset=FLAGS.dataset,
         loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir, opt=FLAGS.opt,
         learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, l2reg=FLAGS.l2reg,

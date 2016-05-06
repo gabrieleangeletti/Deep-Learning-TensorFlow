@@ -6,7 +6,7 @@ evaluate popular Deep Learning models and maybe use them as benchmark/baseline i
 
 ### Requirements:
 
-* tensorflow >= 0.6 (tested on tensorflow 0.6, 0.7.1 and 0.8)
+* tensorflow >= 0.8
 
 ### List of available models:
 

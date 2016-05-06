@@ -14,13 +14,12 @@ class DenoisingAutoencoder(model.Model):
 
     def __init__(self, model_name='dae', n_components=256, main_dir='dae/', enc_act_func='tanh',
                  dec_act_func='none', loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
-                 xavier_init=1, opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none',
+                 opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none',
                  corr_frac=0., verbose=1, l2reg=5e-4):
         """
         :param n_components: number of hidden units
         :param enc_act_func: Activation function for the encoder. ['tanh', 'sigmoid']
         :param dec_act_func: Activation function for the decoder. ['tanh', 'sigmoid', 'none']
-        :param xavier_init: Value of the constant for xavier weights initialization
         :param corr_type: Type of input corruption. ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt.
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
@@ -34,7 +33,6 @@ class DenoisingAutoencoder(model.Model):
         self.n_components = n_components
         self.enc_act_func = enc_act_func
         self.dec_act_func = dec_act_func
-        self.xavier_init = xavier_init
         self.corr_type = corr_type
         self.corr_frac = corr_frac
         self.verbose = verbose
@@ -171,7 +169,7 @@ class DenoisingAutoencoder(model.Model):
         self._create_decode_layer()
 
         self._create_cost_function_node(self.loss_func, self.decode, self.input_data)
-        self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
+        self._create_train_step_node(self.opt, self.learning_rate, self.momentum)
 
     def _create_placeholders(self, n_features):
 
@@ -191,7 +189,7 @@ class DenoisingAutoencoder(model.Model):
         if W_:
             self.W_ = tf.Variable(W_, name='enc-w')
         else:
-            self.W_ = tf.Variable(utilities.xavier_init(n_features, self.n_components, self.xavier_init), name='enc-w')
+            self.W_ = tf.Variable(tf.truncated_normal(shape=[n_features, self.n_components], stddev=0.01), name='enc-w')
 
         if bh_:
             self.bh_ = tf.Variable(bh_, name='hidden-bias')

@@ -49,7 +49,7 @@ class LogisticRegression(model.Model):
         self.model_output = tf.nn.softmax(tf.matmul(self.input_data, self.W_) + self.b_)
 
         self._create_cost_function_node(self.loss_func, self.model_output, self.input_labels)
-        tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
+        self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
         self._create_test_node()
 
     def _create_placeholders(self, n_features, n_classes):

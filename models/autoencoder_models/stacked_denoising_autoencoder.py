@@ -15,8 +15,8 @@ class StackedDenoisingAutoencoder(model.Model):
 
     def __init__(self, layers, model_name='sdae', main_dir='sdae/', enc_act_func=list(['tanh']),
                  dec_act_func=list(['none']), loss_func=list(['mean_squared']), num_epochs=list([10]),
-                 batch_size=list([10]), dataset='mnist', xavier_init=list([1]), opt=list(['gradient_descent']),
-                 learning_rate=list([0.01]), momentum=list([0.5]),  dropout=1, corr_type='none', corr_frac=0.,
+                 batch_size=list([10]), dataset='mnist', opt=list(['gradient_descent']),
+                 learning_rate=list([0.01]), momentum=0.5,  dropout=1, corr_type='none', corr_frac=0.,
                  verbose=1, finetune_loss_func='cross_entropy', finetune_act_func='relu',
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
                  finetune_batch_size=20, do_pretrain=True):
@@ -31,7 +31,6 @@ class StackedDenoisingAutoencoder(model.Model):
         :param finetune_opt: optimizer for the finetuning phase
         :param finetune_num_epochs: Number of epochs for the finetuning. int, default 20
         :param finetune_batch_size: Size of each mini-batch for the finetuning. int, default 20
-        :param xavier_init: Value of the constant for xavier weights initialization. int, default 1
         :param corr_type: Type of input corruption. string, default 'none'. ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt. float, default 0.0
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
@@ -48,7 +47,6 @@ class StackedDenoisingAutoencoder(model.Model):
         # Autoencoder parameters
         self.enc_act_func = enc_act_func
         self.dec_act_func = dec_act_func
-        self.xavier_init = xavier_init
 
         # Stacked Autoencoder parameters
         self.corr_type = corr_type
@@ -82,8 +80,8 @@ class StackedDenoisingAutoencoder(model.Model):
             self.autoencoders.append(denoising_autoencoder.DenoisingAutoencoder(
                 n_components=layer, main_dir=self.main_dir,
                 enc_act_func=self.enc_act_func[l], dec_act_func=self.dec_act_func[l], loss_func=self.loss_func[l],
-                xavier_init=self.xavier_init[l], opt=self.opt[l], learning_rate=self.learning_rate[l],
-                momentum=self.momentum[l], corr_type=self.corr_type, corr_frac=self.corr_frac,
+                opt=self.opt[l], learning_rate=self.learning_rate[l],
+                momentum=self.momentum, corr_type=self.corr_type, corr_frac=self.corr_frac,
                 verbose=self.verbose, num_epochs=self.num_epochs[l], batch_size=self.batch_size[l],
                 dataset=self.dataset))
 
@@ -254,7 +252,7 @@ class StackedDenoisingAutoencoder(model.Model):
         self._create_softmax_layer(next_train, n_classes)
 
         self._create_cost_function_node(self.finetune_loss_func, self.softmax_out, self.input_labels)
-        self._create_train_step_node(self.finetune_opt, self.finetune_learning_rate, self.cost, self.momentum)
+        self._create_train_step_node(self.finetune_opt, self.finetune_learning_rate, self.momentum)
 
         self._create_test_node()
 
@@ -289,22 +287,17 @@ class StackedDenoisingAutoencoder(model.Model):
         :return: self
         """
 
-        if not self.xavier_init[0]:
-            xinit = 1
-        else:
-            xinit = self.xavier_init[0]
-
         self.encoding_w_ = []
         self.encoding_b_ = []
 
         for l, layer in enumerate(self.layers):
 
             if l == 0:
-                self.encoding_w_.append(tf.Variable(utilities.xavier_init(n_features, self.layers[l], xinit)))
-                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.01)))
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.01)))
+                self.encoding_b_.append(tf.Variable(tf.constant(0.01, shape=[self.layers[l]])))
             else:
-                self.encoding_w_.append(tf.Variable(utilities.xavier_init(self.layers[l-1], self.layers[l], xinit)))
-                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.01)))
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l-1], self.layers[l]], stddev=0.01)))
+                self.encoding_b_.append(tf.Variable(tf.constant(0.01, shape=[self.layers[l]])))
 
     def _create_variables_pretrain(self):
 
@@ -358,9 +351,8 @@ class StackedDenoisingAutoencoder(model.Model):
         :return: self
         """
 
-        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes]),
-                                     name='softmax-weigths')
-        self.softmax_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='softmax-biases')
+        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes], stddev=0.01), name='sm-weigths')
+        self.softmax_b = tf.Variable(tf.constant(0.01, shape=[n_classes]), name='sm-biases')
 
         with tf.name_scope("softmax_layer"):
             self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b

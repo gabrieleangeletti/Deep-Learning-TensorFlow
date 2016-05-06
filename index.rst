@@ -98,10 +98,10 @@ Example usage::
   python command_line/run_autoencoder.py --n_components 1024 --batch_size 64 --num_epochs 20 --verbose 1 --learning_rate 0.05 --corr_type masking --corr_frac 0.5 --enc_act_func sigmoid --dec_act_func sigmoid --loss_func cross_entropy --opt momentum --momentum 0.9 --main_dir dae-models --model_name dae1024 --weight_images 200
 
 This command trains a Denoising Autoencoder on MNIST with 1024 hidden units, sigmoid activation function for the encoder and the decoder, and 50% masking noise. The --weight_images 200 save 200 random hidden units as images in config.data_dir/dae-models/img/ so that you can visualize the learned filters.
-You can also initialize an Autoencoder to an already trained model by passing the parameters to its `build_model()` method. If
- you are using the command line, you can add the options `--weights /path/to/file.npy`, `--h_bias /path/to/file.npy` and `--v_bias /path/to/file.npy`.
- If you want to save the reconstructions of your model, you can add the option `--save_reconstructions /path/to/file.npy` and the reconstruction of the test set will be saved.
- You can also save the parameters of the model by adding the option `--save_paramenters /path/to/file`. Three files will be generated: `file-enc_w.npy`, `file-enc_b.npy` and `file-dec_b.npy`.
+You can also initialize an Autoencoder to an already trained model by passing the parameters to its ``build_model()`` method. If
+ you are using the command line, you can add the options ``--weights /path/to/file.npy``, ``--h_bias /path/to/file.npy`` and ``--v_bias /path/to/file.npy``.
+ If you want to save the reconstructions of your model, you can add the option ``--save_reconstructions /path/to/file.npy`` and the reconstruction of the test set will be saved.
+ You can also save the parameters of the model by adding the option ``--save_paramenters /path/to/file``. Three files will be generated: ``file-enc_w.npy``, ``file-enc_b.npy`` and ``file-dec_b.npy``.
 
 =============================
 Stacked Denoising Autoencoder
@@ -115,9 +115,9 @@ Example usage::
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 1024, 1024 <-> 784, 784 <-> 512, 512 <-> 256, and then performs supervised finetuning with ReLU units.
 This basic command trains the model on the training set (MNIST in this case), and print the accuracy on the test set. If in addition to the accuracy
-you want also the predicted labels on the test set, just add the option `--save_predictions /path/to/file.npy`.
+you want also the predicted labels on the test set, just add the option ``--save_predictions /path/to/file.npy``.
 You can also get the output of each layer on the test set. This can be useful to analyze the learned model and to visualized the learned features.
-This can be done by adding the `--save_layers_output /path/to/file`. The files will be saved in the form `file-layer-1.npy`, `file-layer-n.npy`.
+This can be done by adding the ``--save_layers_output /path/to/file``. The files will be saved in the form ``file-layer-1.npy``, ``file-layer-n.npy``.
 
 ========================
 Stacked Deep Autoencoder
@@ -127,12 +127,12 @@ Stack of Denoising Autoencoders used to build a Deep Network for unsupervised le
 
 Example usage::
 
-  python command_line/run_stacked_autoencoder_unsupervised.py --layers 512,256,128 --batch_size 25 --num_epochs 5 --verbose 1 --corr_type masking --corr_frac 0.0 --finetune_learning_rate 0.001 --finetune_num_epochs 25 --opt gradient_descent --learning_rate 0.05 --enc_act_func sigmoid --dec_act_func sigmoid --loss_func cross_entropy --finetune_act_func tanh --dropout 0.7
+  python command_line/run_stacked_autoencoder_unsupervised.py --layers 512,256,128 --batch_size 25 --num_epochs 5 --verbose 1 --corr_type masking --corr_frac 0.0 --finetune_learning_rate 0.0001 --finetune_num_epochs 25 --opt gradient_descent --learning_rate 0.05 --enc_act_func sigmoid --dec_act_func sigmoid --loss_func cross_entropy --finetune_act_func tanh --dropout 0.7
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 512, 512 <-> 256, 256 <-> 128, and from there it constructs the Deep Autoencoder model.
 The final architecture of the model is 784 <-> 512, 512 <-> 256, 256 <-> 128, 128 <-> 256, 256 <-> 512, 512 <-> 784.
-If you want to get the reconstructions of the test set performed by the trained model you can add the option `--save_reconstructions /path/to/file.npy`.
-Like for the Stacked Denoising Autoencoder, you can get the layers output by calling `--save_layers_output /path/to/file`.
+If you want to get the reconstructions of the test set performed by the trained model you can add the option ``--save_reconstructions /path/to/file.npy``.
+Like for the Stacked Denoising Autoencoder, you can get the layers output by calling ``--save_layers_output /path/to/file``.
 The Deep Autoencoder accepts, in addition to train validation and test sets, reference sets. These are used as reference samples for the model.
 For example, if you want to reconstruct frontal faces from non-frontal faces, you can pass the non-frontal faces as train/valid/test set and the
  frontal faces as train/valid/test reference. If you don't pass reference sets, they will be set equal to the train/valid/test set.
@@ -148,8 +148,8 @@ Utilities
 =========
 Each model has the following utilities:
 
-* `--seed n`: set numpy and tensorflow random number generators to n
-* `--restore_previous_model`: restore a previously trained model with the same `model_name` and model architecture of the current model.
+* ``--seed n``: set numpy and tensorflow random number generators to n
+* ``--restore_previous_model``: restore a previously trained model with the same ``model_name`` and model architecture of the current model.
 
 =========
 TODO list

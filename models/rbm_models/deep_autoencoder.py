@@ -205,7 +205,7 @@ class DeepAutoencoder(model.Model):
         decode_output = self._create_decoding_layers(encode_output)
 
         self._create_cost_function_node(self.loss_func, decode_output, self.x)
-        self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
+        self._create_train_step_node(self.opt, self.learning_rate, self.momentum)
 
     def _create_placeholders(self, n_features):
 

@@ -80,9 +80,10 @@ if __name__ == '__main__':
         teY = None
 
     # Create the object
-    l = logistic_regression.LogisticRegression(model_name=FLAGS.model_name,
-        dataset=FLAGS.dataset, loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir, verbose=FLAGS.verbose,
-        learning_rate=FLAGS.learning_rate, num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size)
+    l = logistic_regression.LogisticRegression(
+        model_name=FLAGS.model_name, dataset=FLAGS.dataset, loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir,
+        verbose=FLAGS.verbose, learning_rate=FLAGS.learning_rate, num_epochs=FLAGS.num_epochs,
+        batch_size=FLAGS.batch_size)
 
     # Fit the model
     l.build_model(trX.shape[1], trY.shape[1])

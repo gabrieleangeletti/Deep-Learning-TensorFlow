@@ -111,28 +111,27 @@ class Model(object):
             else:
                 self.cost = None
 
-    def _create_train_step_node(self, opt, learning_rate, cost, momentum=None):
+    def _create_train_step_node(self, opt, learning_rate, momentum=None):
 
         """ Create the training step node of the network.
         :param opt: tensorflow optimizer
         :param learning_rate: learning rate parameter
-        :param cost: cost function node
         :param momentum: momentum parameter (used only for momentum optimizer)
         :return: self
         """
 
         with tf.name_scope("train"):
             if opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
+                self.train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(self.cost)
 
             elif opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(learning_rate).minimize(cost)
+                self.train_step = tf.train.AdagradOptimizer(learning_rate).minimize(self.cost)
 
             elif opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(cost)
+                self.train_step = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(self.cost)
 
             elif opt == 'adam':
-                self.train_step = tf.train.AdamOptimizer(learning_rate).minimize(cost)
+                self.train_step = tf.train.AdamOptimizer(learning_rate).minimize(self.cost)
 
             else:
                 self.train_step = None

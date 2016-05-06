@@ -208,7 +208,7 @@ class DBN(model.Model):
         self._create_softmax_layer(next_train, n_classes)
 
         self._create_cost_function_node(self.loss_func, self.y, self.y_)
-        self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
+        self._create_train_step_node(self.opt, self.learning_rate, self.momentum)
         self._create_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
