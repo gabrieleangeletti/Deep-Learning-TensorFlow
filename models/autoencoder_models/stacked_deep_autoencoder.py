@@ -31,20 +31,16 @@ class StackedDeepAutoencoder(model.Model):
         :param finetune_opt: optimizer for the finetuning phase
         :param finetune_num_epochs: Number of epochs for the finetuning. int, default 20
         :param finetune_batch_size: Size of each mini-batch for the finetuning. int, default 20
-        :param loss_func: Loss function. ['cross_entropy', 'mean_squared']. string, default 'mean_squared'
         :param xavier_init: Value of the constant for xavier weights initialization. int, default 1
-        :param opt: Optimizer to use. string, default 'gradient_descent'. ['gradient_descent', 'ada_grad', 'momentum']
-        :param learning_rate: Initial learning rate. float, default 0.01
-        :param momentum: 'Momentum parameter. float, default 0.9
         :param corr_type: Type of input corruption. string, default 'none'. ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt. float, default 0.0
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
-        :param num_epochs: Number of epochs. int, default 10
-        :param batch_size: Size of each mini-batch. int, default 10
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
-        :param dataset: Optional name for the dataset. string, default 'mnist'
         """
         model.Model.__init__(self, model_name, main_dir)
+
+        self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
+                                             dataset, opt, momentum)
 
         self.layers = layers
         self.do_pretrain = do_pretrain
@@ -52,13 +48,7 @@ class StackedDeepAutoencoder(model.Model):
         # Autoencoder parameters
         self.enc_act_func = enc_act_func
         self.dec_act_func = dec_act_func
-        self.loss_func = loss_func
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
         self.xavier_init = xavier_init
-        self.opt = opt
-        self.learning_rate = learning_rate
-        self.momentum = momentum
 
         # Stacked Autoencoder parameters
         self.corr_type = corr_type
@@ -70,7 +60,6 @@ class StackedDeepAutoencoder(model.Model):
         self.finetune_act_func = finetune_act_func
         self.finetune_num_epochs = finetune_num_epochs
         self.finetune_batch_size = finetune_batch_size
-        self.dataset = dataset
         self.verbose = verbose
 
         self.input_data = None

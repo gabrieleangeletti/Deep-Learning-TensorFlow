@@ -20,32 +20,21 @@ class DenoisingAutoencoder(model.Model):
         :param n_components: number of hidden units
         :param enc_act_func: Activation function for the encoder. ['tanh', 'sigmoid']
         :param dec_act_func: Activation function for the decoder. ['tanh', 'sigmoid', 'none']
-        :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
         :param xavier_init: Value of the constant for xavier weights initialization
-        :param opt: Which tensorflow optimizer to use. ['gradient_descent', 'momentum', 'ada_grad']
-        :param learning_rate: Initial learning rate
-        :param momentum: Momentum parameter
         :param corr_type: Type of input corruption. ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt.
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
-        :param num_epochs: Number of epochs
-        :param batch_size: Size of each mini-batch
-        :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom'].
         :param l2reg: Regularization parameter. If 0, no regularization.
         """
         model.Model.__init__(self, model_name, main_dir)
 
+        self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
+                                             dataset, opt, momentum)
+
         self.n_components = n_components
         self.enc_act_func = enc_act_func
         self.dec_act_func = dec_act_func
-        self.loss_func = loss_func
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
-        self.dataset = dataset
         self.xavier_init = xavier_init
-        self.opt = opt
-        self.learning_rate = learning_rate
-        self.momentum = momentum
         self.corr_type = corr_type
         self.corr_frac = corr_frac
         self.verbose = verbose

@@ -66,13 +66,34 @@ class Model(object):
 
         self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
+    def _initialize_training_parameters(self, loss_func, learning_rate, num_epochs, batch_size, dataset, opt, momentum):
+
+        """ Initialize training parameters common to all models.
+        :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
+        :param learning_rate: Initial learning rate
+        :param num_epochs: Number of epochs
+        :param batch_size: Size of each mini-batch
+        :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom'].
+        :param opt: Which tensorflow optimizer to use. ['gradient_descent', 'momentum', 'ada_grad']
+        :param momentum: Momentum parameter
+        :return: self
+        """
+
+        self.loss_func = loss_func
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.dataset = dataset
+        self.opt = opt
+        self.momentum = momentum
+
     def _create_cost_function_node(self, loss_func, model_output, ref_input):
 
         """ Create the cost function node.
         :param loss_func: cost function. ['cross_entropy', 'mean_squared']
         :param model_output: model output node
         :param ref_input: reference input placeholder node
-        :return: cost function node
+        :return: self
         """
 
         with tf.name_scope("cost"):
@@ -97,7 +118,7 @@ class Model(object):
         :param learning_rate: learning rate parameter
         :param cost: cost function node
         :param momentum: momentum parameter (used only for momentum optimizer)
-        :return: train step node
+        :return: self
         """
 
         with tf.name_scope("train"):

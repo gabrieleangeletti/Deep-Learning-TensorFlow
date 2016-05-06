@@ -11,27 +11,24 @@ class RBM(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, num_hidden, visible_unit_type='bin', main_dir='rbm', model_name='rbm',
+    def __init__(self, num_hidden, visible_unit_type='bin', main_dir='rbm', model_name='rbm', dataset='mnist',
                  gibbs_sampling_steps=1, learning_rate=0.01, batch_size=10, num_epochs=10, stddev=0.1, verbose=0):
 
         """
         :param num_hidden: number of hidden units
         :param visible_unit_type: type of the visible units (binary or gaussian)
         :param gibbs_sampling_steps: optional, default 1
-        :param learning_rate: optional, default 0.01
-        :param batch_size: optional, default 10
-        :param num_epochs: optional, default 10
         :param stddev: optional, default 0.1. Ignored if visible_unit_type is not 'gauss'
         :param verbose: level of verbosity. optional, default 0
         """
         model.Model.__init__(self, model_name, main_dir)
 
+        self._initialize_training_parameters(None, learning_rate, num_epochs, batch_size,
+                                             dataset, None, None)
+
         self.num_hidden = num_hidden
         self.visible_unit_type = visible_unit_type
         self.gibbs_sampling_steps = gibbs_sampling_steps
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.num_epochs = num_epochs
         self.stddev = stddev
         self.verbose = verbose
 

@@ -30,17 +30,13 @@ class DeepAutoencoder(model.Model):
         :param rbm_gibbs_k: number of gibbs sampling steps for each rbm
         :param gauss_visible: whether the input layer should have gaussian units
         :param stddev: standard deviation for the gaussian layer
-        :param learning_rate: Initial learning rate. float, default 0.01
-        :param momentum: 'Momentum parameter. float, default 0.9
-        :param num_epochs: Number of epochs. int, default 10
-        :param batch_size: Size of each mini-batch. int, default 10
         :param dropout: dropout parameter
-        :param opt: Optimizer to use. string, default 'gradient_descent'. ['gradient_descent', 'ada_grad', 'momentum']
-        :param loss_func: Loss function. ['cross_entropy', 'mean_squared']. string, default 'mean_squared'
-        :param dataset: Optional name for the dataset. string, default 'mnist'
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
         """
         model.Model.__init__(self, model_name, main_dir)
+
+        self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
+                                             dataset, opt, momentum)
 
         self.layers = layers
         self.n_layers = len(layers)
@@ -56,14 +52,7 @@ class DeepAutoencoder(model.Model):
         # Stacked RBM parameters
         self.gauss_visible = gauss_visible
         self.stddev = stddev
-        self.learning_rate = learning_rate
-        self.momentum = momentum
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
         self.dropout = dropout
-        self.opt = opt
-        self.loss_func = loss_func
-        self.dataset = dataset
         self.verbose = verbose
 
         self.W_pretrain = None

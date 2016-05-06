@@ -15,21 +15,14 @@ class LogisticRegression(model.Model):
                  learning_rate=0.01, verbose=0, num_epochs=10, batch_size=10):
 
         """
-        :param loss_func: Loss function. string, default 'cross_entropy', ['cross_entropy', 'mean_squared']
-        :param learning_rate: Initial learning rate. float, default 0.01
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
-        :param num_epochs: Number of epochs. int, default 10
-        :param batch_size: Size of each mini-batch. int, default 10
-        :param dataset: Optional name for the dataset. string, default 'mnist'
         """
         model.Model.__init__(self, model_name, main_dir)
 
-        self.loss_func = loss_func
-        self.learning_rate = learning_rate
+        self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
+                                             dataset, None, None)
+
         self.verbose = verbose
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
-        self.dataset = dataset
 
         # Computational graph nodes
         self.input_data = None

@@ -24,26 +24,15 @@ class ConvolutionalNetwork(model.Model):
                 softmax: softmax layer
             For example:
                 conv2d-5-5-32,maxpool-2,conv2d-5-5-64,maxpool-2,full-128,full-128,softmax
-        :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
-        :param num_epochs: Number of epochs
-        :param batch_size: Size of each mini-batch
-        :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom']
-        :param opt: Which tensorflow optimizer to use. ['gradient_descent', 'momentum', 'ada_grad', 'adam']
-        :param learning_rate: Initial learning rate
-        :param momentum: Momentum parameter
         :param dropout: Dropout parameter
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         """
         model.Model.__init__(self, model_name, main_dir)
 
+        self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
+                                             dataset, opt, momentum)
+
         self.layers = layers
-        self.loss_func = loss_func
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
-        self.dataset = dataset
-        self.opt = opt
-        self.learning_rate = learning_rate
-        self.momentum = momentum
         self.dropout = dropout
         self.verbose = verbose
 
