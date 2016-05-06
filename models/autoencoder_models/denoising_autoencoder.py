@@ -120,8 +120,8 @@ class DenoisingAutoencoder(model.Model):
 
             elif self.corr_type == 'salt_and_pepper':
                 return utilities.salt_and_pepper_noise(data, corruption_ratio)
-
-        return None
+        else:
+            return np.copy(data)
 
     def _run_validation_error_and_summaries(self, epoch, validation_set):
 
