@@ -26,7 +26,7 @@ flags.DEFINE_string('save_layers_output', '', 'Path to a .npy file to save outpu
 flags.DEFINE_string('encweights', None, 'Path to a npz array containing the weights of the encoding layers.')
 flags.DEFINE_string('encbiases', None, 'Path to a npz array containing the encoding layers biases.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
-flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
+flags.DEFINE_string('model_name', 'un_sdae', 'Name for the model.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
@@ -38,7 +38,7 @@ flags.DEFINE_float('dropout', 1, 'Dropout parameter.')
 flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum"]')
 flags.DEFINE_integer('finetune_batch_size', 20, 'Size of each mini-batch for the fine-tuning phase.')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
-flags.DEFINE_string('main_dir', 'sdae/', 'Directory to store data relative to the algorithm.')
+flags.DEFINE_string('main_dir', 'un_sdae/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_string('corr_type', 'none', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
 flags.DEFINE_float('corr_frac', 0.0, 'Fraction of the input to corrupt.')
 # Autoencoder layers specific parameters
@@ -149,7 +149,7 @@ if __name__ == '__main__':
     sdae = None
 
     sdae = stacked_deep_autoencoder.StackedDeepAutoencoder(
-        do_pretrain=FLAGS.do_pretrain,
+        do_pretrain=FLAGS.do_pretrain, model_name=FLAGS.model_name,
         layers=dae_params['layers'], finetune_loss_func=FLAGS.finetune_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,

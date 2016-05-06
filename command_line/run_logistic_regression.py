@@ -20,6 +20,7 @@ flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('main_dir', 'lr/', 'Directory to store data relative to the algorithm.')
+flags.DEFINE_string('model_name', 'logreg', 'Name for the model.')
 flags.DEFINE_string('loss_func', 'cross_entropy', 'Loss function. ["mean_squared" or "cross_entropy"]')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
@@ -79,7 +80,7 @@ if __name__ == '__main__':
         teY = None
 
     # Create the object
-    l = logistic_regression.LogisticRegression(
+    l = logistic_regression.LogisticRegression(model_name=FLAGS.model_name,
         dataset=FLAGS.dataset, loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir, verbose=FLAGS.verbose,
         learning_rate=FLAGS.learning_rate, num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size)
 

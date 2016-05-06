@@ -81,8 +81,9 @@ class StackedDeepAutoencoder(model.Model):
         self.autoencoders = []
 
         for l, layer in enumerate(layers):
+            autoencoder_name = self.model_name + '-dae-' + str(l+1)
             self.autoencoders.append(denoising_autoencoder.DenoisingAutoencoder(
-                n_components=layer, main_dir=self.main_dir,
+                n_components=layer, main_dir=self.main_dir, model_name=autoencoder_name,
                 enc_act_func=self.enc_act_func[l], dec_act_func=self.dec_act_func[l], loss_func=self.loss_func[l],
                 xavier_init=self.xavier_init[l], opt=self.opt[l], learning_rate=self.learning_rate[l],
                 momentum=self.momentum[l], corr_type=self.corr_type, corr_frac=self.corr_frac,
@@ -363,7 +364,7 @@ class StackedDeepAutoencoder(model.Model):
 
         next_decode = last_encode
 
-        for l, layer in enumerate(reversed(self.layers)):
+        for l, layer in reversed(list(enumerate(self.layers))):
 
             with tf.name_scope("decode-{}".format(l)):
 

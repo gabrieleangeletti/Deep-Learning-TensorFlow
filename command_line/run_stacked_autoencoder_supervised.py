@@ -24,6 +24,7 @@ flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predict
 flags.DEFINE_string('save_layers_output', '', 'Path to a .npy file to save output from all the layers of the model.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
+flags.DEFINE_string('model_name', 'sdae', 'Name for the model.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
@@ -134,7 +135,7 @@ if __name__ == '__main__':
     sdae = None
 
     sdae = stacked_denoising_autoencoder.StackedDenoisingAutoencoder(
-        do_pretrain=FLAGS.do_pretrain,
+        do_pretrain=FLAGS.do_pretrain, model_name=FLAGS.model_name,
         layers=dae_params['layers'], finetune_loss_func=FLAGS.finetune_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,
