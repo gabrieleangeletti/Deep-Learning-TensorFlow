@@ -66,7 +66,8 @@ class Model(object):
 
         self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
-    def _initialize_training_parameters(self, loss_func, learning_rate, num_epochs, batch_size, dataset, opt, momentum):
+    def _initialize_training_parameters(self, loss_func, learning_rate, num_epochs, batch_size,
+                                        dataset, opt, momentum, l2reg):
 
         """ Initialize training parameters common to all models.
         :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
@@ -76,6 +77,7 @@ class Model(object):
         :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom'].
         :param opt: Which tensorflow optimizer to use. ['gradient_descent', 'momentum', 'ada_grad']
         :param momentum: Momentum parameter
+        :param l2reg: regularization parameter
         :return: self
         """
 
@@ -86,13 +88,15 @@ class Model(object):
         self.dataset = dataset
         self.opt = opt
         self.momentum = momentum
+        self.l2reg = l2reg
 
-    def _create_cost_function_node(self, loss_func, model_output, ref_input):
+    def _create_cost_function_node(self, loss_func, model_output, ref_input, regterm=None):
 
         """ Create the cost function node.
         :param loss_func: cost function. ['cross_entropy', 'mean_squared']
         :param model_output: model output node
         :param ref_input: reference input placeholder node
+        :param regterm: regularization term
         :return: self
         """
 
@@ -101,12 +105,12 @@ class Model(object):
                 cost = - tf.reduce_mean(ref_input * tf.log(tf.clip_by_value(model_output, 1e-10, float('inf'))) +
                                         (1 - ref_input) * tf.log(tf.clip_by_value(1 - model_output, 1e-10, float('inf'))))
                 _ = tf.scalar_summary("cross_entropy", cost)
-                self.cost = cost
+                self.cost = cost + regterm if regterm is not None else cost
 
             elif loss_func == 'mean_squared':
                 cost = tf.sqrt(tf.reduce_mean(tf.square(ref_input - model_output)))
                 _ = tf.scalar_summary("mean_squared", cost)
-                self.cost = cost
+                self.cost = cost + regterm if regterm is not None else cost
 
             else:
                 self.cost = None

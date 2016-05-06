@@ -42,6 +42,7 @@ flags.DEFINE_float('corr_frac', 0.0, 'Fraction of the input to corrupt.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 # Autoencoder layers specific parameters
 flags.DEFINE_string('layers', '256,', 'Comma-separated values for the layers in the sdae.')
+flags.DEFINE_float('l2reg', 5e-4, 'Regularization parameter for the autoencoders. If 0, no regularization.')
 flags.DEFINE_string('enc_act_func', 'sigmoid,', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dec_act_func', 'none,', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
 flags.DEFINE_string('loss_func', 'mean_squared,', 'Loss function. ["mean_squared" or "cross_entropy"]')
@@ -136,7 +137,7 @@ if __name__ == '__main__':
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,
         enc_act_func=dae_params['enc_act_func'], dec_act_func=dae_params['dec_act_func'],
-        corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
+        corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac, autoencoders_l2reg=FLAGS.l2reg,
         dataset=FLAGS.dataset, loss_func=dae_params['loss_func'], main_dir=FLAGS.main_dir, opt=dae_params['opt'],
         learning_rate=dae_params['learning_rate'], momentum=FLAGS.momentum, verbose=FLAGS.verbose,
         num_epochs=dae_params['num_epochs'], batch_size=dae_params['batch_size'],

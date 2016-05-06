@@ -17,7 +17,7 @@ class StackedDeepAutoencoder(model.Model):
                  dec_act_func=list(['none']), loss_func=list(['mean_squared']), num_epochs=list([10]),
                  batch_size=list([10]), dataset='mnist', opt=list(['gradient_descent']),
                  learning_rate=list([0.01]), momentum=0.5,  dropout=1, corr_type='none', corr_frac=0.,
-                 verbose=1, finetune_loss_func='cross_entropy', finetune_act_func='relu',
+                 verbose=1, finetune_loss_func='cross_entropy', finetune_act_func='relu', autoencoders_l2reg=5e-4,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
                  finetune_batch_size=20, do_pretrain=True):
         """
@@ -83,7 +83,7 @@ class StackedDeepAutoencoder(model.Model):
             self.autoencoders.append(denoising_autoencoder.DenoisingAutoencoder(
                 n_components=layer, main_dir=self.main_dir, model_name=autoencoder_name,
                 enc_act_func=self.enc_act_func[l], dec_act_func=self.dec_act_func[l], loss_func=self.loss_func[l],
-                opt=self.opt[l], learning_rate=self.learning_rate[l],
+                opt=self.opt[l], learning_rate=self.learning_rate[l], l2reg=autoencoders_l2reg,
                 momentum=self.momentum, corr_type=self.corr_type, corr_frac=self.corr_frac,
                 verbose=self.verbose, num_epochs=self.num_epochs[l], batch_size=self.batch_size[l],
                 dataset=self.dataset))
