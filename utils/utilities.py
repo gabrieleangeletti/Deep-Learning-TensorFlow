@@ -170,6 +170,18 @@ def salt_and_pepper_noise(X, v):
 # ############# #
 
 
+def random_seed_np_tf(seed):
+    """ seed numpy and tensorflow random number generators.
+    :param seed: seed parameter
+    """
+    if seed >= 0:
+        np.random.seed(seed)
+        tf.set_random_seed(seed)
+        return True
+    else:
+        return False
+
+
 def gen_image(img, width, height, outfile, img_type='grey'):
     assert len(img) == width * height or len(img) == width * height * 3
 

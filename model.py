@@ -20,6 +20,10 @@ class Model(object):
         self.models_dir, self.data_dir, self.tf_summary_dir = self._create_data_directories()
         self.model_path = self.models_dir + self.model_name
 
+        self.train_step = None
+        self.cost = None
+
+        # tensorflow objects
         self.tf_session = None
         self.tf_saver = None
         self.tf_merged_summaries = None
@@ -76,15 +80,15 @@ class Model(object):
                 cost = - tf.reduce_mean(ref_input * tf.log(model_output) +
                                              (1 - ref_input) * tf.log(1 - model_output))
                 _ = tf.scalar_summary("cross_entropy", cost)
-                return cost
+                self.cost = cost
 
             elif loss_func == 'mean_squared':
                 cost = tf.sqrt(tf.reduce_mean(tf.square(ref_input - model_output)))
                 _ = tf.scalar_summary("mean_squared", cost)
-                return cost
+                self.cost = cost
 
             else:
-                return None
+                self.cost = None
 
     def _create_train_step_node(self, opt, learning_rate, cost, momentum=None):
 
@@ -98,16 +102,16 @@ class Model(object):
 
         with tf.name_scope("train"):
             if opt == 'gradient_descent':
-                return tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
+                self.train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
 
             elif opt == 'ada_grad':
-                return tf.train.AdagradOptimizer(learning_rate).minimize(cost)
+                self.train_step = tf.train.AdagradOptimizer(learning_rate).minimize(cost)
 
             elif opt == 'momentum':
-                return tf.train.MomentumOptimizer(learning_rate, momentum).minimize(cost)
+                self.train_step = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(cost)
 
             elif opt == 'adam':
-                return tf.train.AdamOptimizer(learning_rate).minimize(cost)
+                self.train_step = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
             else:
-                return None
+                self.train_step = None

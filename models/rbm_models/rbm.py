@@ -49,11 +49,6 @@ class RBM(model.Model):
         self.hrand = None
         self.vrand = None
 
-        self.tf_merged_summaries = None
-        self.tf_summary_writer = None
-        self.tf_session = None
-        self.tf_saver = None
-
     def fit(self, train_set, validation_set=None, restore_previous_model=False):
 
         """ Fit the model to the training data.

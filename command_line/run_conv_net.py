@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from models.convolutional_models import conv_net
-from utils import datasets
+from utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #
@@ -24,6 +24,7 @@ flags.DEFINE_string('model_name', 'convnet', 'Model name.')
 flags.DEFINE_string('main_dir', 'convnet/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
+flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 
 # Convolutional Net parameters
@@ -40,6 +41,8 @@ assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert FLAGS.opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
 
 if __name__ == '__main__':
+
+    utilities.random_seed_np_tf(FLAGS.seed)
 
     if FLAGS.dataset == 'mnist':
 

@@ -40,16 +40,7 @@ class LogisticRegression(model.Model):
 
         self.model_output = None
 
-        # Model training and evaluation
-        self.train_step = None
-        self.cost = None
         self.accuracy = None
-
-        # tensorflow objects
-        self.tf_merged_summaries = None
-        self.tf_summary_writer = None
-        self.tf_session = None
-        self.tf_saver = None
 
     def build_model(self, n_features, n_classes):
 
@@ -64,8 +55,8 @@ class LogisticRegression(model.Model):
 
         self.model_output = tf.nn.softmax(tf.matmul(self.input_data, self.W_) + self.b_)
 
-        self.cost = self._create_cost_function_node(self.loss_func, self.model_output, self.input_labels)
-        self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
+        self._create_cost_function_node(self.loss_func, self.model_output, self.input_labels)
+        tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
         self._create_test_node()
 
     def _create_placeholders(self, n_features, n_classes):

@@ -144,6 +144,14 @@ MultiLayer Perceptron
 Just train a Stacked Denoising Autoencoder of Deep Belief Network with the --do_pretrain false option.
 
 =========
+Utilities
+=========
+Each model has the following utilities:
+
+* `--seed n`: set numpy and tensorflow random number generators to n
+* `--restore_previous_model`: restore a previously trained model with the same `model_name` and model architecture of the current model.
+
+=========
 TODO list
 =========
 

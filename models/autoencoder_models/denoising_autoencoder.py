@@ -15,7 +15,7 @@ class DenoisingAutoencoder(model.Model):
     def __init__(self, model_name='dae', n_components=256, main_dir='dae/', enc_act_func='tanh',
                  dec_act_func='none', loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
                  xavier_init=1, opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none',
-                 corr_frac=0., verbose=1, seed=-1, l2reg=5e-4):
+                 corr_frac=0., verbose=1, l2reg=5e-4):
         """
         :param n_components: number of hidden units
         :param enc_act_func: Activation function for the encoder. ['tanh', 'sigmoid']
@@ -31,7 +31,6 @@ class DenoisingAutoencoder(model.Model):
         :param num_epochs: Number of epochs
         :param batch_size: Size of each mini-batch
         :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom'].
-        :param seed: positive integer for seeding random generators. Ignored if < 0.
         :param l2reg: Regularization parameter. If 0, no regularization.
         """
         model.Model.__init__(self, model_name, main_dir)
@@ -50,12 +49,7 @@ class DenoisingAutoencoder(model.Model):
         self.corr_type = corr_type
         self.corr_frac = corr_frac
         self.verbose = verbose
-        self.seed = seed
         self.l2reg = l2reg
-
-        if self.seed >= 0:
-            np.random.seed(self.seed)
-            tf.set_random_seed(self.seed)
 
         self.input_data = None
         self.input_data_corr = None
@@ -66,14 +60,6 @@ class DenoisingAutoencoder(model.Model):
 
         self.encode = None
         self.decode = None
-
-        self.train_step = None
-        self.cost = None
-
-        self.tf_session = None
-        self.tf_merged_summaries = None
-        self.tf_summary_writer = None
-        self.tf_saver = None
 
     def fit(self, train_set, validation_set=None, restore_previous_model=False):
 
@@ -195,8 +181,8 @@ class DenoisingAutoencoder(model.Model):
         self._create_encode_layer()
         self._create_decode_layer()
 
-        self.cost = self._create_cost_function_node(self.loss_func, self.decode, self.input_data)
-        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
+        self._create_cost_function_node(self.loss_func, self.decode, self.input_data)
+        self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
 
     def _create_placeholders(self, n_features):
 

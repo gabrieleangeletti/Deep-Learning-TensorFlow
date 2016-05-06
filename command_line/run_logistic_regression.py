@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from models import logistic_regression
-from utils import datasets
+from utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #
@@ -26,11 +26,14 @@ flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
+flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert FLAGS.loss_func in ['cross_entropy', 'mean_squared']
 
 if __name__ == '__main__':
+
+    utilities.random_seed_np_tf(FLAGS.seed)
 
     if FLAGS.dataset == 'mnist':
 

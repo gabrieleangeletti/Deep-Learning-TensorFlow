@@ -17,7 +17,7 @@ class StackedDeepAutoencoder(model.Model):
                  dec_act_func=list(['none']), loss_func=list(['mean_squared']), num_epochs=list([10]),
                  batch_size=list([10]), dataset='mnist', xavier_init=list([1]), opt=list(['gradient_descent']),
                  learning_rate=list([0.01]), momentum=list([0.5]),  dropout=1, corr_type='none', corr_frac=0.,
-                 verbose=1, seed=-1, finetune_loss_func='cross_entropy', finetune_act_func='relu',
+                 verbose=1, finetune_loss_func='cross_entropy', finetune_act_func='relu',
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
                  finetune_batch_size=20, do_pretrain=True):
         """
@@ -43,7 +43,6 @@ class StackedDeepAutoencoder(model.Model):
         :param batch_size: Size of each mini-batch. int, default 10
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         :param dataset: Optional name for the dataset. string, default 'mnist'
-        :param seed: positive integer for seeding random generators. Ignored if < 0. int, default -1
         """
         model.Model.__init__(self, model_name, main_dir)
 
@@ -73,11 +72,6 @@ class StackedDeepAutoencoder(model.Model):
         self.finetune_batch_size = finetune_batch_size
         self.dataset = dataset
         self.verbose = verbose
-        self.seed = seed
-
-        if self.seed >= 0:
-            np.random.seed(self.seed)
-            tf.set_random_seed(self.seed)
 
         self.input_data = None
         self.input_ref = None
@@ -94,16 +88,6 @@ class StackedDeepAutoencoder(model.Model):
         self.decoding_b = []  # list of arrays of decoding biases (one per layer)
 
         self.reconstruction = None
-
-        # Model traning and evaluation
-        self.train_step = None
-        self.cost = None
-
-        # tensorflow objects
-        self.tf_merged_summaries = None
-        self.tf_summary_writer = None
-        self.tf_session = None
-        self.tf_saver = None
 
         self.autoencoders = []
 
@@ -285,8 +269,8 @@ class StackedDeepAutoencoder(model.Model):
         next_train = self._create_encoding_layers()
         self.reconstruction = self._create_decoding_layers(next_train)
 
-        self.cost = self._create_cost_function_node(self.finetune_loss_func, self.reconstruction, self.input_labels)
-        self.train_step = self._create_train_step_node(self.finetune_opt, self.finetune_learning_rate, self.cost,
+        self._create_cost_function_node(self.finetune_loss_func, self.reconstruction, self.input_labels)
+        self._create_train_step_node(self.finetune_opt, self.finetune_learning_rate, self.cost,
                                                        self.momentum)
 
     def _create_placeholders(self, n_features, n_classes):

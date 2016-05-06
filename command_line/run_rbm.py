@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from models.rbm_models import rbm
-from utils import datasets
+from utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #
@@ -20,6 +20,7 @@ flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
+flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 # RBM configuration
 flags.DEFINE_integer('num_hidden', 250, 'Number of hidden units.')
@@ -41,6 +42,8 @@ assert FLAGS.cifar_dir != '' if FLAGS.dataset == 'cifar10' else True
 assert FLAGS.visible_unit_type in ['bin', 'gauss']
 
 if __name__ == '__main__':
+
+    utilities.random_seed_np_tf(FLAGS.seed)
 
     if FLAGS.dataset == 'mnist':
 

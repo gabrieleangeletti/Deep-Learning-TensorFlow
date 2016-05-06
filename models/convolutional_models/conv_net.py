@@ -59,11 +59,6 @@ class ConvolutionalNetwork(model.Model):
         self.accuracy = None
         self.keep_prob = None
 
-        self.tf_session = None
-        self.tf_saver = None
-        self.tf_merged_summaries = None
-        self.tf_summary_writer = None
-
     def fit(self, train_set, train_labels, validation_set=None, validation_labels=None, restore_previous_model=False):
 
         """ Fit the model to the data.
@@ -154,8 +149,8 @@ class ConvolutionalNetwork(model.Model):
         self._create_placeholders(n_features, n_classes)
         self._create_layers(n_classes, original_shape)
 
-        self.cost = self._create_cost_function_node(self.loss_func, self.softmax_out, self.input_labels)
-        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
+        self._create_cost_function_node(self.loss_func, self.softmax_out, self.input_labels)
+        self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
 
         self._create_test_node()
 

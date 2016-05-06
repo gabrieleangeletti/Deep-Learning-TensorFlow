@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from models.autoencoder_models import stacked_denoising_autoencoder
-from utils import datasets
+from utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #
@@ -19,11 +19,11 @@ flags.DEFINE_string('valid_labels', '', 'Path to valid labels .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
-flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pretraining.')
 flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
 flags.DEFINE_string('save_layers_output', '', 'Path to a .npy file to save output from all the layers of the model.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
+flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
@@ -85,6 +85,8 @@ assert FLAGS.finetune_opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam'
 
 if __name__ == '__main__':
 
+    utilities.random_seed_np_tf(FLAGS.seed)
+
     if FLAGS.dataset == 'mnist':
 
         # ################# #
@@ -133,7 +135,7 @@ if __name__ == '__main__':
 
     sdae = stacked_denoising_autoencoder.StackedDenoisingAutoencoder(
         do_pretrain=FLAGS.do_pretrain,
-        layers=dae_params['layers'], seed=FLAGS.seed, finetune_loss_func=FLAGS.finetune_loss_func,
+        layers=dae_params['layers'], finetune_loss_func=FLAGS.finetune_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size, dropout=FLAGS.dropout,
         enc_act_func=dae_params['enc_act_func'], dec_act_func=dae_params['dec_act_func'],

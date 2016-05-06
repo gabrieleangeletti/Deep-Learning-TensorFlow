@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 
 from models.rbm_models import deep_autoencoder
-from utils import datasets
+from utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #
@@ -20,6 +20,7 @@ flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('model_name', 'srbm', 'Name of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
+flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
@@ -64,6 +65,8 @@ assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert len(layers) > 0
 
 if __name__ == '__main__':
+
+    utilities.random_seed_np_tf(FLAGS.seed)
 
     if FLAGS.dataset == 'mnist':
 

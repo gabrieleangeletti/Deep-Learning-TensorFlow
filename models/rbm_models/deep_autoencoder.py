@@ -75,16 +75,7 @@ class DeepAutoencoder(model.Model):
         self.bh_vars = None
         self.bv_vars = None
 
-        # Model traning and evaluation
         self.encode = None
-        self.cost = None
-        self.train_step = None
-
-        # tensorflow objects
-        self.tf_merged_summaries = None
-        self.tf_summary_writer = None
-        self.tf_session = None
-        self.tf_saver = None
 
         if self.do_pretrain:
 
@@ -224,8 +215,8 @@ class DeepAutoencoder(model.Model):
         self.encode = encode_output
         decode_output = self._create_decoding_layers(encode_output)
 
-        self.cost = self._create_cost_function_node(self.loss_func, decode_output, self.x)
-        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
+        self._create_cost_function_node(self.loss_func, decode_output, self.x)
+        self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
 
     def _create_placeholders(self, n_features):
 

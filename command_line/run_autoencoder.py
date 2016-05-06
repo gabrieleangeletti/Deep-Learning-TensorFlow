@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from models.autoencoder_models import denoising_autoencoder
-from utils import datasets
+from utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #
@@ -17,7 +17,6 @@ flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('model_name', 'dae', 'Model name.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
-flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_boolean('encode_train', False, 'Whether to encode and store the training set.')
 flags.DEFINE_boolean('encode_valid', False, 'Whether to encode and store the validation set.')
@@ -27,6 +26,7 @@ flags.DEFINE_string('save_parameters', '', 'Path to save the parameters of the m
 flags.DEFINE_string('weights', None, 'Path to a numpy array containing the weights of the autoencoder.')
 flags.DEFINE_string('h_bias', None, 'Path to a numpy array containing the encoder bias vector.')
 flags.DEFINE_string('v_bias', None, 'Path to a numpy array containing the decoder bias vector.')
+flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 
 # Stacked Denoising Autoencoder specific parameters
@@ -57,6 +57,8 @@ assert FLAGS.loss_func in ['cross_entropy', 'mean_squared']
 assert FLAGS.opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
 
 if __name__ == '__main__':
+
+    utilities.random_seed_np_tf(FLAGS.seed)
 
     if FLAGS.dataset == 'mnist':
 
@@ -98,7 +100,7 @@ if __name__ == '__main__':
 
     # Create the object
     dae = denoising_autoencoder.DenoisingAutoencoder(
-        seed=FLAGS.seed, model_name=FLAGS.model_name, n_components=FLAGS.n_components,
+        model_name=FLAGS.model_name, n_components=FLAGS.n_components,
         enc_act_func=FLAGS.enc_act_func, dec_act_func=FLAGS.dec_act_func, xavier_init=FLAGS.xavier_init,
         corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac, dataset=FLAGS.dataset,
         loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir, opt=FLAGS.opt,

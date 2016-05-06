@@ -74,11 +74,6 @@ class DBN(model.Model):
         self.bh_vars = None
         self.bv_vars = None
 
-        self.tf_merged_summaries = None
-        self.tf_summary_writer = None
-        self.tf_session = None
-        self.tf_saver = None
-
         if self.do_pretrain:
 
             self.rbms = []
@@ -223,8 +218,8 @@ class DBN(model.Model):
         next_train = self._forward_pass()
         self._create_softmax_layer(next_train, n_classes)
 
-        self.cost = self._create_cost_function_node(self.loss_func, self.y, self.y_)
-        self.train_step = self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
+        self._create_cost_function_node(self.loss_func, self.y, self.y_)
+        self._create_train_step_node(self.opt, self.learning_rate, self.cost, self.momentum)
         self._create_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
