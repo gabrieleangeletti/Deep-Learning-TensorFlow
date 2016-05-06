@@ -276,7 +276,7 @@ class DBN(model.Model):
         self.softmax_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='softmax-biases')
 
         with tf.name_scope("softmax_layer"):
-            self.y = tf.matmul(next_train, self.softmax_W) + self.softmax_b
+            self.y = tf.nn.softmax(tf.matmul(next_train, self.softmax_W) + self.softmax_b)
 
     def _create_test_node(self):
 
