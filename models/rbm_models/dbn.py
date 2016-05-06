@@ -147,33 +147,23 @@ class DBN(model.Model):
 
         return rboltz.transform(train_set), rboltz.transform(validation_set)
 
-    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None):
+    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None, restore_previous_model=False):
 
         """ Perform supervised finetuning of the model.
         :param train_set: training set
         :param train_labels: training labels
         :param validation_set: validation set
         :param validation_labels: validation labels
+        :param restore_previous_model:
+                    if true, a previous trained model
+                    with the same name of this model is restored from disk to continue training.
         :return: self
         """
 
         with tf.Session() as self.tf_session:
-            self._initialize_tf_utilities_and_ops()
+            self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, train_labels, validation_set, validation_labels)
             self.tf_saver.save(self.tf_session, self.model_path)
-
-    def _initialize_tf_utilities_and_ops(self):
-
-        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
-        """
-
-        self.tf_merged_summaries = tf.merge_all_summaries()
-        init_op = tf.initialize_all_variables()
-        self.tf_saver = tf.train.Saver()
-
-        self.tf_session.run(init_op)
-
-        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
     def _train_model(self, train_set, train_labels, validation_set=None, validation_labels=None):
 

@@ -23,6 +23,7 @@ flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful 
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pretraining.')
 flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
 flags.DEFINE_string('save_layers_output', '', 'Path to a .npy file to save output from all the layers of the model.')
+flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
@@ -148,7 +149,7 @@ if __name__ == '__main__':
 
     # Supervised finetuning
     sdae.build_model(trX.shape[1], trY.shape[1])
-    sdae.fit(trX, trY, vlX, vlY)
+    sdae.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Compute the accuracy of the model
     print('Test set accuracy: {}'.format(sdae.compute_accuracy(teX, teY)))

@@ -101,33 +101,23 @@ class LogisticRegression(model.Model):
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
             _ = tf.scalar_summary('accuracy', self.accuracy)
 
-    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None):
+    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None, restore_previous_model=False):
 
         """ Fit the model to the data.
         :param train_set: Training data. shape(n_samples, n_features).
         :param train_labels: Labels for the data. shape(n_samples, n_classes).
         :param validation_set: optional, default None. Validation data. shape(n_validation_samples, n_features).
         :param validation_labels: optional, default None. Labels for the validation data. shape(n_validation_samples, n_classes).
+        :param restore_previous_model:
+                    if true, a previous trained model
+                    with the same name of this model is restored from disk to continue training.
         :return: self
         """
 
         with tf.Session() as self.tf_session:
-            self._initialize_tf_utilities_and_ops()
+            self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, train_labels, validation_set, validation_labels)
             self.tf_saver.save(self.tf_session, self.models_dir + self.model_name)
-
-    def _initialize_tf_utilities_and_ops(self):
-
-        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
-        """
-
-        self.tf_merged_summaries = tf.merge_all_summaries()
-        init_op = tf.initialize_all_variables()
-        self.tf_saver = tf.train.Saver()
-
-        self.tf_session.run(init_op)
-
-        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
     def _train_model(self, train_set, train_labels, validation_set, validation_labels):
 

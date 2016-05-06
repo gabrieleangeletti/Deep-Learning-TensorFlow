@@ -178,22 +178,6 @@ class StackedDeepAutoencoder(model.Model):
             self._train_model(train_set, train_ref, validation_set, validation_ref)
             self.tf_saver.save(self.tf_session, self.model_path)
 
-    def _initialize_tf_utilities_and_ops(self, restore_previous_model):
-
-        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
-        """
-
-        self.tf_merged_summaries = tf.merge_all_summaries()
-        init_op = tf.initialize_all_variables()
-        self.tf_saver = tf.train.Saver()
-
-        self.tf_session.run(init_op)
-
-        if restore_previous_model:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-
-        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
-
     def _train_model(self, train_set, train_ref, validation_set, validation_ref):
 
         """ Train the model.

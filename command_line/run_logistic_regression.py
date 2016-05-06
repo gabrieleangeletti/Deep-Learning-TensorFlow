@@ -25,6 +25,7 @@ flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print ac
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
+flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert FLAGS.loss_func in ['cross_entropy', 'mean_squared']
@@ -81,7 +82,7 @@ if __name__ == '__main__':
 
     # Fit the model
     l.build_model(trX.shape[1], trY.shape[1])
-    l.fit(trX, trY, vlX, vlY)
+    l.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model
     print('Test set accuracy: {}'.format(l.predict(teX, teY)))

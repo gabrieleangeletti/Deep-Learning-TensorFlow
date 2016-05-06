@@ -154,31 +154,21 @@ class DeepAutoencoder(model.Model):
 
         return rboltz.transform(train_set), rboltz.transform(validation_set)
 
-    def fit(self, train_set, validation_set=None):
+    def fit(self, train_set, validation_set=None, restore_previous_model=False):
 
         """ Perform finetuning procedure of the deep autoencoder.
         :param train_set: trainin set
         :param validation_set: validation set
+        :param restore_previous_model:
+                    if true, a previous trained model
+                    with the same name of this model is restored from disk to continue training.
         :return: self
         """
 
         with tf.Session() as self.tf_session:
-            self._initialize_tf_utilities_and_ops()
+            self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, validation_set)
             self.tf_saver.save(self.tf_session, self.model_path)
-
-    def _initialize_tf_utilities_and_ops(self):
-
-        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
-        """
-
-        self.tf_merged_summaries = tf.merge_all_summaries()
-        init_op = tf.initialize_all_variables()
-        self.tf_saver = tf.train.Saver()
-
-        self.tf_session.run(init_op)
-
-        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
     def _train_model(self, train_set, validation_set):
 

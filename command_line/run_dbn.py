@@ -22,6 +22,7 @@ flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('model_name', 'srbm', 'Name of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
+flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_string('main_dir', 'dbn/', 'Directory to store data relative to the algorithm.')
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     # finetuning
     print('Start deep belief net finetuning...')
     srbm.build_model(trX.shape[1], trY.shape[1])
-    srbm.fit(trX, trY, vlX, vlY)
+    srbm.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model
     print('Test set accuracy: {}'.format(srbm.predict(teX, teY)))

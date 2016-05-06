@@ -23,6 +23,7 @@ flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('model_name', 'convnet', 'Model name.')
 flags.DEFINE_string('main_dir', 'convnet/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
+flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 
 
 # Convolutional Net parameters
@@ -88,7 +89,7 @@ if __name__ == '__main__':
     # Model training
     print('Start Convolutional Network training...')
     convnet.build_model(trX.shape[1], trY.shape[1], [int(i) for i in FLAGS.original_shape.split(',')])
-    convnet.fit(trX, trY, vlX, vlY)
+    convnet.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model
     print('Test set accuracy: {}'.format(convnet.predict(teX, teY)))

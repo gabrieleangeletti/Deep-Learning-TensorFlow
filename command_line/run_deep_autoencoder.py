@@ -19,6 +19,7 @@ flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('model_name', 'srbm', 'Name of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
+flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
@@ -119,7 +120,7 @@ if __name__ == '__main__':
     # finetuning
     print('Start deep autoencoder finetuning...')
     srbm.build_model(trX.shape[1])
-    srbm.fit(trX, vlX)
+    srbm.fit(trX, vlX, restore_previous_model=FLAGS.restore_previous_model)
 
     params = srbm.get_model_parameters()
 

@@ -19,6 +19,7 @@ flags.DEFINE_string('train_dataset', '', 'Path to train set .npy file.')
 flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
+flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 
 # RBM configuration
 flags.DEFINE_integer('num_hidden', 250, 'Number of hidden units.')
@@ -88,7 +89,7 @@ if __name__ == '__main__':
     # Fit the model
     print('Start training...')
     r.build_model(trX.shape[1])
-    r.fit(trX, teX)
+    r.fit(trX, teX, restore_previous_model=FLAGS.restore_previous_model)
 
     # Encode the training data and store it
     if FLAGS.encode_train:

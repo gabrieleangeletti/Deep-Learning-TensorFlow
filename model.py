@@ -20,6 +20,11 @@ class Model(object):
         self.models_dir, self.data_dir, self.tf_summary_dir = self._create_data_directories()
         self.model_path = self.models_dir + self.model_name
 
+        self.tf_session = None
+        self.tf_saver = None
+        self.tf_merged_summaries = None
+        self.tf_summary_writer = None
+
     def _create_data_directories(self):
 
         """ Create the three directories for storing respectively the stored_models,
@@ -36,6 +41,26 @@ class Model(object):
                 os.mkdir(d)
 
         return models_dir, data_dir, summary_dir
+
+    def _initialize_tf_utilities_and_ops(self, restore_previous_model):
+
+        """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
+        Restore a previously trained model if the flag restore_previous_model is true.
+        :param restore_previous_model:
+                    if true, a previous trained model
+                    with the same name of this model is restored from disk to continue training.
+        """
+
+        self.tf_merged_summaries = tf.merge_all_summaries()
+        init_op = tf.initialize_all_variables()
+        self.tf_saver = tf.train.Saver()
+
+        self.tf_session.run(init_op)
+
+        if restore_previous_model:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+
+        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
     def _create_cost_function_node(self, loss_func, model_output, ref_input):
 
