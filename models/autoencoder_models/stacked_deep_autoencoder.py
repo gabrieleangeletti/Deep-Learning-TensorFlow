@@ -297,11 +297,11 @@ class StackedDeepAutoencoder(model.Model):
         for l, layer in enumerate(self.layers):
 
             if l == 0:
-                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.01)))
-                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.01)))
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.1)))
+                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.1)))
             else:
-                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l-1], self.layers[l]], stddev=0.01)))
-                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.01)))
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l-1], self.layers[l]], stddev=0.1)))
+                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.1)))
 
     def _create_variables_pretrain(self):
 
@@ -362,7 +362,7 @@ class StackedDeepAutoencoder(model.Model):
 
                 # Create decoding variables
                 dec_w = tf.Variable(tf.transpose(self.encoding_w_[l].initialized_value()))
-                dec_b = tf.Variable(tf.constant(0.01, shape=[dec_w.get_shape().dims[1].value]))
+                dec_b = tf.Variable(tf.constant(0.1, shape=[dec_w.get_shape().dims[1].value]))
                 self.decoding_w.append(dec_w)
                 self.decoding_b.append(dec_b)
 

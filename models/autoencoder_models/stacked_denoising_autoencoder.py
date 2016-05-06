@@ -293,11 +293,11 @@ class StackedDenoisingAutoencoder(model.Model):
         for l, layer in enumerate(self.layers):
 
             if l == 0:
-                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.01)))
-                self.encoding_b_.append(tf.Variable(tf.constant(0.01, shape=[self.layers[l]])))
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.1)))
+                self.encoding_b_.append(tf.Variable(tf.constant(0.1, shape=[self.layers[l]])))
             else:
-                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l-1], self.layers[l]], stddev=0.01)))
-                self.encoding_b_.append(tf.Variable(tf.constant(0.01, shape=[self.layers[l]])))
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l-1], self.layers[l]], stddev=0.1)))
+                self.encoding_b_.append(tf.Variable(tf.constant(0.1, shape=[self.layers[l]])))
 
     def _create_variables_pretrain(self):
 
@@ -351,8 +351,8 @@ class StackedDenoisingAutoencoder(model.Model):
         :return: self
         """
 
-        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes], stddev=0.01), name='sm-weigths')
-        self.softmax_b = tf.Variable(tf.constant(0.01, shape=[n_classes]), name='sm-biases')
+        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes], stddev=0.1), name='sm-weigths')
+        self.softmax_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='sm-biases')
 
         with tf.name_scope("softmax_layer"):
             self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b

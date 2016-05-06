@@ -288,12 +288,12 @@ class ConvolutionalNetwork(model.Model):
 
     @staticmethod
     def weight_variable(shape):
-        initial = tf.truncated_normal(shape=shape, stddev=0.01)
+        initial = tf.truncated_normal(shape=shape, stddev=0.1)
         return tf.Variable(initial)
 
     @staticmethod
     def bias_variable(shape):
-        initial = tf.constant(0.01, shape=shape)
+        initial = tf.constant(0.1, shape=shape)
         return tf.Variable(initial)
 
     @staticmethod

@@ -170,7 +170,7 @@ class RBM(model.Model):
         :return: self
         """
 
-        self.W = tf.Variable(tf.random_normal((n_features, self.num_hidden), mean=0.0, stddev=0.01), name='weights')
+        self.W = tf.Variable(tf.truncated_normal(shape=[n_features, self.num_hidden], stddev=0.1), name='weights')
         self.bh_ = tf.Variable(tf.zeros([self.num_hidden]), name='hidden-bias')
         self.bv_ = tf.Variable(tf.zeros([n_features]), name='visible-bias')
 

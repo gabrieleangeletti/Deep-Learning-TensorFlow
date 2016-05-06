@@ -192,17 +192,17 @@ class DenoisingAutoencoder(model.Model):
         if W_:
             self.W_ = tf.Variable(W_, name='enc-w')
         else:
-            self.W_ = tf.Variable(tf.truncated_normal(shape=[n_features, self.n_components], stddev=0.01), name='enc-w')
+            self.W_ = tf.Variable(tf.truncated_normal(shape=[n_features, self.n_components], stddev=0.1), name='enc-w')
 
         if bh_:
             self.bh_ = tf.Variable(bh_, name='hidden-bias')
         else:
-            self.bh_ = tf.Variable(tf.constant(0.01, shape=[self.n_components]), name='hidden-bias')
+            self.bh_ = tf.Variable(tf.constant(0.1, shape=[self.n_components]), name='hidden-bias')
 
         if bv_:
             self.bv_ = tf.Variable(bv_, name='visible-bias')
         else:
-            self.bv_ = tf.Variable(tf.constant(0.01, shape=[n_features]), name='visible-bias')
+            self.bv_ = tf.Variable(tf.constant(0.1, shape=[n_features]), name='visible-bias')
 
     def _create_encode_layer(self):
 
