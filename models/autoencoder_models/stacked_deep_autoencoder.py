@@ -158,24 +158,27 @@ class StackedDeepAutoencoder(model.Model):
 
         return next_train, next_valid
 
-    def fit(self, train_set, train_ref, validation_set=None, validation_ref=None):
+    def fit(self, train_set, train_ref, validation_set=None, validation_ref=None, restore_previous_model=False):
 
         """ Fit the model to the data.
         :param train_set: Training data. shape(n_samples, n_features)
         :param train_ref: Reference data. shape(n_samples, n_features)
         :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
         :param validation_ref: optional, default None. Reference validation data. shape(nval_samples, n_features)
+        :param restore_previous_model:
+                    if true, a previous trained model
+                    with the same name of this model is restored from disk to continue training.
         :return: self
         """
 
         print('Starting Reconstruction finetuning...')
 
         with tf.Session() as self.tf_session:
-            self._initialize_tf_utilities_and_ops()
+            self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, train_ref, validation_set, validation_ref)
             self.tf_saver.save(self.tf_session, self.model_path)
 
-    def _initialize_tf_utilities_and_ops(self):
+    def _initialize_tf_utilities_and_ops(self, restore_previous_model):
 
         """ Initialize TensorFlow operations: summaries, init operations, saver, summary_writer.
         """
@@ -185,6 +188,9 @@ class StackedDeepAutoencoder(model.Model):
         self.tf_saver = tf.train.Saver()
 
         self.tf_session.run(init_op)
+
+        if restore_previous_model:
+            self.tf_saver.restore(self.tf_session, self.model_path)
 
         self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 

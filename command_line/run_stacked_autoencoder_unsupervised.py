@@ -25,6 +25,7 @@ flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the
 flags.DEFINE_string('save_layers_output', '', 'Path to a .npy file to save output from all the layers of the model.')
 flags.DEFINE_string('encweights', None, 'Path to a npz array containing the weights of the encoding layers.')
 flags.DEFINE_string('encbiases', None, 'Path to a npz array containing the encoding layers biases.')
+flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
@@ -175,7 +176,7 @@ if __name__ == '__main__':
 
     # Supervised finetuning
     sdae.build_model(trX.shape[1], encodingw, encodingb)
-    sdae.fit(trX, trRef, vlX, vlRef)
+    sdae.fit(trX, trRef, vlX, vlRef, restore_previous_model=FLAGS.restore_previous_model)
 
     # Compute the reconstruction loss of the model
     print('Test set reconstruction loss: {}'.format(sdae.compute_reconstruction_loss(teX, teRef)))
