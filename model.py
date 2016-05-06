@@ -98,8 +98,8 @@ class Model(object):
 
         with tf.name_scope("cost"):
             if loss_func == 'cross_entropy':
-                cost = - tf.reduce_mean(ref_input * tf.log(model_output) +
-                                             (1 - ref_input) * tf.log(1 - model_output))
+                cost = - tf.reduce_mean(ref_input * tf.log(tf.clip_by_value(model_output, 1e-10, float('inf'))) +
+                                        (1 - ref_input) * tf.log(tf.clip_by_value(1 - model_output, 1e-10, float('inf'))))
                 _ = tf.scalar_summary("cross_entropy", cost)
                 self.cost = cost
 

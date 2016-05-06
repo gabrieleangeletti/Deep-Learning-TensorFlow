@@ -257,7 +257,7 @@ class StackedDeepAutoencoder(model.Model):
             self._create_variables(n_features)
 
         next_train = self._create_encoding_layers()
-        self.reconstruction = self._create_decoding_layers(next_train)
+        self._create_decoding_layers(next_train)
 
         self._create_cost_function_node(self.finetune_loss_func, self.reconstruction, self.input_labels)
         self._create_train_step_node(self.finetune_opt, self.finetune_learning_rate, self.cost,
@@ -393,4 +393,4 @@ class StackedDeepAutoencoder(model.Model):
 
             self.layer_nodes.append(next_decode)
 
-        return next_decode
+        self.reconstruction = next_decode
