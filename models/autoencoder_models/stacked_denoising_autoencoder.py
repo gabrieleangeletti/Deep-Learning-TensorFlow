@@ -355,7 +355,7 @@ class StackedDenoisingAutoencoder(model.Model):
         self.softmax_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='sm-biases')
 
         with tf.name_scope("softmax_layer"):
-            self.softmax_out = tf.nn.softmax(tf.matmul(last_layer, self.softmax_W) + self.softmax_b)
+            self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b
             self.layer_nodes.append(self.softmax_out)
 
     def _create_test_node(self):
