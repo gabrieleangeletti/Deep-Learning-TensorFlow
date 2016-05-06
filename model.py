@@ -67,7 +67,7 @@ class Model(object):
         self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
     def _initialize_training_parameters(self, loss_func, learning_rate, num_epochs, batch_size,
-                                        dataset, opt, momentum, l2reg):
+                                        dataset, opt, momentum=None, l2reg=None):
 
         """ Initialize training parameters common to all models.
         :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
