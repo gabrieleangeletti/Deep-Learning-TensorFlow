@@ -27,8 +27,9 @@ class DenoisingAutoencoder(model.Model):
         """
         model.Model.__init__(self, model_name, main_dir)
 
-        self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
-                                             dataset, opt, momentum, l2reg)
+        self._initialize_training_parameters(loss_func=loss_func, learning_rate=learning_rate, num_epochs=num_epochs,
+                                             batch_size=batch_size, dataset=dataset, opt=opt, momentum=momentum,
+                                             l2reg=l2reg)
 
         self.n_components = n_components
         self.enc_act_func = enc_act_func
@@ -36,7 +37,6 @@ class DenoisingAutoencoder(model.Model):
         self.corr_type = corr_type
         self.corr_frac = corr_frac
         self.verbose = verbose
-        self.l2reg = l2reg
 
         self.input_data = None
         self.input_data_corr = None
@@ -171,8 +171,8 @@ class DenoisingAutoencoder(model.Model):
         regularizers = tf.nn.l2_loss(self.W_) + tf.nn.l2_loss(self.bh_) + tf.nn.l2_loss(self.bv_)
         regterm = self.l2reg * regularizers
 
-        self._create_cost_function_node(self.loss_func, self.decode, self.input_data, regterm)
-        self._create_train_step_node(self.opt, self.learning_rate, self.momentum)
+        self._create_cost_function_node(self.decode, self.input_data, regterm)
+        self._create_train_step_node()
 
     def _create_placeholders(self, n_features):
 

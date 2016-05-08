@@ -170,6 +170,21 @@ def salt_and_pepper_noise(X, v):
 # ############# #
 
 
+def flag_to_list(flagval, flagtype):
+
+    if flagtype == 'int':
+        return [int(_) for _ in flagval.split(',') if _]
+
+    elif flagtype == 'float':
+        return [float(_) for _ in flagval.split(',') if _]
+
+    elif flagtype == 'str':
+        return [_ for _ in flagval.split(',') if _]
+
+    else:
+        raise Exception("incorrect type")
+
+
 def random_seed_np_tf(seed):
     """ seed numpy and tensorflow random number generators.
     :param seed: seed parameter

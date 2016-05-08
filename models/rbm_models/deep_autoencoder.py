@@ -3,326 +3,380 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 
 from models.rbm_models import rbm
-from utils import utilities
 import model
+from utils import utilities
 
 
 class DeepAutoencoder(model.Model):
 
-    """ Implementation of a Deep Autoencoder as a Stack of
-    Restricted Boltzmann Machines using TensorFlow.
+    """ Implementation of a Deep Autoencoder as a stack of RBMs for Unsupervised Learning using TensorFlow.
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, layers, do_pretrain=True, rbm_num_epochs=list([10]), rbm_batch_size=list([10]),
-                 rbm_learning_rate=list([0.01]), rbm_names=list(['']), rbm_gibbs_k=list([1]), gauss_visible=False,
-                 stddev=0.1, learning_rate=0.01, momentum=0.7, num_epochs=10, batch_size=10, dropout=1,
-                 opt='gradient_descent', loss_func='mean_squared', model_name='deepae', main_dir='deepae/',
-                 dataset='mnist', verbose=1):
-
+    def __init__(self, rbm_layers, model_name='sdae', main_dir='sdae/', rbm_num_epochs=list([10]),
+                 rbm_batch_size=list([10]), dataset='mnist', rbm_learning_rate=list([0.01]), rbm_gibbs_k=list([1]),
+                 momentum=0.5,  finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_act_func='relu',
+                 finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10, rbm_gauss_visible=False,
+                 rbm_stddev=0.1, finetune_batch_size=20, do_pretrain=True):
         """
-        :param layers: list containing the hidden units for each layer
-        :param do_pretrain: whether to do unsupervised pretraining of the network
-        :param rbm_num_epochs: number of epochs to train each rbm
-        :param rbm_batch_size: batch size each rbm
-        :param rbm_learning_rate: learning rate each rbm
-        :param rbm_names: model name for each rbm
-        :param rbm_gibbs_k: number of gibbs sampling steps for each rbm
-        :param gauss_visible: whether the input layer should have gaussian units
-        :param stddev: standard deviation for the gaussian layer
-        :param dropout: dropout parameter
+        :param rbm_layers: list containing the hidden units for each layer
+        :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
+        :param finetune_dropout: dropout parameter
+        :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
+        :param finetune_act_func: activation function for the finetuning phase
+        :param finetune_opt: optimizer for the finetuning phase
+        :param finetune_num_epochs: Number of epochs for the finetuning. int, default 20
+        :param finetune_batch_size: Size of each mini-batch for the finetuning. int, default 20
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
+        :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
         model.Model.__init__(self, model_name, main_dir)
 
-        self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
-                                             dataset, opt, momentum)
+        self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
+                                             num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
+                                             dropout=finetune_dropout, dataset=dataset, opt=finetune_opt, momentum=momentum)
 
-        self.layers = layers
-        self.n_layers = len(layers)
-
-        # RBM parameters
         self.do_pretrain = do_pretrain
-        self.rbm_num_epochs = rbm_num_epochs
-        self.rbm_batch_size = rbm_batch_size
-        self.rbm_learning_rate = rbm_learning_rate
-        self.rbm_names = rbm_names
-        self.rbm_gibbs_k = rbm_gibbs_k
-
-        # Stacked RBM parameters
-        self.gauss_visible = gauss_visible
-        self.stddev = stddev
-        self.dropout = dropout
+        self.layers = rbm_layers
+        self.finetune_act_func = finetune_act_func
         self.verbose = verbose
 
-        self.W_pretrain = None
-        self.bh_pretrain = None
-        self.bv_pretrain = None
+        self.input_data = None
+        self.input_ref = None
 
-        self.W_vars = None
-        self.W_vars_t = None
-        self.bh_vars = None
-        self.bv_vars = None
+        self.keep_prob = None
 
-        self.encode = None
+        self.layer_nodes = []  # list of layers of the final network
 
-        if self.do_pretrain:
+        # Model parameters
+        self.encoding_w_ = []  # list of matrices of encoding weights (one per layer)
+        self.encoding_b_ = []  # list of arrays of encoding biases (one per layer)
 
-            self.rbms = []
+        self.decoding_w = []  # list of matrices of decoding weights (one per layer)
+        self.decoding_b = []  # list of arrays of decoding biases (one per layer)
 
-            for l in range(self.n_layers):
+        self.reconstruction = None
 
-                if l == 0 and self.gauss_visible:
+        self.rbms = []
 
-                    # Gaussian visible units
+        for l, layer in enumerate(rbm_layers):
 
-                    self.rbms.append(rbm.RBM(
-                        visible_unit_type='gauss', stddev=self.stddev,
-                        model_name=self.rbm_names[l] + str(l), num_hidden=self.layers[l],
-                        main_dir=self.main_dir, learning_rate=self.rbm_learning_rate[l],
-                        verbose=self.verbose, num_epochs=self.rbm_num_epochs[l], batch_size=self.rbm_batch_size[l]))
+            rbm_name = self.model_name + '-rbm-' + str(l + 1)
 
-                else:
+            if l == 0 and rbm_gauss_visible:
 
-                    # Binary RBMs
+                # Gaussian visible units
 
-                    self.rbms.append(rbm.RBM(
-                        model_name=self.rbm_names[l] + str(l), num_hidden=self.layers[l],
-                        main_dir=self.main_dir, learning_rate=self.rbm_learning_rate[l],
-                        verbose=self.verbose, num_epochs=self.rbm_num_epochs[l], batch_size=self.rbm_batch_size[l]))
+                self.rbms.append(rbm.RBM(
+                    visible_unit_type='gauss', stddev=rbm_stddev,
+                    model_name=rbm_name + str(l), num_hidden=rbm_layers[l],
+                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
+                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
+
+            else:
+
+                # Binary RBMs
+
+                self.rbms.append(rbm.RBM(
+                    model_name=rbm_name + str(l), num_hidden=rbm_layers[l],
+                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
+                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
 
     def pretrain(self, train_set, validation_set=None):
 
-        """ Unsupervised pretraining procedure for the deep autoencoder.
+        """ Perform unsupervised pretraining of the stack of rbms.
         :param train_set: training set
         :param validation_set: validation set
-        :return: self
+        :return: return data encoded by the last layer
         """
-
-        self.W_pretrain = []
-        self.bh_pretrain = []
-        self.bv_pretrain = []
 
         next_train = train_set
         next_valid = validation_set
 
-        for l, rboltz in enumerate(self.rbms):
+        for l, rbm in enumerate(self.rbms):
             print('Training layer {}...'.format(l+1))
-            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rboltz, next_train, next_valid)
+            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rbm, next_train, next_valid)
 
-            # Reset tensorflow's default graph between different models
+            # Reset tensorflow's default graph between different autoencoders
             ops.reset_default_graph()
 
         return next_train, next_valid
 
-    def _pretrain_rbm_and_gen_feed(self, rboltz, train_set, validation_set):
+    def _pretrain_rbm_and_gen_feed(self, rbm, train_set, validation_set):
 
-        """ Pretrain a single rbm and encode the data for the next layer.
-        :param rboltz: rbm reference
+        """ Pretrain a single autoencoder and encode the data for the next layer.
+        :param rbm: autoencoder reference
         :param train_set: training set
         :param validation_set: validation set
         :return: encoded train data, encoded validation data
         """
 
-        rboltz.build_model(train_set.shape[1])
-        rboltz.fit(train_set, validation_set)
-        params = rboltz.get_model_parameters()
+        rbm.build_model(train_set.shape[1])
+        rbm.fit(train_set, validation_set)
 
-        self.W_pretrain.append(params['W'])
-        self.bh_pretrain.append(params['bh_'])
-        self.bv_pretrain.append(params['bv_'])
+        params = rbm.get_model_parameters()
 
-        return rboltz.transform(train_set), rboltz.transform(validation_set)
+        self.encoding_w_.append(params['W'])
+        self.encoding_b_.append(params['bh_'])
 
-    def fit(self, train_set, validation_set=None, restore_previous_model=False):
+        next_train = rbm.transform(train_set)
+        next_valid = rbm.transform(validation_set)
 
-        """ Perform finetuning procedure of the deep autoencoder.
-        :param train_set: trainin set
-        :param validation_set: validation set
+        return next_train, next_valid
+
+    def fit(self, train_set, train_ref, validation_set=None, validation_ref=None, restore_previous_model=False):
+
+        """ Fit the model to the data.
+        :param train_set: Training data. shape(n_samples, n_features)
+        :param train_ref: Reference data. shape(n_samples, n_features)
+        :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
+        :param validation_ref: optional, default None. Reference validation data. shape(nval_samples, n_features)
         :param restore_previous_model:
                     if true, a previous trained model
                     with the same name of this model is restored from disk to continue training.
         :return: self
         """
 
+        print('Starting Reconstruction finetuning...')
+
         with tf.Session() as self.tf_session:
             self._initialize_tf_utilities_and_ops(restore_previous_model)
-            self._train_model(train_set, validation_set)
+            self._train_model(train_set, train_ref, validation_set, validation_ref)
             self.tf_saver.save(self.tf_session, self.model_path)
 
-    def _train_model(self, train_set, validation_set):
+    def _train_model(self, train_set, train_ref, validation_set, validation_ref):
 
         """ Train the model.
         :param train_set: training set
+        :param train_ref: training reference data
         :param validation_set: validation set
+        :param validation_ref: validation reference data
         :return: self
         """
 
-        batches = [_ for _ in utilities.gen_batches(train_set, self.batch_size)]
+        shuff = zip(train_set, train_ref)
 
         for i in range(self.num_epochs):
 
+            np.random.shuffle(shuff)
+            batches = [_ for _ in utilities.gen_batches(shuff, self.batch_size)]
+
             for batch in batches:
-                feed = self._create_feed(batch, self.dropout)
-                self.tf_session.run(self.train_step, feed_dict=feed)
+                x_batch, y_batch = zip(*batch)
+                self.tf_session.run(self.train_step, feed_dict={self.input_data: x_batch,
+                                                                self.input_labels: y_batch,
+                                                                self.keep_prob: self.dropout})
 
-            if i % 5 == 0:
-                if validation_set is not None:
-                    self._run_validation_error_and_summaries(i, validation_set)
+            if validation_set is not None:
+                self._run_validation_error_and_summaries(i, validation_set, validation_ref)
 
-    def _run_validation_error_and_summaries(self, epoch, validation_set):
+    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_ref):
 
         """ Run the summaries and error computation on the validation set.
         :param epoch: current epoch
-        :param validation_set: validation data
+        :param validation_ref: validation reference data
         :return: self
         """
 
-        feed = self._create_feed(validation_set, self.dropout)
+        feed = {self.input_data: validation_set, self.input_labels: validation_ref, self.keep_prob: 1}
         result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
+
         summary_str = result[0]
-        err = result[1]
+        acc = result[1]
 
         self.tf_summary_writer.add_summary(summary_str, epoch)
 
         if self.verbose == 1:
-            print("Cost at step %s: %s" % (epoch, err))
+            print("Reconstruction loss at step %s: %s" % (epoch, acc))
 
-    def build_model(self, n_features):
+    def get_layers_output(self, dataset):
 
-        """ Creates the computational graph.
-        This graph is intented to be created for finetuning,
-        i.e. after unsupervised pretraining.
-        :param n_features: number of features of the first layer.
+        """ Get output from each layer of the network.
+        :param dataset: input data
+        :return: list of np array, element i in the list is the output of layer i
+        """
+
+        layers_out = []
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            for l in self.layer_nodes:
+                layers_out.append(l.eval({self.input_data: dataset,
+                                          self.keep_prob: 1}))
+        return layers_out
+
+    def reconstruct(self, test_set):
+
+        """ Reconstruct the test set data using the learned model.
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :return: labels
+        """
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            return self.reconstruction.eval({self.input_data: test_set,
+                                             self.keep_prob: 1})
+
+    def compute_reconstruction_loss(self, test_set, test_ref):
+
+        """ Compute the reconstruction loss over the test set.
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :param test_ref: Reference test data. shape(n_test_samples, n_features)
+        :return: reconstruction loss
+        """
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            return self.cost.eval({self.input_data: test_set,
+                                   self.input_labels: test_ref,
+                                   self.keep_prob: 1})
+
+    def build_model(self, n_features, encoding_w=None, encoding_b=None):
+
+        """ Creates the computational graph for the reconstruction task.
+        :param n_features: Number of features
+        :param encoding_w: list of weights for the encoding layers.
+        :param encoding_b: list of biases for the encoding layers.
         :return: self
         """
 
-        self._create_placeholders(n_features)
-        self._create_variables()
+        self._create_placeholders(n_features, n_features)
 
-        encode_output = self._create_encoding_layers()
-        self.encode = encode_output
-        decode_output = self._create_decoding_layers(encode_output)
+        if encoding_w and encoding_b:
+            self.encoding_w_ = encoding_w
+            self.encoding_b_ = encoding_b
+        else:
+            self._create_variables(n_features)
 
-        self._create_cost_function_node(self.loss_func, decode_output, self.x)
-        self._create_train_step_node(self.opt, self.learning_rate, self.momentum)
+        next_train = self._create_encoding_layers()
+        self._create_decoding_layers(next_train)
 
-    def _create_placeholders(self, n_features):
+        self._create_cost_function_node(self.reconstruction, self.input_labels)
+        self._create_train_step_node()
 
-        """ Create placeholders for the model
+    def _create_placeholders(self, n_features, n_classes):
+
+        """ Create the TensorFlow placeholders for the model.
         :param n_features: number of features of the first layer
-        :return: keep_probs, hrand, vrand
+        :param n_classes: number of classes
+        :return: self
         """
 
-        self.x = tf.placeholder('float', [None, n_features])
-        self.keep_prob = tf.placeholder('float')
-        self.hrand = [tf.placeholder('float', [None, self.layers[l+1]]) for l in range(self.n_layers-1)]
-        self.vrand = [tf.placeholder('float', [None, self.layers[l]]) for l in range(self.n_layers-1)]
+        self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
+        self.input_labels = tf.placeholder('float', [None, n_classes], name='y-input')
+        self.keep_prob = tf.placeholder('float', name='keep-probs')
 
-    def _create_variables(self):
+    def _create_variables(self, n_features):
 
-        """ Create variables for the model
-        :return: W_vars, W_vars_t, bh_vars, bv_vars
+        """ Create the TensorFlow variables for the model.
+        :param n_features: number of features
+        :return: self
         """
 
-        self.W_vars = [tf.Variable(self.W_pretrain[l]) for l in range(self.n_layers-1)]
-        self.W_vars_t = [tf.Variable(self.W_pretrain[l].T) for l in range(self.n_layers-1)]
-        self.bh_vars = [tf.Variable(self.bh_pretrain[l]) for l in range(self.n_layers-1)]
-        self.bv_vars = [tf.Variable(self.bv_pretrain[l]) for l in range(self.n_layers-1)]
+        if self.do_pretrain:
+            self._create_variables_pretrain()
+        else:
+            self._create_variables_no_pretrain(n_features)
+
+    def _create_variables_no_pretrain(self, n_features):
+
+        """ Create model variables (no previous unsupervised pretraining)
+        :param n_features: number of features
+        :return: self
+        """
+
+        self.encoding_w_ = []
+        self.encoding_b_ = []
+
+        for l, layer in enumerate(self.layers):
+
+            if l == 0:
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.1)))
+                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.1)))
+            else:
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l-1], self.layers[l]], stddev=0.1)))
+                self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.1)))
+
+    def _create_variables_pretrain(self):
+
+        """ Create model variables (previous unsupervised pretraining)
+        :return: self
+        """
+
+        for l, layer in enumerate(self.layers):
+            self.encoding_w_[l] = tf.Variable(self.encoding_w_[l], name='enc-w-{}'.format(l))
+            self.encoding_b_[l] = tf.Variable(self.encoding_b_[l], name='enc-b-{}'.format(l))
 
     def _create_encoding_layers(self):
 
-        """ Create the encoding layers of the model.
-        :return: output of the last encoding layer
+        """ Create the encoding layers for supervised finetuning.
+        :return: output of the final encoding layer.
         """
 
-        next_layer_feed = self.x
+        next_train = self.input_data
+        self.layer_nodes = []
 
-        for l in range(self.n_layers-1):
-            hprobs = tf.nn.dropout(tf.nn.sigmoid(tf.matmul(next_layer_feed, self.W_vars[l]) + self.bh_vars[l]),
-                                   self.keep_prob)
+        for l, layer in enumerate(self.layers):
 
-            hstates = utilities.sample_prob(hprobs, self.hrand[l])
+            with tf.name_scope("encode-{}".format(l)):
 
-            next_layer_feed = hstates
+                y_act = tf.matmul(next_train, self.encoding_w_[l]) + self.encoding_b_[l]
 
-        return next_layer_feed
+                if self.finetune_act_func == 'sigmoid':
+                    layer_y = tf.nn.sigmoid(y_act)
 
-    def _create_decoding_layers(self, decode_input):
+                elif self.finetune_act_func == 'tanh':
+                    layer_y = tf.nn.tanh(y_act)
 
-        """ Create the decoding layres of the model.
-        :param decode_input: output of the last encoding layer
-        :return: output of the last decoding layer
-        """
-        decode_output = decode_input
+                elif self.finetune_act_func == 'relu':
+                    layer_y = tf.nn.relu(y_act)
 
-        for l in reversed(range(self.n_layers-1)):
-            vprobs = tf.nn.sigmoid(tf.matmul(decode_output, self.W_vars_t[l]) + self.bv_vars[l])
-            vstates = utilities.sample_prob(vprobs, self.vrand[l])
+                else:
+                    layer_y = None
 
-            decode_output = vstates
+                # the input to the next layer is the output of this layer
+                next_train = tf.nn.dropout(layer_y, self.keep_prob)
 
-        return decode_output
+            self.layer_nodes.append(next_train)
 
-    def get_model_parameters(self):
+        return next_train
 
-        """ Return the model parameters in the form of numpy arrays.
-        :return: model parameters
-        """
+    def _create_decoding_layers(self, last_encode):
 
-        with tf.Session() as self.tf_session:
-
-            self.tf_saver.restore(self.tf_session, self.model_path)
-
-            def eval_tensors(tens, prefix):
-                eval_tens = {}
-                for i, t in enumerate(tens):
-                    eval_tens[prefix + str(i)] = t.eval()
-
-            return {
-                'W': eval_tensors(self.W_vars, 'w'),
-                'Wt': eval_tensors(self.W_vars_t, 'wt'),
-                'bh': eval_tensors(self.bh_vars, 'bh'),
-                'bv': eval_tensors(self.bv_vars, 'bv')
-            }
-
-    def transform(self, data, name='train', save=False):
-
-        """ Return data encoded by the deep autoencoder.
-        :param data: data to encode
-        :param name: name to save the data
-        :param save: if true, also save the data as numpy array
-        :return: encoded data
+        """ Create the decoding layers for reconstruction finetuning.
+        :param last_encode: output of the last encoding layer
+        :return: output of the final encoding layer.
         """
 
-        with tf.Session() as self.tf_session:
+        next_decode = last_encode
 
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            encoded_data = self.encode.eval(self._create_feed(data, 1.))
+        for l, layer in reversed(list(enumerate(self.layers))):
 
-            if save:
-                np.save(self.data_dir + self.model_name + '-' + name, encoded_data)
+            with tf.name_scope("decode-{}".format(l)):
 
-            return encoded_data
+                # Create decoding variables
+                dec_w = tf.Variable(tf.transpose(self.encoding_w_[l].initialized_value()))
+                dec_b = tf.Variable(tf.constant(0.1, shape=[dec_w.get_shape().dims[1].value]))
+                self.decoding_w.append(dec_w)
+                self.decoding_b.append(dec_b)
 
-    def _create_feed(self, data, keep_prob):
+                y_act = tf.matmul(next_decode, dec_w) + dec_b
 
-        """ Create dictionary to feed TensorFlow placeholders.
-        :param data: input data
-        :param keep_prob: dropout probabilities
-        :return: feed dictionary
-        """
+                if self.finetune_act_func == 'sigmoid':
+                    layer_y = tf.nn.sigmoid(y_act)
 
-        feed = {self.x: data, self.keep_prob: keep_prob}
+                elif self.finetune_act_func == 'tanh':
+                    layer_y = tf.nn.tanh(y_act)
 
-        # Random uniform for encoding layers
-        hrand = [np.random.rand(data.shape[0], l) for l in self.layers[1:]]
-        for j, h in enumerate(hrand):
-            feed[self.hrand[j]] = h
+                elif self.finetune_act_func == 'relu':
+                    layer_y = tf.nn.relu(y_act)
 
-        # Random uniform for decoding layers
-        vrand = [np.random.rand(data.shape[0], l) for l in self.layers[:-1]]
-        for j, v in enumerate(vrand):
-            feed[self.vrand[j]] = v
+                else:
+                    layer_y = None
 
-        return feed
+                # the input to the next layer is the output of this layer
+                next_decode = tf.nn.dropout(layer_y, self.keep_prob)
+
+            self.layer_nodes.append(next_decode)
+
+        self.reconstruction = next_decode

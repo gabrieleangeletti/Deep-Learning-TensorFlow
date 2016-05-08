@@ -58,7 +58,7 @@ def load_cifar10_dataset(cifar_dir, mode='supervised'):
     for fn in os.listdir(cifar_dir):
 
         if not fn.startswith('batches') and not fn.startswith('readme'):
-            fo = open(cifar_dir + fn, 'rb')
+            fo = open(os.path.join(cifar_dir, fn), 'rb')
             data_batch = cPickle.load(fo)
             fo.close()
 
@@ -74,6 +74,9 @@ def load_cifar10_dataset(cifar_dir, mode='supervised'):
             if fn.startswith('test'):
                 teX = data_batch['data']
                 teY = data_batch['labels']
+
+    trX = trX.astype(np.float32) / 255.
+    teX = teX.astype(np.float32) / 255.
 
     if mode == 'supervised':
         return trX, trY, teX, teY

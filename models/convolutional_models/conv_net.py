@@ -138,8 +138,8 @@ class ConvolutionalNetwork(model.Model):
         self._create_placeholders(n_features, n_classes)
         self._create_layers(n_classes, original_shape)
 
-        self._create_cost_function_node(self.loss_func, self.softmax_out, self.input_labels)
-        self._create_train_step_node(self.opt, self.learning_rate, self.momentum)
+        self._create_cost_function_node(self.softmax_out, self.input_labels)
+        self._create_train_step_node()
 
         self._create_test_node()
 

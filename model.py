@@ -67,7 +67,7 @@ class Model(object):
         self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
 
     def _initialize_training_parameters(self, loss_func, learning_rate, num_epochs, batch_size,
-                                        dataset, opt, momentum=None, l2reg=None):
+                                        dataset, opt, dropout=1, momentum=None, l2reg=None):
 
         """ Initialize training parameters common to all models.
         :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
@@ -76,6 +76,7 @@ class Model(object):
         :param batch_size: Size of each mini-batch
         :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom'].
         :param opt: Which tensorflow optimizer to use. ['gradient_descent', 'momentum', 'ada_grad']
+        :param dropout: Dropout parameter
         :param momentum: Momentum parameter
         :param l2reg: regularization parameter
         :return: self
@@ -83,6 +84,7 @@ class Model(object):
 
         self.loss_func = loss_func
         self.learning_rate = learning_rate
+        self.dropout = dropout
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.dataset = dataset
@@ -90,10 +92,9 @@ class Model(object):
         self.momentum = momentum
         self.l2reg = l2reg
 
-    def _create_cost_function_node(self, loss_func, model_output, ref_input, regterm=None):
+    def _create_cost_function_node(self, model_output, ref_input, regterm=None):
 
         """ Create the cost function node.
-        :param loss_func: cost function. ['cross_entropy', 'mean_squared']
         :param model_output: model output node
         :param ref_input: reference input placeholder node
         :param regterm: regularization term
@@ -101,14 +102,14 @@ class Model(object):
         """
 
         with tf.name_scope("cost"):
-            if loss_func == 'cross_entropy':
+            if self.loss_func == 'cross_entropy':
                 model_output = tf.nn.softmax(model_output)
                 cost = - tf.reduce_mean(ref_input * tf.log(tf.clip_by_value(model_output, 1e-10, float('inf'))) +
                                         (1 - ref_input) * tf.log(tf.clip_by_value(1 - model_output, 1e-10, float('inf'))))
                 _ = tf.scalar_summary("cross_entropy", cost)
                 self.cost = cost + regterm if regterm is not None else cost
 
-            elif loss_func == 'mean_squared':
+            elif self.loss_func == 'mean_squared':
                 cost = tf.sqrt(tf.reduce_mean(tf.square(ref_input - model_output)))
                 _ = tf.scalar_summary("mean_squared", cost)
                 self.cost = cost + regterm if regterm is not None else cost
@@ -116,27 +117,24 @@ class Model(object):
             else:
                 self.cost = None
 
-    def _create_train_step_node(self, opt, learning_rate, momentum=None):
+    def _create_train_step_node(self):
 
         """ Create the training step node of the network.
-        :param opt: tensorflow optimizer
-        :param learning_rate: learning rate parameter
-        :param momentum: momentum parameter (used only for momentum optimizer)
         :return: self
         """
 
         with tf.name_scope("train"):
-            if opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(self.cost)
+            if self.opt == 'gradient_descent':
+                self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
 
-            elif opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(learning_rate).minimize(self.cost)
+            elif self.opt == 'ada_grad':
+                self.train_step = tf.train.AdagradOptimizer(self.learning_rate).minimize(self.cost)
 
-            elif opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(self.cost)
+            elif self.opt == 'momentum':
+                self.train_step = tf.train.MomentumOptimizer(self.learning_rate, self.momentum).minimize(self.cost)
 
-            elif opt == 'adam':
-                self.train_step = tf.train.AdamOptimizer(learning_rate).minimize(self.cost)
+            elif self.opt == 'adam':
+                self.train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(self.cost)
 
             else:
                 self.train_step = None

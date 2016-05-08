@@ -13,46 +13,35 @@ class DBN(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, layers, do_pretrain=True, rbm_num_epochs=list([10]), rbm_batch_size=list([10]), model_name='dbn',
-                 rbm_learning_rate=list([0.01]), rbm_names=list(['']), rbm_gibbs_k=list([1]), gauss_visible=False,
-                 stddev=0.1, learning_rate=0.01, momentum=0.7, num_epochs=10, batch_size=10, dropout=1,
-                 opt='gradient_descent', verbose=1, act_func='relu', loss_func='mean_squared', main_dir='dbn/',
-                 dataset='mnist'):
+    def __init__(self, rbm_layers, do_pretrain=True, rbm_num_epochs=list([10]), rbm_batch_size=list([10]), model_name='dbn',
+                 rbm_learning_rate=list([0.01]), rbm_names=list(['']), rbm_gibbs_k=list([1]), rbm_gauss_visible=False,
+                 rbm_stddev=0.1, finetune_learning_rate=0.01, momentum=0.9, finetune_num_epochs=10,
+                 finetune_batch_size=10, finetune_dropout=1, finetune_opt='gradient_descent', verbose=1,
+                 finetune_act_func='relu', finetune_loss_func='mean_squared', main_dir='dbn/', dataset='mnist'):
 
         """
-        :param layers: list containing the hidden units for each layer
+        :param rbm_layers: list containing the hidden units for each layer
         :param do_pretrain: whether to do unsupervised pretraining of the network
         :param rbm_num_epochs: number of epochs to train each rbm
         :param rbm_batch_size: batch size each rbm
         :param rbm_learning_rate: learning rate each rbm
         :param rbm_names: model name for each rbm
         :param rbm_gibbs_k: number of gibbs sampling steps for each rbm
-        :param gauss_visible: whether the input layer should have gaussian units
-        :param stddev: standard deviation for the gaussian layer
-        :param dropout: dropout parameter
+        :param rbm_gauss_visible: whether the input layer should have gaussian units
+        :param rbm_stddev: standard deviation for the gaussian layer
+        :param finetune_dropout: dropout parameter
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
         """
         model.Model.__init__(self, model_name, main_dir)
 
-        self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
-                                             dataset, opt, momentum)
+        self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
+                                             num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
+                                             dropout=finetune_dropout, dataset=dataset, opt=finetune_opt,
+                                             momentum=momentum)
 
-        self.layers = layers
-        self.n_layers = len(layers)
-
-        # RBM parameters
         self.do_pretrain = do_pretrain
-        self.rbm_num_epochs = rbm_num_epochs
-        self.rbm_batch_size = rbm_batch_size
-        self.rbm_learning_rate = rbm_learning_rate
-        self.rbm_names = rbm_names
-        self.rbm_gibbs_k = rbm_gibbs_k
-
-        # DBN parameters
-        self.gauss_visible = gauss_visible
-        self.stddev = stddev
-        self.act_func = act_func
-        self.dropout = dropout
+        self.layers = rbm_layers
+        self.finetune_act_func = finetune_act_func
         self.verbose = verbose
 
         self.W_pretrain = None
@@ -60,33 +49,30 @@ class DBN(model.Model):
         self.bv_pretrain = None
 
         self.W_vars = None
-        self.bh_vars = None
-        self.bv_vars = None
+        self.b_vars = None
 
-        if self.do_pretrain:
+        self.rbms = []
 
-            self.rbms = []
+        for l, layer in enumerate(rbm_layers):
 
-            for l in range(self.n_layers):
+            if l == 0 and rbm_gauss_visible:
 
-                if l == 0 and self.gauss_visible:
+                # Gaussian visible units
 
-                    # Gaussian visible units
+                self.rbms.append(rbm.RBM(
+                    visible_unit_type='gauss', stddev=rbm_stddev,
+                    model_name=rbm_names[l] + str(l), num_hidden=rbm_layers[l],
+                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
+                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
 
-                    self.rbms.append(rbm.RBM(
-                        visible_unit_type='gauss', stddev=self.stddev,
-                        model_name=self.rbm_names[l] + str(l), num_hidden=self.layers[l],
-                        main_dir=self.main_dir, learning_rate=self.rbm_learning_rate[l],
-                        verbose=self.verbose, num_epochs=self.rbm_num_epochs[l], batch_size=self.rbm_batch_size[l]))
+            else:
 
-                else:
+                # Binary RBMs
 
-                    # Binary RBMs
-
-                    self.rbms.append(rbm.RBM(
-                        model_name=self.rbm_names[l] + str(l), num_hidden=self.layers[l],
-                        main_dir=self.main_dir, learning_rate=self.rbm_learning_rate[l],
-                        verbose=self.verbose, num_epochs=self.rbm_num_epochs[l], batch_size=self.rbm_batch_size[l]))
+                self.rbms.append(rbm.RBM(
+                    model_name=rbm_names[l] + str(l), num_hidden=rbm_layers[l],
+                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
+                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
 
     def pretrain(self, train_set, validation_set=None):
 
@@ -168,7 +154,7 @@ class DBN(model.Model):
 
             for batch in batches:
                 x_batch, y_batch = zip(*batch)
-                feed = self._create_feed(x_batch, y_batch, self.dropout)
+                feed = {self.input_data: x_batch, self.input_labels: y_batch, self.keep_prob: self.dropout}
                 self.tf_session.run(self.train_step, feed_dict=feed)
 
             if validation_set is not None:
@@ -183,7 +169,7 @@ class DBN(model.Model):
         :return: self
         """
 
-        feed = self._create_feed(validation_set, validation_labels, 1)
+        feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
         result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
         summary_str = result[0]
         err = result[1]
@@ -202,13 +188,13 @@ class DBN(model.Model):
         """
 
         self._create_placeholders(n_features, n_classes)
-        self._create_variables()
+        self._create_variables(n_features)
 
         next_train = self._forward_pass()
         self._create_softmax_layer(next_train, n_classes)
 
-        self._create_cost_function_node(self.loss_func, self.y, self.y_)
-        self._create_train_step_node(self.opt, self.learning_rate, self.momentum)
+        self._create_cost_function_node(self.softmax_out, self.input_labels)
+        self._create_train_step_node()
         self._create_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
@@ -219,22 +205,50 @@ class DBN(model.Model):
         :return: self
         """
 
+        self.input_data = tf.placeholder('float', [None, n_features])
+        self.input_labels = tf.placeholder('float', [None, n_classes])
         self.keep_prob = tf.placeholder('float')
-        self.hrand = [tf.placeholder('float', [None, self.layers[l+1]]) for l in range(self.n_layers-1)]
-        self.vrand = [tf.placeholder('float', [None, self.layers[l]]) for l in range(self.n_layers-1)]
 
-        self.x = tf.placeholder('float', [None, n_features])
-        self.y_ = tf.placeholder('float', [None, n_classes])
-
-    def _create_variables(self):
+    def _create_variables(self, n_features):
 
         """ Create the TensorFlow variables for the model.
+        :param n_features: number of features
         :return: self
         """
 
-        self.W_vars = [tf.Variable(self.W_pretrain[l]) for l in range(self.n_layers-1)]
-        self.bh_vars = [tf.Variable(self.bh_pretrain[l]) for l in range(self.n_layers-1)]
-        self.bv_vars = [tf.Variable(self.bv_pretrain[l]) for l in range(self.n_layers-1)]
+        self.W_vars = []
+        self.b_vars = []
+
+        if self.do_pretrain:
+            self._create_variables_pretrain()
+        else:
+            self._create_variables_no_pretrain(n_features)
+
+    def _create_variables_no_pretrain(self, n_features):
+
+        """ Create model variables (no previous unsupervised pretraining)
+        :param n_features: number of features
+        :return: self
+        """
+
+        for l, layer in enumerate(self.layers):
+
+            if l == 0:
+                self.W_vars.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.1)))
+                self.b_vars.append(tf.Variable(tf.constant(0.1, shape=[self.layers[l]])))
+            else:
+                self.W_vars.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l - 1], self.layers[l]], stddev=0.1)))
+                self.b_vars.append(tf.Variable(tf.constant(0.1, shape=[self.layers[l]])))
+
+    def _create_variables_pretrain(self):
+
+        """ Create model variables (previous unsupervised pretraining)
+        :return: self
+        """
+
+        for l, layer in enumerate(self.layers):
+            self.W_vars.append(tf.Variable(self.W_pretrain[l], name='w-{}'.format(l)))
+            self.b_vars.append(tf.Variable(self.bh_pretrain[l], name='b-{}'.format(l)))
 
     def _forward_pass(self):
 
@@ -242,19 +256,19 @@ class DBN(model.Model):
         :return: sampled units at the last layer
         """
 
-        next_train = self.x
+        next_train = self.input_data
 
-        for l in range(self.n_layers-1):
+        for l, layer in enumerate(self.layers):
 
-            activation = tf.matmul(next_train, self.W_vars[l]) + self.bh_vars[l]
+            activation = tf.matmul(next_train, self.W_vars[l]) + self.b_vars[l]
 
-            if self.act_func == 'sigmoid':
+            if self.finetune_act_func == 'sigmoid':
                 hprobs = tf.nn.sigmoid(activation)
 
-            elif self.act_func == 'tanh':
+            elif self.finetune_act_func == 'tanh':
                 hprobs = tf.nn.tanh(activation)
 
-            elif self.act_func == 'relu':
+            elif self.finetune_act_func == 'relu':
                 hprobs = tf.nn.relu(activation)
 
             else:
@@ -264,19 +278,18 @@ class DBN(model.Model):
 
         return next_train
 
-    def _create_softmax_layer(self, next_train, n_classes):
+    def _create_softmax_layer(self, last_layer, n_classes):
 
         """ Create nodes for the softmax layer build on top of the last layer.
-        :param next_train: sampled units at the last layer
+        :param last_layer: last layer output node
         :param n_classes: number of classes
         :return: self
         """
-        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes]),
-                                     name='softmax-weights')
-        self.softmax_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='softmax-biases')
+        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes], stddev=0.1), name='sm-weights')
+        self.softmax_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='sm-biases')
 
         with tf.name_scope("softmax_layer"):
-            self.y = tf.matmul(next_train, self.softmax_W) + self.softmax_b
+            self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b
 
     def _create_test_node(self):
 
@@ -285,7 +298,7 @@ class DBN(model.Model):
         """
 
         with tf.name_scope("test"):
-            correct_prediction = tf.equal(tf.argmax(self.y, 1), tf.argmax(self.y_, 1))
+            correct_prediction = tf.equal(tf.argmax(self.softmax_out, 1), tf.argmax(self.input_labels, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
             _ = tf.scalar_summary('accuracy', self.accuracy)
 
@@ -306,10 +319,9 @@ class DBN(model.Model):
 
             return {
                 'W': eval_tensors(self.W_vars, 'w'),
-                'bh': eval_tensors(self.bh_vars, 'bh'),
-                'bv': eval_tensors(self.bv_vars, 'bv'),
-                'smaxW': self.softmax_W.eval(),
-                'smaxb': self.softmax_b.eval()
+                'b': eval_tensors(self.b_vars, 'b'),
+                'smW': self.softmax_W.eval(),
+                'smb': self.softmax_b.eval()
             }
 
     def predict(self, test_set, test_labels):
@@ -324,29 +336,6 @@ class DBN(model.Model):
         with tf.Session() as self.tf_session:
 
             self.tf_saver.restore(self.tf_session, self.model_path)
-            feed = self._create_feed(test_set, test_labels, 1)
+            feed = {self.input_data: test_set, self.input_labels: test_labels, self.keep_prob: 1}
 
             return self.accuracy.eval(feed)
-
-    def _create_feed(self, datax, datay, keep_prob):
-
-        """ Create dictionary to feed TensorFlow placeholders.
-        :param datax: input data
-        :param datay: input labels
-        :param keep_prob: dropout probability
-        :return: feed dictionary
-        """
-
-        feed = {self.x: datax, self.y_: datay, self.keep_prob: keep_prob}
-
-        # Random uniform for encoding layers
-        hrand = [np.random.rand(len(datax), l) for l in self.layers[1:]]
-        for j, h in enumerate(hrand):
-            feed[self.hrand[j]] = h
-
-        # Random uniform for decoding layers
-        vrand = [np.random.rand(len(datax), l) for l in self.layers[:-1]]
-        for j, v in enumerate(vrand):
-            feed[self.vrand[j]] = v
-
-        return feed
