@@ -264,6 +264,20 @@ class RBM(model.Model):
 
             return encoded_data
 
+    def reconstruct(self, data):
+
+        """ Reconstruct the test set data using the learned model.
+        :param data: Testing data. shape(n_test_samples, n_features)
+        :return: labels
+        """
+
+        with tf.Session() as self.tf_session:
+
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            hprobs, _ = self.sample_hidden_from_visible(data)
+            vprobs = self.sample_visible_from_hidden(hprobs, data.shape[1])
+            return vprobs.eval()
+
     def load_model(self, shape, gibbs_sampling_steps, model_path):
 
         """ Load a trained model from disk. The shape of the model

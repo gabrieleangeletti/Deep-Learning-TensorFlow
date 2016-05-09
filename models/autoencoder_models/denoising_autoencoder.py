@@ -141,16 +141,16 @@ class DenoisingAutoencoder(model.Model):
         if self.verbose == 1:
             print("Validation cost at step %s: %s" % (epoch, err))
 
-    def reconstruct(self, test_set):
+    def reconstruct(self, data):
 
         """ Reconstruct the test set data using the learned model.
-        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :param data: Testing data. shape(n_test_samples, n_features)
         :return: labels
         """
 
         with tf.Session() as self.tf_session:
             self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.decode.eval({self.input_data_corr: test_set})
+            return self.decode.eval({self.input_data_corr: data})
 
     def build_model(self, n_features, W_=None, bh_=None, bv_=None):
 

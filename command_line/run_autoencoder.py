@@ -128,7 +128,7 @@ if __name__ == '__main__':
         for p in params:
             np.save(FLAGS.save_parameters + '-' + p, params[p])
 
-    # Save the predictions of the model
+    # Save the reconstructions of the model
     if FLAGS.save_reconstructions:
         print('Saving the reconstructions for the test set...')
         np.save(FLAGS.save_reconstructions, dae.reconstruct(teX))

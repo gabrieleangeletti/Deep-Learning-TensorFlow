@@ -20,6 +20,8 @@ flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
+flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the reconstructions of the model.')
+flags.DEFINE_string('save_parameters', '', 'Path to save the parameters of the model.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 # RBM configuration
@@ -91,6 +93,18 @@ if __name__ == '__main__':
     print('Start training...')
     r.build_model(trX.shape[1])
     r.fit(trX, teX, restore_previous_model=FLAGS.restore_previous_model)
+
+    # Save the model paramenters
+    if FLAGS.save_parameters:
+        print('Saving the parameters of the model...')
+        params = r.get_model_parameters()
+        for p in params:
+            np.save(FLAGS.save_parameters + '-' + p, params[p])
+
+    # Save the reconstructions of the model
+    if FLAGS.save_reconstructions:
+        print('Saving the reconstructions for the test set...')
+        np.save(FLAGS.save_reconstructions, r.reconstruct(teX))
 
     # Encode the training data and store it
     if FLAGS.encode_train:
