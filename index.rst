@@ -132,7 +132,8 @@ Example usage::
 This command trains a Stack of Denoising Autoencoders 784 <-> 512, 512 <-> 256, 256 <-> 128, and from there it constructs the Deep Autoencoder model.
 The final architecture of the model is 784 <-> 512, 512 <-> 256, 256 <-> 128, 128 <-> 256, 256 <-> 512, 512 <-> 784.
 If you want to get the reconstructions of the test set performed by the trained model you can add the option ``--save_reconstructions /path/to/file.npy``.
-Like for the Stacked Denoising Autoencoder, you can get the layers output by calling ``--save_layers_output /path/to/file``.
+Like for the Stacked Denoising Autoencoder, you can get the layers output by calling ``--save_layers_output_test /path/to/file`` for the test set and
+``--save_layers_output_train /path/to/file`` for the train set.
 The Deep Autoencoder accepts, in addition to train validation and test sets, reference sets. These are used as reference samples for the model.
 For example, if you want to reconstruct frontal faces from non-frontal faces, you can pass the non-frontal faces as train/valid/test set and the
  frontal faces as train/valid/test reference. If you don't pass reference sets, they will be set equal to the train/valid/test set.

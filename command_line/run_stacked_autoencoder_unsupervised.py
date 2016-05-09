@@ -193,12 +193,12 @@ if __name__ == '__main__':
         if which_set == 'train':
             trout = sdae.get_layers_output(trX)
             for i, o in enumerate(trout):
-                np.save(FLAGS.save_layers_output + '-layer-' + str(i + 1) + '-train', o)
+                np.save(FLAGS.save_layers_output_train + '-layer-' + str(i + 1) + '-train', o)
 
         elif which_set == 'test':
             teout = sdae.get_layers_output(teX)
             for i, o in enumerate(teout):
-                np.save(FLAGS.save_layers_output + '-layer-' + str(i + 1) + '-test', o)
+                np.save(FLAGS.save_layers_output_test + '-layer-' + str(i + 1) + '-test', o)
 
     # Save output from each layer of the model
     if FLAGS.save_layers_output_test:
