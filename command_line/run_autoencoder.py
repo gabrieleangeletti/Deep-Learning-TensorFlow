@@ -39,7 +39,6 @@ flags.DEFINE_string('dec_act_func', 'none', 'Activation function for the decoder
 flags.DEFINE_string('main_dir', 'dae/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_string('loss_func', 'mean_squared', 'Loss function. ["mean_squared" or "cross_entropy"]')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
-flags.DEFINE_integer('weight_images', 0, 'Number of weight images to generate.')
 flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
@@ -138,7 +137,3 @@ if __name__ == '__main__':
     dae.transform(trX, name='train', save=FLAGS.encode_train)
     dae.transform(vlX, name='valid', save=FLAGS.encode_valid)
     dae.transform(teX, name='test', save=FLAGS.encode_test)
-
-    # save images
-    dae.get_weights_as_images(28, 28, max_images=FLAGS.weight_images)
-

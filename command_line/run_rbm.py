@@ -33,8 +33,6 @@ flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_float('stddev', 0.1, 'Standard deviation for the Gaussian visible units.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
-flags.DEFINE_integer('weight_images', 0, 'Number of weight images to generate.')
-flags.DEFINE_string('img_type', 'grey', 'Grey or color images.')
 flags.DEFINE_integer('transform_gibbs_sampling_steps', 10, 'Gibbs sampling steps for the transformation of data.')
 
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
@@ -106,5 +104,3 @@ if __name__ == '__main__':
     if FLAGS.encode_test:
         print('Transforming test data...')
         r.transform(teX, name='test', save=FLAGS.encode_test)
-
-    r.get_weights_as_images(28, 28, n_images=FLAGS.weight_images, img_type=FLAGS.img_type)
