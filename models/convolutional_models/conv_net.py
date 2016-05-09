@@ -12,7 +12,7 @@ class ConvolutionalNetwork(model.Model):
     """
 
     def __init__(self, layers, model_name='convnet', main_dir='convnet',
-                 loss_func='cross_entropy', num_epochs=10, batch_size=10, dataset='mnist',
+                 loss_func='softmax_cross_entropy', num_epochs=10, batch_size=10, dataset='mnist',
                  opt='gradient_descent', learning_rate=0.01, momentum=0.5, dropout=0.5, verbose=1):
         """
         :param layers: string used to build the model.

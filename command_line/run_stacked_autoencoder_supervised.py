@@ -31,7 +31,7 @@ flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print ac
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 
 # Supervised fine tuning parameters
-flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
+flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["softmax_cross_entropy", "mean_squared"]')
 flags.DEFINE_integer('finetune_num_epochs', 30, 'Number of epochs for the fine-tuning phase.')
 flags.DEFINE_float('finetune_learning_rate', 0.001, 'Learning rate for the fine-tuning phase.')
 flags.DEFINE_string('finetune_act_func', 'relu', 'Activation function for the fine-tuning phase. ["sigmoid, "tanh", "relu"]')
@@ -80,6 +80,7 @@ assert all([af in ['sigmoid', 'tanh'] for af in dae_enc_act_func])
 assert all([af in ['sigmoid', 'tanh', 'none'] for af in dae_dec_act_func])
 assert all([lf in ['cross_entropy', 'mean_squared'] for lf in dae_loss_func])
 assert FLAGS.finetune_opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
+assert FLAGS.finetune_loss_func in ['mean_squared', 'softmax_cross_entropy']
 
 if __name__ == '__main__':
 

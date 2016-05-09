@@ -29,7 +29,7 @@ flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful 
 
 # Convolutional Net parameters
 flags.DEFINE_string('layers', '', 'String representing the architecture of the network.')
-flags.DEFINE_string('loss_func', 'cross_entropy', 'Loss function. ["mean_squared" or "cross_entropy"]')
+flags.DEFINE_string('loss_func', 'cross_entropy', 'Loss function. ["mean_squared" or "softmax_cross_entropy"]')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
 flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
@@ -39,6 +39,7 @@ flags.DEFINE_float('dropout', 1, 'Dropout parameter.')
 
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert FLAGS.opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
+assert FLAGS.loss_func in ['mean_squared', 'softmax_cross_entropy']
 
 if __name__ == '__main__':
 

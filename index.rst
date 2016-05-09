@@ -74,7 +74,7 @@ Stack of Restricted Boltzmann Machines used to build a Deep Network for supervis
 
 Example usage::
 
-  python command_line/run_dbn.py --dataset mnist --main_dir dbn-models --model_name my-deeper-dbn  --verbose 1 --rbm_layers 512,256 --rbm_learning_rate 0.005 --rbm_num_epochs 15 --rbm_batch_size 25 --finetune_batch_size 25 --finetune_learning_rate 0.001 --finetune_num_epochs 10 --finetune_loss_func cross_entropy --finetune_dropout 0.7 --finetune_act_func relu
+  python command_line/run_dbn.py --dataset mnist --main_dir dbn-models --model_name my-deeper-dbn  --verbose 1 --rbm_layers 512,256 --rbm_learning_rate 0.005 --rbm_num_epochs 15 --rbm_batch_size 25 --finetune_batch_size 25 --finetune_learning_rate 0.001 --finetune_num_epochs 10 --finetune_loss_func softmax_cross_entropy --finetune_dropout 0.7 --finetune_act_func relu
 
 This command trains a DBN on the MNIST dataset. Two RBMs are used in the pretraining phase, the first is 784-512 and the second is 512-256. The training parameters of the RBMs can be specified layer-wise: for example we can specify the learning rate for each layer with: --rbm_learning_rate 0.005,0.1. In this case the fine-tuning phase uses dropout and the ReLU activation function.
 
@@ -86,7 +86,7 @@ Stack of Restricted Boltzmann Machines used to build a Deep Network for unsuperv
 
 Example usage::
 
-  python command_line/run_deep_autoencoder.py --dataset cifar10 --cifar_dir path/to/cifar10 --main_dir deep-autoencoder --model_name deeper-is-better --rbm_layers 8192,2048,512,256 --rbm_batch_size 128 --finetune_batch_size 128
+  python command_line/run_deep_autoencoder.py --dataset cifar10 --cifar_dir path/to/cifar10 --main_dir deep-autoencoder --model_name deeper-is-better --rbm_layers 8192,2048,512,256 --rbm_batch_size 128 --finetune_batch_size 128 --finetune_loss_func cross_entropy
 This command trains a Deep Autoencoder built as a stack of RBMs on the cifar10 dataset. The layers in the finetuning phase are 3072 -> 8192 -> 2048 -> 512 -> 256 -> 512 -> 2048 -> 8192 -> 3072, that's pretty deep.
 
 =====================
@@ -95,9 +95,9 @@ Denoising Autoencoder
 
 Example usage::
 
-  python command_line/run_autoencoder.py --n_components 1024 --batch_size 64 --num_epochs 20 --verbose 1 --learning_rate 0.05 --corr_type masking --corr_frac 0.5 --enc_act_func sigmoid --dec_act_func sigmoid --loss_func cross_entropy --opt momentum --momentum 0.9 --main_dir dae-models --model_name dae1024 --weight_images 200
+  python command_line/run_autoencoder.py --n_components 1024 --batch_size 64 --num_epochs 20 --verbose 1 --learning_rate 0.05 --corr_type masking --corr_frac 0.5 --enc_act_func sigmoid --dec_act_func sigmoid --loss_func cross_entropy --opt momentum --momentum 0.9 --main_dir dae-models --model_name dae1024
 
-This command trains a Denoising Autoencoder on MNIST with 1024 hidden units, sigmoid activation function for the encoder and the decoder, and 50% masking noise. The --weight_images 200 save 200 random hidden units as images in config.data_dir/dae-models/img/ so that you can visualize the learned filters.
+This command trains a Denoising Autoencoder on MNIST with 1024 hidden units, sigmoid activation function for the encoder and the decoder, and 50% masking noise.
 You can also initialize an Autoencoder to an already trained model by passing the parameters to its ``build_model()`` method. If
  you are using the command line, you can add the options ``--weights /path/to/file.npy``, ``--h_bias /path/to/file.npy`` and ``--v_bias /path/to/file.npy``.
  If you want to save the reconstructions of your model, you can add the option ``--save_reconstructions /path/to/file.npy`` and the reconstruction of the test set will be saved.
@@ -111,7 +111,7 @@ Stack of Denoising Autoencoders used to build a Deep Network for supervised lear
 
 Example usage::
 
-  python command_line/run_stacked_autoencoder_supervised.py --dae_layers 1024,784,512,256 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_learning_rate 0.002 --finetune_num_epochs 25 --finetune_opt momentum --momentum 0.9 --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_act_func relu --dropout 0.7
+  python command_line/run_stacked_autoencoder_supervised.py --dae_layers 1024,784,512,256 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_learning_rate 0.002 --finetune_num_epochs 25 --finetune_opt momentum --momentum 0.9 --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_act_func relu --finetune_loss_func softmax_cross_entropy --dropout 0.7
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 1024, 1024 <-> 784, 784 <-> 512, 512 <-> 256, and then performs supervised finetuning with ReLU units.
 This basic command trains the model on the training set (MNIST in this case), and print the accuracy on the test set. If in addition to the accuracy
@@ -127,7 +127,7 @@ Stack of Denoising Autoencoders used to build a Deep Network for unsupervised le
 
 Example usage::
 
-  python command_line/run_stacked_autoencoder_unsupervised.py --dae_layers 512,256,128 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_learning_rate 0.0001 --finetune_num_epochs 25 --finetune_opt gradient_descent --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_act_func tanh --dropout 0.7
+  python command_line/run_stacked_autoencoder_unsupervised.py --dae_layers 512,256,128 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_learning_rate 0.0001 --finetune_num_epochs 25 --finetune_opt gradient_descent --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_enc_act_func tanh --finetune_dec_act_func sigmoid --finetune_loss_func cross_entropy --dropout 0.7
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 512, 512 <-> 256, 256 <-> 128, and from there it constructs the Deep Autoencoder model.
 The final architecture of the model is 784 <-> 512, 512 <-> 256, 256 <-> 128, 128 <-> 256, 256 <-> 512, 512 <-> 784.

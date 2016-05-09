@@ -67,6 +67,7 @@ for p in dae_params:
 
 # Parameters validation
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
+assert FLAGS.loss_func in ["mean_squared", "cross_entropy"]
 assert len(rbm_layers) > 0
 
 if __name__ == '__main__':

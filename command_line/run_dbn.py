@@ -45,7 +45,7 @@ flags.DEFINE_float('finetune_momentum', 0.7, 'Momentum parameter.')
 flags.DEFINE_integer('finetune_num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('finetune_batch_size', 10, 'Size of each mini-batch.')
 flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
-flags.DEFINE_string('finetune_loss_func', 'mean_squared', 'Loss function.')
+flags.DEFINE_string('finetune_loss_func', 'mean_squared', 'Loss function. ["mean_squared", "softmax_cross_entropy"]')
 flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
 
 # Conversion of Autoencoder layers parameters from string to their specific type
@@ -68,6 +68,7 @@ for p in dae_params:
 # Parameters validation
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert FLAGS.finetune_act_func in ['sigmoid', 'tanh', 'relu']
+assert FLAGS.finetune_loss_func in ['mean_squared', 'softmax_cross_entropy']
 assert len(rbm_layers) > 0
 
 if __name__ == '__main__':

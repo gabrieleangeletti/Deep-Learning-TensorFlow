@@ -103,19 +103,24 @@ class Model(object):
 
         with tf.name_scope("cost"):
             if self.loss_func == 'cross_entropy':
-                model_output = tf.nn.softmax(model_output)
                 cost = - tf.reduce_mean(ref_input * tf.log(tf.clip_by_value(model_output, 1e-10, float('inf'))) +
                                         (1 - ref_input) * tf.log(tf.clip_by_value(1 - model_output, 1e-10, float('inf'))))
-                _ = tf.scalar_summary("cross_entropy", cost)
-                self.cost = cost + regterm if regterm is not None else cost
+
+            elif self.loss_func == 'softmax_cross_entropy':
+                softmax = tf.nn.softmax(model_output)
+                cost = - tf.reduce_mean(ref_input * tf.log(softmax) + (1 - ref_input) * tf.log(1 - softmax))
 
             elif self.loss_func == 'mean_squared':
                 cost = tf.sqrt(tf.reduce_mean(tf.square(ref_input - model_output)))
-                _ = tf.scalar_summary("mean_squared", cost)
-                self.cost = cost + regterm if regterm is not None else cost
 
             else:
-                self.cost = None
+                cost = None
+
+        if cost is not None:
+            self.cost = cost + regterm if regterm is not None else cost
+            _ = tf.scalar_summary(self.loss_func, self.cost)
+        else:
+            self.cost = None
 
     def _create_train_step_node(self):
 

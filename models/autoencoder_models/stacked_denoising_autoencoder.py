@@ -17,14 +17,14 @@ class StackedDenoisingAutoencoder(model.Model):
                  dae_dec_act_func=list(['none']), dae_loss_func=list(['mean_squared']), dae_num_epochs=list([10]),
                  dae_batch_size=list([10]), dataset='mnist', dae_opt=list(['gradient_descent']),
                  dae_learning_rate=list([0.01]), momentum=0.5,  finetune_dropout=1, dae_corr_type='none', dae_corr_frac=0.,
-                 verbose=1, finetune_loss_func='cross_entropy', finetune_act_func='relu', dae_l2reg=5e-4,
+                 verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func='relu', dae_l2reg=5e-4,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
                  finetune_batch_size=20, do_pretrain=True):
         """
         :param dae_layers: list containing the hidden units for each layer
         :param dae_enc_act_func: Activation function for the encoder. ['sigmoid', 'tanh']
         :param dae_dec_act_func: Activation function for the decoder. ['sigmoid', 'tanh', 'none']
-        :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
+        :param finetune_loss_func: Loss function for the softmax layer. string, default ['softmax_cross_entropy', 'mean_squared']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
         :param finetune_act_func: activation function for the finetuning phase

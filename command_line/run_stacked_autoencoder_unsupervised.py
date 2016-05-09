@@ -31,12 +31,14 @@ flags.DEFINE_string('model_name', 'un_sdae', 'Name for the model.')
 flags.DEFINE_string('main_dir', 'un_sdae/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
+flags.DEFINE_boolean('tied_weights', True, 'Whether to use tied weights for the decoders.')
 
 # Supervised fine tuning parameters
 flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
 flags.DEFINE_integer('finetune_num_epochs', 30, 'Number of epochs for the fine-tuning phase.')
 flags.DEFINE_float('finetune_learning_rate', 0.001, 'Learning rate for the fine-tuning phase.')
-flags.DEFINE_string('finetune_act_func', 'relu', 'Activation function for the fine-tuning phase. ["sigmoid, "tanh", "relu"]')
+flags.DEFINE_string('finetune_enc_act_func', 'relu', 'Activation function for the encoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
+flags.DEFINE_string('finetune_dec_act_func', 'sigmoid', 'Activation function for the decoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
 flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
 flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum"]')
 flags.DEFINE_integer('finetune_batch_size', 20, 'Size of each mini-batch for the fine-tuning phase.')
@@ -155,10 +157,10 @@ if __name__ == '__main__':
         dae_enc_act_func=dae_params['enc_act_func'], dae_dec_act_func=dae_params['dec_act_func'],
         dae_corr_type=FLAGS.dae_corr_type, dae_corr_frac=FLAGS.dae_corr_frac, dae_l2reg=FLAGS.dae_l2reg,
         dataset=FLAGS.dataset, dae_loss_func=dae_params['loss_func'], main_dir=FLAGS.main_dir,
-        dae_opt=dae_params['opt'],
+        dae_opt=dae_params['opt'], tied_weights=FLAGS.tied_weights,
         dae_learning_rate=dae_params['learning_rate'], momentum=FLAGS.momentum, verbose=FLAGS.verbose,
         dae_num_epochs=dae_params['num_epochs'], dae_batch_size=dae_params['batch_size'],
-        finetune_act_func=FLAGS.finetune_act_func)
+        finetune_enc_act_func=FLAGS.finetune_enc_act_func, finetune_dec_act_func=FLAGS.finetune_dec_act_func)
 
     def load_params_npz(npzfilepath):
         params = []
