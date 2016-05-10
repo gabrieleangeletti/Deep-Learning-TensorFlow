@@ -171,8 +171,8 @@ class RBM(model.Model):
         """
 
         self.W = tf.Variable(tf.truncated_normal(shape=[n_features, self.num_hidden], stddev=0.1), name='weights')
-        self.bh_ = tf.Variable(tf.zeros([self.num_hidden]), name='hidden-bias')
-        self.bv_ = tf.Variable(tf.zeros([n_features]), name='visible-bias')
+        self.bh_ = tf.Variable(tf.constant(0.1, shape=[self.num_hidden]), name='hidden-bias')
+        self.bv_ = tf.Variable(tf.constant(0.1, shape=[n_features]), name='visible-bias')
 
     def gibbs_sampling_step(self, visible, n_features):
 

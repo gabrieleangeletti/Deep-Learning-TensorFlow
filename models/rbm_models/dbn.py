@@ -17,7 +17,7 @@ class DBN(model.Model):
                  rbm_learning_rate=list([0.01]), rbm_names=list(['']), rbm_gibbs_k=list([1]), rbm_gauss_visible=False,
                  rbm_stddev=0.1, finetune_learning_rate=0.01, momentum=0.9, finetune_num_epochs=10,
                  finetune_batch_size=10, finetune_dropout=1, finetune_opt='gradient_descent', verbose=1,
-                 finetune_act_func='relu', finetune_loss_func='mean_squared', main_dir='dbn/', dataset='mnist'):
+                 finetune_act_func='relu', finetune_loss_func='softmax_cross_entropy', main_dir='dbn/', dataset='mnist'):
 
         """
         :param rbm_layers: list containing the hidden units for each layer
@@ -50,6 +50,8 @@ class DBN(model.Model):
 
         self.W_vars = None
         self.b_vars = None
+
+        self.model_predictions = None
 
         self.rbms = []
 
@@ -170,14 +172,41 @@ class DBN(model.Model):
         """
 
         feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
-        result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
+        result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
         summary_str = result[0]
-        err = result[1]
+        acc = result[1]
 
         self.tf_summary_writer.add_summary(summary_str, epoch)
 
         if self.verbose == 1:
-            print("Cost at step %s: %s" % (epoch, err))
+            print("Accuracy at step %s: %s" % (epoch, acc))
+
+    def predict(self, test_set):
+
+        """ Predict the labels for the test set.
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :return: labels
+        """
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            return self.model_predictions.eval({self.input_data: test_set,
+                                                self.keep_prob: 1})
+
+    def compute_accuracy(self, test_set, test_labels):
+
+        """ Predict the labels for the test set, and return the accuracy
+        over the test set.
+        :param test_set: test set
+        :param test_labels: test labels
+        :return: accuracy over the test set
+        """
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            feed = {self.input_data: test_set, self.input_labels: test_labels, self.keep_prob: 1}
+
+            return self.accuracy.eval(feed)
 
     def build_model(self, n_features, n_classes):
 
@@ -298,7 +327,8 @@ class DBN(model.Model):
         """
 
         with tf.name_scope("test"):
-            correct_prediction = tf.equal(tf.argmax(self.softmax_out, 1), tf.argmax(self.input_labels, 1))
+            self.model_predictions = tf.argmax(self.softmax_out, 1)
+            correct_prediction = tf.equal(self.model_predictions, tf.argmax(self.input_labels, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
             _ = tf.scalar_summary('accuracy', self.accuracy)
 
@@ -323,19 +353,3 @@ class DBN(model.Model):
                 'smW': self.softmax_W.eval(),
                 'smb': self.softmax_b.eval()
             }
-
-    def predict(self, test_set, test_labels):
-
-        """ Predict the labels for the test set, and return the accuracy
-        over the test set.
-        :param test_set: test set
-        :param test_labels: test labels
-        :return: accuracy over the test set
-        """
-
-        with tf.Session() as self.tf_session:
-
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            feed = {self.input_data: test_set, self.input_labels: test_labels, self.keep_prob: 1}
-
-            return self.accuracy.eval(feed)

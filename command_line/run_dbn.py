@@ -21,6 +21,7 @@ flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('model_name', 'dbn', 'Name of the model.')
+flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
@@ -45,7 +46,7 @@ flags.DEFINE_float('finetune_momentum', 0.7, 'Momentum parameter.')
 flags.DEFINE_integer('finetune_num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('finetune_batch_size', 10, 'Size of each mini-batch.')
 flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
-flags.DEFINE_string('finetune_loss_func', 'mean_squared', 'Loss function. ["mean_squared", "softmax_cross_entropy"]')
+flags.DEFINE_string('finetune_loss_func', 'softmax_cross_entropy', 'Loss function. ["mean_squared", "softmax_cross_entropy"]')
 flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
 
 # Conversion of Autoencoder layers parameters from string to their specific type
@@ -127,12 +128,15 @@ if __name__ == '__main__':
     if FLAGS.do_pretrain:
         srbm.pretrain(trX, vlX)
 
-    ops.reset_default_graph()
-
     # finetuning
     print('Start deep belief net finetuning...')
     srbm.build_model(trX.shape[1], trY.shape[1])
     srbm.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model
-    print('Test set accuracy: {}'.format(srbm.predict(teX, teY)))
+    print('Test set accuracy: {}'.format(srbm.compute_accuracy(teX, teY)))
+
+    # Save the predictions of the model
+    if FLAGS.save_predictions:
+        print('Saving the predictions for the test set...')
+        np.save(FLAGS.save_predictions, srbm.predict(teX))
