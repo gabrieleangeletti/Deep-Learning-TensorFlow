@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import ops
 
 from models.rbm_models import dbn
 from utils import datasets, utilities
@@ -22,6 +21,8 @@ flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('model_name', 'dbn', 'Name of the model.')
 flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
+flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
+flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
@@ -30,7 +31,6 @@ flags.DEFINE_string('main_dir', 'dbn/', 'Directory to store data relative to the
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 
 # RBMs layers specific parameters
-flags.DEFINE_string('rbm_names', 'rbm', 'Name for the rbm stored_models.')
 flags.DEFINE_string('rbm_layers', '256,', 'Comma-separated values for the layers in the sdae.')
 flags.DEFINE_boolean('rbm_gauss_visible', False, 'Whether to use Gaussian units for the visible layer.')
 flags.DEFINE_float('rbm_stddev', 0.1, 'Standard deviation for Gaussian visible units.')
@@ -50,7 +50,6 @@ flags.DEFINE_string('finetune_loss_func', 'softmax_cross_entropy', 'Loss functio
 flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
 
 # Conversion of Autoencoder layers parameters from string to their specific type
-rbm_names = utilities.flag_to_list(FLAGS.rbm_names, 'str')
 rbm_layers = utilities.flag_to_list(FLAGS.rbm_layers, 'int')
 rbm_learning_rate = utilities.flag_to_list(FLAGS.rbm_learning_rate, 'float')
 rbm_num_epochs = utilities.flag_to_list(FLAGS.rbm_num_epochs, 'int')
@@ -59,7 +58,7 @@ rbm_gibbs_k = utilities.flag_to_list(FLAGS.rbm_gibbs_k, 'int')
 
 # Parameters normalization: if a parameter is not specified, it must be made of the same length of the others
 dae_params = {'layers': rbm_layers,  'learning_rate': rbm_learning_rate, 'num_epochs': rbm_num_epochs,
-              'batch_size': rbm_batch_size, 'gibbs_k': rbm_gibbs_k, 'rbm_names': rbm_names}
+              'batch_size': rbm_batch_size, 'gibbs_k': rbm_gibbs_k}
 
 for p in dae_params:
     if len(dae_params[p]) != len(rbm_layers):
@@ -114,15 +113,16 @@ if __name__ == '__main__':
         trX, trY, vlX, vlY, teX, teY = None, None, None, None, None, None
 
     # Create the object
-    srbm = dbn.DBN(
-        model_name=FLAGS.model_name, rbm_names=dae_params['rbm_names'], do_pretrain=FLAGS.do_pretrain,
+    srbm = dbn.DeepBeliefNetwork(
+        model_name=FLAGS.model_name, do_pretrain=FLAGS.do_pretrain,
         rbm_layers=dae_params['layers'], dataset=FLAGS.dataset, main_dir=FLAGS.main_dir,
         finetune_act_func=FLAGS.finetune_act_func, rbm_learning_rate=dae_params['learning_rate'],
-        rbm_gibbs_k=dae_params['gibbs_k'], verbose=FLAGS.verbose, rbm_num_epochs=dae_params['num_epochs'],
+        verbose=FLAGS.verbose, rbm_num_epochs=dae_params['num_epochs'], rbm_gibbs_k = dae_params['gibbs_k'],
+        rbm_gauss_visible=FLAGS.rbm_gauss_visible, rbm_stddev=FLAGS.rbm_stddev,
         momentum=FLAGS.momentum, rbm_batch_size=dae_params['batch_size'], finetune_learning_rate=FLAGS.finetune_learning_rate,
         finetune_num_epochs=FLAGS.finetune_num_epochs, finetune_batch_size=FLAGS.finetune_batch_size,
         finetune_opt=FLAGS.finetune_opt, finetune_loss_func=FLAGS.finetune_loss_func,
-        finetune_dropout=FLAGS.finetune_dropout, rbm_gauss_visible=FLAGS.rbm_gauss_visible, rbm_stddev=FLAGS.rbm_stddev)
+        finetune_dropout=FLAGS.finetune_dropout)
 
     # Fit the model (unsupervised pretraining)
     if FLAGS.do_pretrain:
@@ -140,3 +140,26 @@ if __name__ == '__main__':
     if FLAGS.save_predictions:
         print('Saving the predictions for the test set...')
         np.save(FLAGS.save_predictions, srbm.predict(teX))
+
+
+    def save_layers_output(which_set):
+        if which_set == 'train':
+            trout = srbm.get_layers_output(trX)
+            for i, o in enumerate(trout):
+                np.save(FLAGS.save_layers_output_train + '-layer-' + str(i + 1) + '-train', o)
+
+        elif which_set == 'test':
+            teout = srbm.get_layers_output(teX)
+            for i, o in enumerate(teout):
+                np.save(FLAGS.save_layers_output_test + '-layer-' + str(i + 1) + '-test', o)
+
+
+    # Save output from each layer of the model
+    if FLAGS.save_layers_output_test:
+        print('Saving the output of each layer for the test set')
+        save_layers_output('test')
+
+    # Save output from each layer of the model
+    if FLAGS.save_layers_output_train:
+        print('Saving the output of each layer for the train set')
+        save_layers_output('train')

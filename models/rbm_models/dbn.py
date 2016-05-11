@@ -3,40 +3,40 @@ import tensorflow as tf
 from tensorflow.python.framework import ops
 
 from models.rbm_models import rbm
-from utils import utilities
 import model
+from utils import utilities
 
 
-class DBN(model.Model):
+class DeepBeliefNetwork(model.Model):
 
-    """ Implementation of Deep Belief Network using TensorFlow.
+    """ Implementation of Deep Belief Network for Supervised Learning using TensorFlow.
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, rbm_layers, do_pretrain=True, rbm_num_epochs=list([10]), rbm_batch_size=list([10]), model_name='dbn',
-                 rbm_learning_rate=list([0.01]), rbm_names=list(['']), rbm_gibbs_k=list([1]), rbm_gauss_visible=False,
-                 rbm_stddev=0.1, finetune_learning_rate=0.01, momentum=0.9, finetune_num_epochs=10,
-                 finetune_batch_size=10, finetune_dropout=1, finetune_opt='gradient_descent', verbose=1,
-                 finetune_act_func='relu', finetune_loss_func='softmax_cross_entropy', main_dir='dbn/', dataset='mnist'):
-
+    def __init__(self, rbm_layers, model_name='srbm', do_pretrain=True, main_dir='srbm/', rbm_num_epochs=list([10]),
+                 rbm_gibbs_k=list([1]), rbm_gauss_visible=False, rbm_stddev=0.1,
+                 rbm_batch_size=list([10]), dataset='mnist', rbm_learning_rate=list([0.01]), momentum=0.5,
+                 finetune_dropout=1, verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func='relu',
+                 finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
+                 finetune_batch_size=20):
         """
         :param rbm_layers: list containing the hidden units for each layer
-        :param do_pretrain: whether to do unsupervised pretraining of the network
-        :param rbm_num_epochs: number of epochs to train each rbm
-        :param rbm_batch_size: batch size each rbm
-        :param rbm_learning_rate: learning rate each rbm
-        :param rbm_names: model name for each rbm
-        :param rbm_gibbs_k: number of gibbs sampling steps for each rbm
-        :param rbm_gauss_visible: whether the input layer should have gaussian units
-        :param rbm_stddev: standard deviation for the gaussian layer
+        :param finetune_loss_func: Loss function for the softmax layer. string, default ['softmax_cross_entropy', 'mean_squared']
         :param finetune_dropout: dropout parameter
+        :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
+        :param finetune_act_func: activation function for the finetuning phase
+        :param finetune_opt: optimizer for the finetuning phase
+        :param finetune_num_epochs: Number of epochs for the finetuning. int, default 20
+        :param finetune_batch_size: Size of each mini-batch for the finetuning. int, default 20
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
+        :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
+
         model.Model.__init__(self, model_name, main_dir)
 
         self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
-                                             num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
-                                             dropout=finetune_dropout, dataset=dataset, opt=finetune_opt,
+                                             dropout=finetune_dropout, num_epochs=finetune_num_epochs,
+                                             batch_size=finetune_batch_size, dataset=dataset, opt=finetune_opt,
                                              momentum=momentum)
 
         self.do_pretrain = do_pretrain
@@ -44,107 +44,106 @@ class DBN(model.Model):
         self.finetune_act_func = finetune_act_func
         self.verbose = verbose
 
-        self.W_pretrain = None
-        self.bh_pretrain = None
-        self.bv_pretrain = None
+        self.input_data = None
+        self.input_labels = None
+        self.keep_prob = None
 
-        self.W_vars = None
-        self.b_vars = None
+        self.layer_nodes = []  # list of layers of the final network
+        self.softmax_out = None
 
-        self.model_predictions = None
+        # Model parameters
+        self.encoding_w_ = []  # list of matrices of encoding weights (one per layer)
+        self.encoding_b_ = []  # list of arrays of encoding biases (one per layer)
+
+        self.softmax_W = None
+        self.softmax_b = None
 
         self.rbms = []
 
         for l, layer in enumerate(rbm_layers):
 
             if l == 0 and rbm_gauss_visible:
-
-                # Gaussian visible units
-
                 self.rbms.append(rbm.RBM(
-                    visible_unit_type='gauss', stddev=rbm_stddev,
-                    model_name=rbm_names[l] + str(l), num_hidden=rbm_layers[l],
-                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
-                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
+                    num_hidden=layer, main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], dataset=self.dataset,
+                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l],
+                    gibbs_sampling_steps=rbm_gibbs_k[l], visible_unit_type='gauss', stddev=rbm_stddev))
 
             else:
-
-                # Binary RBMs
-
                 self.rbms.append(rbm.RBM(
-                    model_name=rbm_names[l] + str(l), num_hidden=rbm_layers[l],
-                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
-                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
+                    num_hidden=layer, main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], dataset=self.dataset,
+                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l],
+                    gibbs_sampling_steps=rbm_gibbs_k[l]))
 
     def pretrain(self, train_set, validation_set=None):
 
-        """ Perform unsupervised pretraining of the stack of restricted boltzmann machines.
+        """ Perform unsupervised pretraining of the stack of denoising autoencoders.
         :param train_set: training set
         :param validation_set: validation set
         :return: return data encoded by the last layer
         """
 
-        self.W_pretrain = []
-        self.bh_pretrain = []
-        self.bv_pretrain = []
-
         next_train = train_set
         next_valid = validation_set
 
-        for l, rboltz in enumerate(self.rbms):
+        for l, rbmachine in enumerate(self.rbms):
             print('Training layer {}...'.format(l+1))
-            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rboltz, next_train, next_valid)
+            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rbmachine, next_train, next_valid)
 
-            # Reset tensorflow's default graph between different models
+            # Reset tensorflow's default graph between different autoencoders
             ops.reset_default_graph()
 
         return next_train, next_valid
 
-    def _pretrain_rbm_and_gen_feed(self, rboltz, train_set, validation_set):
+    def _pretrain_rbm_and_gen_feed(self, rbmachine, train_set, validation_set):
 
-        """ Pretrain a single rbm and encode the data for the next layer.
-        :param rboltz: rbm reference
+        """ Pretrain a single autoencoder and encode the data for the next layer.
+        :param rbmachine: autoencoder reference
         :param train_set: training set
         :param validation_set: validation set
         :return: encoded train data, encoded validation data
         """
 
-        rboltz.build_model(train_set.shape[1])
-        rboltz.fit(train_set, validation_set)
-        params = rboltz.get_model_parameters()
+        rbmachine.build_model(train_set.shape[1])
+        rbmachine.fit(train_set, validation_set)
 
-        self.W_pretrain.append(params['W'])
-        self.bh_pretrain.append(params['bh_'])
-        self.bv_pretrain.append(params['bv_'])
+        params = rbmachine.get_model_parameters()
 
-        return rboltz.transform(train_set), rboltz.transform(validation_set)
+        self.encoding_w_.append(params['W'])
+        self.encoding_b_.append(params['bh_'])
+
+        next_train = rbmachine.transform(train_set)
+        next_valid = rbmachine.transform(validation_set)
+
+        return next_train, next_valid
 
     def fit(self, train_set, train_labels, validation_set=None, validation_labels=None, restore_previous_model=False):
 
-        """ Perform supervised finetuning of the model.
-        :param train_set: training set
-        :param train_labels: training labels
-        :param validation_set: validation set
-        :param validation_labels: validation labels
+        """ Fit the model to the data.
+        :param train_set: Training data. shape(n_samples, n_features)
+        :param train_labels: Labels for the data. shape(n_samples, n_classes)
+        :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
+        :param validation_labels: optional, default None. Labels for the validation data. shape(nval_samples, n_classes)
         :param restore_previous_model:
                     if true, a previous trained model
                     with the same name of this model is restored from disk to continue training.
         :return: self
         """
 
+        print('Starting Supervised finetuning...')
+
         with tf.Session() as self.tf_session:
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, train_labels, validation_set, validation_labels)
             self.tf_saver.save(self.tf_session, self.model_path)
 
-    def _train_model(self, train_set, train_labels, validation_set=None, validation_labels=None):
+    def _train_model(self, train_set, train_labels, validation_set, validation_labels):
 
         """ Train the model.
         :param train_set: training set
         :param train_labels: training labels
         :param validation_set: validation set
         :param validation_labels: validation labels
-        :return:
+        :return: self
         """
 
         shuff = zip(train_set, train_labels)
@@ -156,8 +155,9 @@ class DBN(model.Model):
 
             for batch in batches:
                 x_batch, y_batch = zip(*batch)
-                feed = {self.input_data: x_batch, self.input_labels: y_batch, self.keep_prob: self.dropout}
-                self.tf_session.run(self.train_step, feed_dict=feed)
+                self.tf_session.run(self.train_step, feed_dict={self.input_data: x_batch,
+                                                                self.input_labels: y_batch,
+                                                                self.keep_prob: self.dropout})
 
             if validation_set is not None:
                 self._run_validation_error_and_summaries(i, validation_set, validation_labels)
@@ -165,14 +165,14 @@ class DBN(model.Model):
     def _run_validation_error_and_summaries(self, epoch, validation_set, validation_labels):
 
         """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch number
-        :param validation_set: validation set
-        :param validation_labels: validation labels
+        :param epoch: current epoch
+        :param validation_set: validation data
         :return: self
         """
 
         feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
         result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
+
         summary_str = result[0]
         acc = result[1]
 
@@ -180,6 +180,22 @@ class DBN(model.Model):
 
         if self.verbose == 1:
             print("Accuracy at step %s: %s" % (epoch, acc))
+
+    def get_layers_output(self, dataset):
+
+        """ Get output from each layer of the network.
+        :param dataset: input data
+        :return: list of np array, element i in the list is the output of layer i
+        """
+
+        layers_out = []
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            for l in self.layer_nodes:
+                layers_out.append(l.eval({self.input_data: dataset,
+                                          self.keep_prob: 1}))
+        return layers_out
 
     def predict(self, test_set):
 
@@ -195,35 +211,38 @@ class DBN(model.Model):
 
     def compute_accuracy(self, test_set, test_labels):
 
-        """ Predict the labels for the test set, and return the accuracy
-        over the test set.
-        :param test_set: test set
-        :param test_labels: test labels
-        :return: accuracy over the test set
+        """ Compute the accuracy over the test set.
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
+        :return: accuracy
         """
 
         with tf.Session() as self.tf_session:
             self.tf_saver.restore(self.tf_session, self.model_path)
-            feed = {self.input_data: test_set, self.input_labels: test_labels, self.keep_prob: 1}
-
-            return self.accuracy.eval(feed)
+            return self.accuracy.eval({self.input_data: test_set,
+                                       self.input_labels: test_labels,
+                                       self.keep_prob: 1})
 
     def build_model(self, n_features, n_classes):
 
-        """ Assume self.W, self.bh and self.bv contains trained parameters.
-        :param n_features: number of features
-        :param n_classes: number of classes
+        """ Creates the computational graph.
+        This graph is intented to be created for finetuning,
+        i.e. after unsupervised pretraining.
+        :param n_features: Number of features.
+        :param n_classes: number of classes.
         :return: self
         """
 
         self._create_placeholders(n_features, n_classes)
         self._create_variables(n_features)
 
-        next_train = self._forward_pass()
+        next_train = self._create_encoding_layers()
+
         self._create_softmax_layer(next_train, n_classes)
 
         self._create_cost_function_node(self.softmax_out, self.input_labels)
         self._create_train_step_node()
+
         self._create_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
@@ -234,9 +253,9 @@ class DBN(model.Model):
         :return: self
         """
 
-        self.input_data = tf.placeholder('float', [None, n_features])
-        self.input_labels = tf.placeholder('float', [None, n_classes])
-        self.keep_prob = tf.placeholder('float')
+        self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
+        self.input_labels = tf.placeholder('float', [None, n_classes], name='y-input')
+        self.keep_prob = tf.placeholder('float', name='keep-probs')
 
     def _create_variables(self, n_features):
 
@@ -244,9 +263,6 @@ class DBN(model.Model):
         :param n_features: number of features
         :return: self
         """
-
-        self.W_vars = []
-        self.b_vars = []
 
         if self.do_pretrain:
             self._create_variables_pretrain()
@@ -260,14 +276,17 @@ class DBN(model.Model):
         :return: self
         """
 
+        self.encoding_w_ = []
+        self.encoding_b_ = []
+
         for l, layer in enumerate(self.layers):
 
             if l == 0:
-                self.W_vars.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.1)))
-                self.b_vars.append(tf.Variable(tf.constant(0.1, shape=[self.layers[l]])))
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.1)))
+                self.encoding_b_.append(tf.Variable(tf.constant(0.1, shape=[self.layers[l]])))
             else:
-                self.W_vars.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l - 1], self.layers[l]], stddev=0.1)))
-                self.b_vars.append(tf.Variable(tf.constant(0.1, shape=[self.layers[l]])))
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l-1], self.layers[l]], stddev=0.1)))
+                self.encoding_b_.append(tf.Variable(tf.constant(0.1, shape=[self.layers[l]])))
 
     def _create_variables_pretrain(self):
 
@@ -276,53 +295,61 @@ class DBN(model.Model):
         """
 
         for l, layer in enumerate(self.layers):
-            self.W_vars.append(tf.Variable(self.W_pretrain[l], name='w-{}'.format(l)))
-            self.b_vars.append(tf.Variable(self.bh_pretrain[l], name='b-{}'.format(l)))
+            self.encoding_w_[l] = tf.Variable(self.encoding_w_[l], name='enc-w-{}'.format(l))
+            self.encoding_b_[l] = tf.Variable(self.encoding_b_[l], name='enc-b-{}'.format(l))
 
-    def _forward_pass(self):
+    def _create_encoding_layers(self):
 
-        """ Perform a forward pass through the layers of the network.
-        :return: sampled units at the last layer
+        """ Create the encoding layers for supervised finetuning.
+        :return: output of the final encoding layer.
         """
 
         next_train = self.input_data
+        self.layer_nodes = []
 
         for l, layer in enumerate(self.layers):
 
-            activation = tf.matmul(next_train, self.W_vars[l]) + self.b_vars[l]
+            with tf.name_scope("encode-{}".format(l)):
 
-            if self.finetune_act_func == 'sigmoid':
-                hprobs = tf.nn.sigmoid(activation)
+                y_act = tf.matmul(next_train, self.encoding_w_[l]) + self.encoding_b_[l]
 
-            elif self.finetune_act_func == 'tanh':
-                hprobs = tf.nn.tanh(activation)
+                if self.finetune_act_func == 'sigmoid':
+                    layer_y = tf.nn.sigmoid(y_act)
 
-            elif self.finetune_act_func == 'relu':
-                hprobs = tf.nn.relu(activation)
+                elif self.finetune_act_func == 'tanh':
+                    layer_y = tf.nn.tanh(y_act)
 
-            else:
-                hprobs = None
+                elif self.finetune_act_func == 'relu':
+                    layer_y = tf.nn.relu(y_act)
 
-            next_train = tf.nn.dropout(hprobs, self.keep_prob)
+                else:
+                    layer_y = None
+
+                # the input to the next layer is the output of this layer
+                next_train = tf.nn.dropout(layer_y, self.keep_prob)
+
+            self.layer_nodes.append(next_train)
 
         return next_train
 
     def _create_softmax_layer(self, last_layer, n_classes):
 
-        """ Create nodes for the softmax layer build on top of the last layer.
+        """ Create the softmax layer for finetuning.
         :param last_layer: last layer output node
         :param n_classes: number of classes
         :return: self
         """
-        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes], stddev=0.1), name='sm-weights')
+
+        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes], stddev=0.1), name='sm-weigths')
         self.softmax_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='sm-biases')
 
         with tf.name_scope("softmax_layer"):
             self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b
+            self.layer_nodes.append(self.softmax_out)
 
     def _create_test_node(self):
 
-        """ Create validation testing node.
+        """ Create the test node of the network.
         :return: self
         """
 
@@ -331,25 +358,3 @@ class DBN(model.Model):
             correct_prediction = tf.equal(self.model_predictions, tf.argmax(self.input_labels, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
             _ = tf.scalar_summary('accuracy', self.accuracy)
-
-    def get_model_parameters(self):
-
-        """ Return the model parameters in the form of numpy arrays.
-        :return: model parameters
-        """
-
-        with tf.Session() as self.tf_session:
-
-            self.tf_saver.restore(self.tf_session, self.model_path)
-
-            def eval_tensors(tens, prefix):
-                eval_tens = {}
-                for i, t in enumerate(tens):
-                    eval_tens[prefix + str(i)] = t.eval()
-
-            return {
-                'W': eval_tensors(self.W_vars, 'w'),
-                'b': eval_tensors(self.b_vars, 'b'),
-                'smW': self.softmax_W.eval(),
-                'smb': self.softmax_b.eval()
-            }
