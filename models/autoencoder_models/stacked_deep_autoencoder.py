@@ -51,12 +51,7 @@ class StackedDeepAutoencoder(model.Model):
         self.tied_weights = tied_weights
         self.verbose = verbose
 
-        self.input_data = None
         self.input_ref = None
-
-        self.keep_prob = None
-
-        self.layer_nodes = []  # list of layers of the final network
 
         # Model parameters
         self.encoding_w_ = []  # list of matrices of encoding weights (one per layer)

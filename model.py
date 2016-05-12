@@ -20,6 +20,11 @@ class Model(object):
         self.models_dir, self.data_dir, self.tf_summary_dir = self._create_data_directories()
         self.model_path = self.models_dir + self.model_name
 
+        self.input_data = None
+        self.input_labels = None
+        self.keep_prob = None
+        self.layer_nodes = []  # list of layers of the final network
+        self.last_out = None
         self.train_step = None
         self.cost = None
 
@@ -92,6 +97,35 @@ class Model(object):
         self.momentum = momentum
         self.l2reg = l2reg
 
+    def predict(self, test_set):
+
+        """ Predict the labels for the test set.
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :return: labels
+        """
+
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            return self.model_predictions.eval({self.input_data: test_set,
+                                                self.keep_prob: 1})
+
+    def _create_last_layer(self, last_layer, n_classes):
+
+        """ Create the last layer for finetuning.
+        :param last_layer: last layer output node
+        :param n_classes: number of classes
+        :return: self
+        """
+
+        with tf.name_scope("last_layer"):
+            self.last_W = tf.Variable(tf.truncated_normal([last_layer.get_shape()[1].value, n_classes], stddev=0.1),
+                                      name='sm-weigths')
+            self.last_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='sm-biases')
+            last_out = tf.matmul(last_layer, self.last_W) + self.last_b
+            self.layer_nodes.append(last_out)
+            self.last_out = last_out
+            return last_out
+
     def _create_cost_function_node(self, model_output, ref_input, regterm=None):
 
         """ Create the cost function node.
@@ -143,3 +177,15 @@ class Model(object):
 
             else:
                 self.train_step = None
+
+    def _create_supervised_test_node(self):
+
+        """ Create the supervised test node of the network.
+        :return: self
+        """
+
+        with tf.name_scope("test"):
+            self.model_predictions = tf.argmax(self.last_out, 1)
+            correct_prediction = tf.equal(self.model_predictions, tf.argmax(self.input_labels, 1))
+            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+            _ = tf.scalar_summary('accuracy', self.accuracy)

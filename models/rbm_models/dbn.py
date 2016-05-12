@@ -44,13 +44,6 @@ class DeepBeliefNetwork(model.Model):
         self.finetune_act_func = finetune_act_func
         self.verbose = verbose
 
-        self.input_data = None
-        self.input_labels = None
-        self.keep_prob = None
-
-        self.layer_nodes = []  # list of layers of the final network
-        self.softmax_out = None
-
         # Model parameters
         self.encoding_w_ = []  # list of matrices of encoding weights (one per layer)
         self.encoding_b_ = []  # list of arrays of encoding biases (one per layer)
@@ -197,18 +190,6 @@ class DeepBeliefNetwork(model.Model):
                                           self.keep_prob: 1}))
         return layers_out
 
-    def predict(self, test_set):
-
-        """ Predict the labels for the test set.
-        :param test_set: Testing data. shape(n_test_samples, n_features)
-        :return: labels
-        """
-
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.model_predictions.eval({self.input_data: test_set,
-                                                self.keep_prob: 1})
-
     def compute_accuracy(self, test_set, test_labels):
 
         """ Compute the accuracy over the test set.
@@ -237,13 +218,12 @@ class DeepBeliefNetwork(model.Model):
         self._create_variables(n_features)
 
         next_train = self._create_encoding_layers()
+        last_out = self._create_last_layer(next_train, n_classes)
 
-        self._create_softmax_layer(next_train, n_classes)
-
-        self._create_cost_function_node(self.softmax_out, self.input_labels)
+        self._create_cost_function_node(last_out, self.input_labels)
         self._create_train_step_node()
 
-        self._create_test_node()
+        self._create_supervised_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
 
@@ -331,30 +311,3 @@ class DeepBeliefNetwork(model.Model):
             self.layer_nodes.append(next_train)
 
         return next_train
-
-    def _create_softmax_layer(self, last_layer, n_classes):
-
-        """ Create the softmax layer for finetuning.
-        :param last_layer: last layer output node
-        :param n_classes: number of classes
-        :return: self
-        """
-
-        self.softmax_W = tf.Variable(tf.truncated_normal([self.layers[-1], n_classes], stddev=0.1), name='sm-weigths')
-        self.softmax_b = tf.Variable(tf.constant(0.1, shape=[n_classes]), name='sm-biases')
-
-        with tf.name_scope("softmax_layer"):
-            self.softmax_out = tf.matmul(last_layer, self.softmax_W) + self.softmax_b
-            self.layer_nodes.append(self.softmax_out)
-
-    def _create_test_node(self):
-
-        """ Create the test node of the network.
-        :return: self
-        """
-
-        with tf.name_scope("test"):
-            self.model_predictions = tf.argmax(self.softmax_out, 1)
-            correct_prediction = tf.equal(self.model_predictions, tf.argmax(self.input_labels, 1))
-            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-            _ = tf.scalar_summary('accuracy', self.accuracy)

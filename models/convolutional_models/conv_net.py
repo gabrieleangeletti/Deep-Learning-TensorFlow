@@ -36,17 +36,10 @@ class ConvolutionalNetwork(model.Model):
         self.dropout = dropout
         self.verbose = verbose
 
-        self.input_data = None
-        self.input_labels = None
-
         self.W_vars = None
         self.B_vars = None
 
-        self.softmax_out = None
-        self.cost = None
-        self.train_step = None
         self.accuracy = None
-        self.keep_prob = None
 
     def fit(self, train_set, train_labels, validation_set=None, validation_labels=None, restore_previous_model=False):
 
@@ -112,20 +105,6 @@ class ConvolutionalNetwork(model.Model):
         if self.verbose == 1:
             print("Accuracy at step %s: %s" % (epoch, acc))
 
-    def predict(self, test_set, test_labels):
-
-        """ Compute the accuracy over the test set.
-        :param test_set: Testing data. shape(n_test_samples, n_features)
-        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
-        :return: accuracy
-        """
-
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.accuracy.eval({self.input_data: test_set,
-                                       self.input_labels: test_labels,
-                                       self.keep_prob: 1})
-
     def build_model(self, n_features, n_classes, original_shape):
 
         """ Creates the computational graph of the model.
@@ -138,10 +117,10 @@ class ConvolutionalNetwork(model.Model):
         self._create_placeholders(n_features, n_classes)
         self._create_layers(n_classes, original_shape)
 
-        self._create_cost_function_node(self.softmax_out, self.input_labels)
+        self._create_cost_function_node(self.last_out, self.input_labels)
         self._create_train_step_node()
 
-        self._create_test_node()
+        self._create_supervised_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
 
@@ -273,18 +252,7 @@ class ConvolutionalNetwork(model.Model):
                 self.W_vars.append(W_sm)
                 self.B_vars.append(b_sm)
 
-                self.softmax_out = tf.nn.softmax(tf.matmul(next_layer_feed, W_sm) + b_sm)
-
-    def _create_test_node(self):
-
-        """ Create the test node of the network.
-        :return: self
-        """
-
-        with tf.name_scope("test"):
-            correct_prediction = tf.equal(tf.argmax(self.softmax_out, 1), tf.argmax(self.input_labels, 1))
-            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-            _ = tf.scalar_summary('accuracy', self.accuracy)
+                self.last_out = tf.matmul(next_layer_feed, W_sm) + b_sm
 
     @staticmethod
     def weight_variable(shape):
