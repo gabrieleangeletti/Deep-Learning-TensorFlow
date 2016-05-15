@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
-from models.autoencoder_models import denoising_autoencoder
-from utils import datasets, utilities
+from yadlt.models.autoencoder_models import denoising_autoencoder
+from yadlt.utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #

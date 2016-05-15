@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
-from models.convolutional_models import conv_net
-from utils import datasets, utilities
+from yadlt.models.convolutional_models import conv_net
+from yadlt.utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #
@@ -29,7 +29,7 @@ flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful 
 
 # Convolutional Net parameters
 flags.DEFINE_string('layers', '', 'String representing the architecture of the network.')
-flags.DEFINE_string('loss_func', 'cross_entropy', 'Loss function. ["mean_squared" or "softmax_cross_entropy"]')
+flags.DEFINE_string('loss_func',  'softmax_cross_entropy', 'Loss function. ["mean_squared" or "softmax_cross_entropy"]')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
 flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')

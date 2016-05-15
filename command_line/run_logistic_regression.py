@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
-from models import logistic_regression
-from utils import datasets, utilities
+from yadlt.models.misc_models import logistic_regression
+from yadlt.utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #

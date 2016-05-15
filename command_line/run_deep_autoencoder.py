@@ -1,9 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework import ops
 
-from models.rbm_models import deep_autoencoder
-from utils import datasets, utilities
+from yadlt.models.rbm_models import deep_autoencoder
+from yadlt.utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #
@@ -67,7 +66,7 @@ for p in dae_params:
 
 # Parameters validation
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
-assert FLAGS.loss_func in ["mean_squared", "cross_entropy"]
+assert FLAGS.finetune_loss_func in ["mean_squared", "cross_entropy"]
 assert len(rbm_layers) > 0
 
 if __name__ == '__main__':

@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
-from models.autoencoder_models import stacked_deep_autoencoder
-from utils import datasets, utilities
+from yadlt.models.autoencoder_models import stacked_deep_autoencoder
+from yadlt.utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #

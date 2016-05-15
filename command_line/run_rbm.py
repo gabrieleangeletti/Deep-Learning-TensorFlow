@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
-from models.rbm_models import rbm
-from utils import datasets, utilities
+from yadlt.models.rbm_models import rbm
+from yadlt.utils import datasets, utilities
 
 # #################### #
 #   Flags definition   #

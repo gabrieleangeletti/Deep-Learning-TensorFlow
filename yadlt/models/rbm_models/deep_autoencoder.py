@@ -2,39 +2,31 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
 
-from models.autoencoder_models import denoising_autoencoder
-import model
-from utils import utilities
+from yadlt.core import model
+from yadlt.models.rbm_models import rbm
+from yadlt.utils import utilities
 
 
-class StackedDeepAutoencoder(model.Model):
+class DeepAutoencoder(model.Model):
 
-    """ Implementation of Stacked Denoising Autoencoders for Unsupervised Learning using TensorFlow.
+    """ Implementation of a Deep Autoencoder as a stack of RBMs for Unsupervised Learning using TensorFlow.
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', dae_enc_act_func=list(['tanh']),
-                 dae_dec_act_func=list(['none']), dae_loss_func=list(['mean_squared']), dae_num_epochs=list([10]),
-                 dae_batch_size=list([10]), dataset='mnist', dae_opt=list(['gradient_descent']),
-                 dae_learning_rate=list([0.01]), momentum=0.5,  finetune_dropout=1, dae_corr_type='none', dae_corr_frac=0.,
-                 verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func='relu', tied_weights=True,
-                 finetune_dec_act_func='sigmoid', dae_l2reg=5e-4, finetune_batch_size=20, do_pretrain=True,
-                 finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10):
+    def __init__(self, rbm_layers, model_name='sdae', main_dir='sdae/', rbm_num_epochs=list([10]),
+                 rbm_batch_size=list([10]), dataset='mnist', rbm_learning_rate=list([0.01]), rbm_gibbs_k=list([1]),
+                 momentum=0.5,  finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_act_func='relu',
+                 finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10, rbm_gauss_visible=False,
+                 rbm_stddev=0.1, finetune_batch_size=20, do_pretrain=True):
         """
-        :param dae_layers: list containing the hidden units for each layer
-        :param dae_enc_act_func: Activation function for the encoder. ['sigmoid', 'tanh']
-        :param dae_dec_act_func: Activation function for the decoder. ['sigmoid', 'tanh', 'none']
+        :param rbm_layers: list containing the hidden units for each layer
         :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
-        :param finetune_enc_act_func: activation function for the encoder finetuning phase
-        :param finetune_dec_act_func: activation function for the decoder finetuning phase
+        :param finetune_act_func: activation function for the finetuning phase
         :param finetune_opt: optimizer for the finetuning phase
         :param finetune_num_epochs: Number of epochs for the finetuning. int, default 20
         :param finetune_batch_size: Size of each mini-batch for the finetuning. int, default 20
-        :param tied_weights: if True, the decoder layers weights are constrained to be the transpose of the encoder layers
-        :param dae_corr_type: Type of input corruption. string, default 'none'. ["none", "masking", "salt_and_pepper"]
-        :param dae_corr_frac: Fraction of the input to corrupt. float, default 0.0
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
@@ -45,10 +37,8 @@ class StackedDeepAutoencoder(model.Model):
                                              dropout=finetune_dropout, dataset=dataset, opt=finetune_opt, momentum=momentum)
 
         self.do_pretrain = do_pretrain
-        self.layers = dae_layers
-        self.finetune_enc_act_func = finetune_enc_act_func
-        self.finetune_dec_act_func = finetune_dec_act_func
-        self.tied_weights = tied_weights
+        self.layers = rbm_layers
+        self.finetune_act_func = finetune_act_func
         self.verbose = verbose
 
         self.input_ref = None
@@ -62,21 +52,34 @@ class StackedDeepAutoencoder(model.Model):
 
         self.reconstruction = None
 
-        self.autoencoders = []
+        self.rbms = []
 
-        for l, layer in enumerate(dae_layers):
-            autoencoder_name = self.model_name + '-dae-' + str(l+1)
-            self.autoencoders.append(denoising_autoencoder.DenoisingAutoencoder(
-                n_components=layer, main_dir=self.main_dir, model_name=autoencoder_name,
-                enc_act_func=dae_enc_act_func[l], dec_act_func=dae_dec_act_func[l], loss_func=dae_loss_func[l],
-                opt=dae_opt[l], learning_rate=dae_learning_rate[l], l2reg=dae_l2reg,
-                momentum=self.momentum, corr_type=dae_corr_type, corr_frac=dae_corr_frac,
-                verbose=self.verbose, num_epochs=dae_num_epochs[l], batch_size=dae_batch_size[l],
-                dataset=self.dataset))
+        for l, layer in enumerate(rbm_layers):
+
+            rbm_name = self.model_name + '-rbm-' + str(l + 1)
+
+            if l == 0 and rbm_gauss_visible:
+
+                # Gaussian visible units
+
+                self.rbms.append(rbm.RBM(
+                    visible_unit_type='gauss', stddev=rbm_stddev,
+                    model_name=rbm_name + str(l), num_hidden=rbm_layers[l],
+                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
+                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
+
+            else:
+
+                # Binary RBMs
+
+                self.rbms.append(rbm.RBM(
+                    model_name=rbm_name + str(l), num_hidden=rbm_layers[l],
+                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
+                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
 
     def pretrain(self, train_set, validation_set=None):
 
-        """ Perform unsupervised pretraining of the stack of denoising autoencoders.
+        """ Perform unsupervised pretraining of the stack of rbms.
         :param train_set: training set
         :param validation_set: validation set
         :return: return data encoded by the last layer
@@ -85,34 +88,34 @@ class StackedDeepAutoencoder(model.Model):
         next_train = train_set
         next_valid = validation_set
 
-        for l, autoenc in enumerate(self.autoencoders):
+        for l, rbm in enumerate(self.rbms):
             print('Training layer {}...'.format(l+1))
-            next_train, next_valid = self._pretrain_autoencoder_and_gen_feed(autoenc, next_train, next_valid)
+            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rbm, next_train, next_valid)
 
             # Reset tensorflow's default graph between different autoencoders
             ops.reset_default_graph()
 
         return next_train, next_valid
 
-    def _pretrain_autoencoder_and_gen_feed(self, autoenc, train_set, validation_set):
+    def _pretrain_rbm_and_gen_feed(self, rbm, train_set, validation_set):
 
         """ Pretrain a single autoencoder and encode the data for the next layer.
-        :param autoenc: autoencoder reference
+        :param rbm: autoencoder reference
         :param train_set: training set
         :param validation_set: validation set
         :return: encoded train data, encoded validation data
         """
 
-        autoenc.build_model(train_set.shape[1])
-        autoenc.fit(train_set, validation_set)
+        rbm.build_model(train_set.shape[1])
+        rbm.fit(train_set, validation_set)
 
-        params = autoenc.get_model_parameters()
+        params = rbm.get_model_parameters()
 
-        self.encoding_w_.append(params['enc_w'])
-        self.encoding_b_.append(params['enc_b'])
+        self.encoding_w_.append(params['W'])
+        self.encoding_b_.append(params['bh_'])
 
-        next_train = autoenc.transform(train_set)
-        next_valid = autoenc.transform(validation_set)
+        next_train = rbm.transform(train_set)
+        next_valid = rbm.transform(validation_set)
 
         return next_train, next_valid
 
@@ -314,13 +317,13 @@ class StackedDeepAutoencoder(model.Model):
 
                 y_act = tf.matmul(next_train, self.encoding_w_[l]) + self.encoding_b_[l]
 
-                if self.finetune_enc_act_func == 'sigmoid':
+                if self.finetune_act_func == 'sigmoid':
                     layer_y = tf.nn.sigmoid(y_act)
 
-                elif self.finetune_enc_act_func == 'tanh':
+                elif self.finetune_act_func == 'tanh':
                     layer_y = tf.nn.tanh(y_act)
 
-                elif self.finetune_enc_act_func == 'relu':
+                elif self.finetune_act_func == 'relu':
                     layer_y = tf.nn.relu(y_act)
 
                 else:
@@ -347,24 +350,20 @@ class StackedDeepAutoencoder(model.Model):
             with tf.name_scope("decode-{}".format(l)):
 
                 # Create decoding variables
-                if self.tied_weights:
-                    dec_w = tf.transpose(self.encoding_w_[l])
-                else:
-                    dec_w = tf.Variable(tf.transpose(self.encoding_w_[l].initialized_value()))
-
+                dec_w = tf.Variable(tf.transpose(self.encoding_w_[l].initialized_value()))
                 dec_b = tf.Variable(tf.constant(0.1, shape=[dec_w.get_shape().dims[1].value]))
                 self.decoding_w.append(dec_w)
                 self.decoding_b.append(dec_b)
 
                 y_act = tf.matmul(next_decode, dec_w) + dec_b
 
-                if self.finetune_dec_act_func == 'sigmoid':
+                if self.finetune_act_func == 'sigmoid':
                     layer_y = tf.nn.sigmoid(y_act)
 
-                elif self.finetune_dec_act_func == 'tanh':
+                elif self.finetune_act_func == 'tanh':
                     layer_y = tf.nn.tanh(y_act)
 
-                elif self.finetune_dec_act_func == 'relu':
+                elif self.finetune_act_func == 'relu':
                     layer_y = tf.nn.relu(y_act)
 
                 else:

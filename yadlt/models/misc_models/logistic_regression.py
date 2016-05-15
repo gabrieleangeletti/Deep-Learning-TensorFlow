@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
-from utils import utilities
-import model
+from yadlt.core import model
+from yadlt.utils import utilities
 
 
 class LogisticRegression(model.Model):
@@ -31,8 +31,6 @@ class LogisticRegression(model.Model):
         self.W_ = None
         self.b_ = None
 
-        self.model_output = None
-
         self.accuracy = None
 
     def build_model(self, n_features, n_classes):
@@ -46,11 +44,11 @@ class LogisticRegression(model.Model):
         self._create_placeholders(n_features, n_classes)
         self._create_variables(n_features, n_classes)
 
-        self.model_output = tf.nn.softmax(tf.matmul(self.input_data, self.W_) + self.b_)
+        self.last_out = tf.nn.softmax(tf.matmul(self.input_data, self.W_) + self.b_)
 
-        self._create_cost_function_node(self.loss_func, self.model_output, self.input_labels)
+        self._create_cost_function_node(self.last_out, self.input_labels)
         self.train_step = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.cost)
-        self._create_test_node()
+        self._create_supervised_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
 
@@ -73,17 +71,6 @@ class LogisticRegression(model.Model):
 
         self.W_ = tf.Variable(tf.zeros([n_features, n_classes]), name='weights')
         self.b_ = tf.Variable(tf.zeros([n_classes]), name='biases')
-
-    def _create_test_node(self):
-
-        """
-        :return:
-        """
-
-        with tf.name_scope("test"):
-            correct_prediction = tf.equal(tf.argmax(self.model_output, 1), tf.argmax(self.input_labels, 1))
-            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-            _ = tf.scalar_summary('accuracy', self.accuracy)
 
     def fit(self, train_set, train_labels, validation_set=None, validation_labels=None, restore_previous_model=False):
 

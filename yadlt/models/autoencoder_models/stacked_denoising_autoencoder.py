@@ -2,25 +2,28 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import ops
 
-from models.rbm_models import rbm
-import model
-from utils import utilities
+from yadlt.core import model
+from yadlt.models.autoencoder_models import denoising_autoencoder
+from yadlt.utils import utilities
 
 
-class DeepBeliefNetwork(model.Model):
+class StackedDenoisingAutoencoder(model.Model):
 
-    """ Implementation of Deep Belief Network for Supervised Learning using TensorFlow.
+    """ Implementation of Stacked Denoising Autoencoders for Supervised Learning using TensorFlow.
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, rbm_layers, model_name='srbm', do_pretrain=True, main_dir='srbm/', rbm_num_epochs=list([10]),
-                 rbm_gibbs_k=list([1]), rbm_gauss_visible=False, rbm_stddev=0.1,
-                 rbm_batch_size=list([10]), dataset='mnist', rbm_learning_rate=list([0.01]), momentum=0.5,
-                 finetune_dropout=1, verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func='relu',
+    def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', dae_enc_act_func=list(['tanh']),
+                 dae_dec_act_func=list(['none']), dae_loss_func=list(['mean_squared']), dae_num_epochs=list([10]),
+                 dae_batch_size=list([10]), dataset='mnist', dae_opt=list(['gradient_descent']),
+                 dae_learning_rate=list([0.01]), momentum=0.5,  finetune_dropout=1, dae_corr_type='none', dae_corr_frac=0.,
+                 verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func='relu', dae_l2reg=5e-4,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
-                 finetune_batch_size=20):
+                 finetune_batch_size=20, do_pretrain=True):
         """
-        :param rbm_layers: list containing the hidden units for each layer
+        :param dae_layers: list containing the hidden units for each layer
+        :param dae_enc_act_func: Activation function for the encoder. ['sigmoid', 'tanh']
+        :param dae_dec_act_func: Activation function for the decoder. ['sigmoid', 'tanh', 'none']
         :param finetune_loss_func: Loss function for the softmax layer. string, default ['softmax_cross_entropy', 'mean_squared']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
@@ -28,6 +31,8 @@ class DeepBeliefNetwork(model.Model):
         :param finetune_opt: optimizer for the finetuning phase
         :param finetune_num_epochs: Number of epochs for the finetuning. int, default 20
         :param finetune_batch_size: Size of each mini-batch for the finetuning. int, default 20
+        :param dae_corr_type: Type of input corruption. string, default 'none'. ["none", "masking", "salt_and_pepper"]
+        :param dae_corr_frac: Fraction of the input to corrupt. float, default 0.0
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
@@ -40,7 +45,7 @@ class DeepBeliefNetwork(model.Model):
                                              momentum=momentum)
 
         self.do_pretrain = do_pretrain
-        self.layers = rbm_layers
+        self.layers = dae_layers
         self.finetune_act_func = finetune_act_func
         self.verbose = verbose
 
@@ -48,24 +53,19 @@ class DeepBeliefNetwork(model.Model):
         self.encoding_w_ = []  # list of matrices of encoding weights (one per layer)
         self.encoding_b_ = []  # list of arrays of encoding biases (one per layer)
 
-        self.softmax_W = None
-        self.softmax_b = None
+        self.last_W = None
+        self.last_b = None
 
-        self.rbms = []
+        self.autoencoders = []
 
-        for l, layer in enumerate(rbm_layers):
-
-            if l == 0 and rbm_gauss_visible:
-                self.rbms.append(rbm.RBM(
-                    num_hidden=layer, main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], dataset=self.dataset,
-                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l],
-                    gibbs_sampling_steps=rbm_gibbs_k[l], visible_unit_type='gauss', stddev=rbm_stddev))
-
-            else:
-                self.rbms.append(rbm.RBM(
-                    num_hidden=layer, main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], dataset=self.dataset,
-                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l],
-                    gibbs_sampling_steps=rbm_gibbs_k[l]))
+        for l, layer in enumerate(dae_layers):
+            self.autoencoders.append(denoising_autoencoder.DenoisingAutoencoder(
+                n_components=layer, main_dir=self.main_dir,
+                enc_act_func=dae_enc_act_func[l], dec_act_func=dae_dec_act_func[l], loss_func=dae_loss_func[l],
+                opt=dae_opt[l], learning_rate=dae_learning_rate[l], l2reg=dae_l2reg,
+                momentum=self.momentum, corr_type=dae_corr_type, corr_frac=dae_corr_frac,
+                verbose=self.verbose, num_epochs=dae_num_epochs[l], batch_size=dae_batch_size[l],
+                dataset=self.dataset))
 
     def pretrain(self, train_set, validation_set=None):
 
@@ -78,34 +78,34 @@ class DeepBeliefNetwork(model.Model):
         next_train = train_set
         next_valid = validation_set
 
-        for l, rbmachine in enumerate(self.rbms):
+        for l, autoenc in enumerate(self.autoencoders):
             print('Training layer {}...'.format(l+1))
-            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rbmachine, next_train, next_valid)
+            next_train, next_valid = self._pretrain_autoencoder_and_gen_feed(autoenc, next_train, next_valid)
 
             # Reset tensorflow's default graph between different autoencoders
             ops.reset_default_graph()
 
         return next_train, next_valid
 
-    def _pretrain_rbm_and_gen_feed(self, rbmachine, train_set, validation_set):
+    def _pretrain_autoencoder_and_gen_feed(self, autoenc, train_set, validation_set):
 
         """ Pretrain a single autoencoder and encode the data for the next layer.
-        :param rbmachine: autoencoder reference
+        :param autoenc: autoencoder reference
         :param train_set: training set
         :param validation_set: validation set
         :return: encoded train data, encoded validation data
         """
 
-        rbmachine.build_model(train_set.shape[1])
-        rbmachine.fit(train_set, validation_set)
+        autoenc.build_model(train_set.shape[1])
+        autoenc.fit(train_set, validation_set)
 
-        params = rbmachine.get_model_parameters()
+        params = autoenc.get_model_parameters()
 
-        self.encoding_w_.append(params['W'])
-        self.encoding_b_.append(params['bh_'])
+        self.encoding_w_.append(params['enc_w'])
+        self.encoding_b_.append(params['enc_b'])
 
-        next_train = rbmachine.transform(train_set)
-        next_valid = rbmachine.transform(validation_set)
+        next_train = autoenc.transform(train_set)
+        next_valid = autoenc.transform(validation_set)
 
         return next_train, next_valid
 

@@ -2,8 +2,8 @@ import tensorflow as tf
 import numpy as np
 import os
 
-from utils import utilities
-import model
+from yadlt.core import model
+from yadlt.utils import utilities
 
 
 class DenoisingAutoencoder(model.Model):

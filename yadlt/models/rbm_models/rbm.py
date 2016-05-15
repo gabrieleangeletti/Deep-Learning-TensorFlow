@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
-from utils import utilities
-import model
+from yadlt.core import model
+from yadlt.utils import utilities
 
 
 class RBM(model.Model):
