@@ -69,7 +69,18 @@ class Model(object):
         if restore_previous_model:
             self.tf_saver.restore(self.tf_session, self.model_path)
 
-        self.tf_summary_writer = tf.train.SummaryWriter(self.tf_summary_dir, self.tf_session.graph)
+        # Retrieve run identifier
+        run_id = 0
+        for e in os.listdir(self.tf_summary_dir):
+            if e[:3] == 'run':
+                r = int(e[3:])
+                if r > run_id:
+                    run_id = r
+        run_id += 1
+        run_dir = os.path.join(self.tf_summary_dir, 'run' + str(run_id))
+        print('Tensorboard logs dir for this run is %s' % (run_dir))
+
+        self.tf_summary_writer = tf.train.SummaryWriter(run_dir, self.tf_session.graph)
 
     def _initialize_training_parameters(self, loss_func, learning_rate, num_epochs, batch_size,
                                         dataset, opt, dropout=1, momentum=None, l2reg=None):
