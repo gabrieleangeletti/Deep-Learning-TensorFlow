@@ -1,5 +1,8 @@
 import numpy as np
 import tensorflow as tf
+import os
+
+import config
 
 from yadlt.models.rbm_models import deep_autoencoder
 from yadlt.utils import datasets, utilities
@@ -129,8 +132,13 @@ if __name__ == '__main__':
         teX = None
         teRef = None
 
+    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
+    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
+    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
+
     # Create the object
     srbm = deep_autoencoder.DeepAutoencoder(
+        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         model_name=FLAGS.model_name, do_pretrain=FLAGS.do_pretrain,
         rbm_layers=dae_params['layers'], dataset=FLAGS.dataset, main_dir=FLAGS.main_dir,
         rbm_learning_rate=dae_params['learning_rate'], rbm_gibbs_k=dae_params['gibbs_k'],

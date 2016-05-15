@@ -1,5 +1,8 @@
 import tensorflow as tf
 import numpy as np
+import os
+
+import config
 
 from yadlt.models.rbm_models import rbm
 from yadlt.utils import datasets, utilities
@@ -83,8 +86,13 @@ if __name__ == '__main__':
     else:
         trX, vlX, teX, width, height = None, None, None, None, None
 
+    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
+    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
+    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
+
     # Create the object
     r = rbm.RBM(num_hidden=FLAGS.num_hidden, main_dir=FLAGS.main_dir,
+                models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
                 visible_unit_type=FLAGS.visible_unit_type, learning_rate=FLAGS.learning_rate,
                 num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, stddev=FLAGS.stddev, verbose=FLAGS.verbose,
                 gibbs_sampling_steps=FLAGS.gibbs_sampling_steps, model_name=FLAGS.model_name)

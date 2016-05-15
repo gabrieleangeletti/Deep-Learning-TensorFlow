@@ -1,5 +1,8 @@
 import tensorflow as tf
 import numpy as np
+import os
+
+import config
 
 from yadlt.models.autoencoder_models import denoising_autoencoder
 from yadlt.utils import datasets, utilities
@@ -95,10 +98,15 @@ if __name__ == '__main__':
         trX = None
         vlX = None
         teX = None
-
+        
+    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
+    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
+    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
+    
     # Create the object
     dae = denoising_autoencoder.DenoisingAutoencoder(
         model_name=FLAGS.model_name, n_components=FLAGS.n_components,
+        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         enc_act_func=FLAGS.enc_act_func, dec_act_func=FLAGS.dec_act_func,
         corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac, dataset=FLAGS.dataset,
         loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir, opt=FLAGS.opt,

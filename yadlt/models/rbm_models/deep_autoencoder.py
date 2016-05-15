@@ -1,6 +1,7 @@
-import numpy as np
-import tensorflow as tf
 from tensorflow.python.framework import ops
+import tensorflow as tf
+import numpy as np
+import os
 
 from yadlt.core import model
 from yadlt.models.rbm_models import rbm
@@ -13,7 +14,8 @@ class DeepAutoencoder(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, rbm_layers, model_name='sdae', main_dir='sdae/', rbm_num_epochs=list([10]),
+    def __init__(self, rbm_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
+                 rbm_num_epochs=list([10]),
                  rbm_batch_size=list([10]), dataset='mnist', rbm_learning_rate=list([0.01]), rbm_gibbs_k=list([1]),
                  momentum=0.5,  finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_act_func='relu',
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10, rbm_gauss_visible=False,
@@ -30,7 +32,7 @@ class DeepAutoencoder(model.Model):
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
-        model.Model.__init__(self, model_name, main_dir)
+        model.Model.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
                                              num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
@@ -55,16 +57,15 @@ class DeepAutoencoder(model.Model):
         self.rbms = []
 
         for l, layer in enumerate(rbm_layers):
-
-            rbm_name = self.model_name + '-rbm-' + str(l + 1)
+            rbm_str = 'rbm-' + str(l+1)
 
             if l == 0 and rbm_gauss_visible:
 
                 # Gaussian visible units
 
-                self.rbms.append(rbm.RBM(
-                    visible_unit_type='gauss', stddev=rbm_stddev,
-                    model_name=rbm_name + str(l), num_hidden=rbm_layers[l],
+                self.rbms.append(rbm.RBM(model_name=self.model_name + '-' + rbm_str,
+                    models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),  summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
+                    visible_unit_type='gauss', stddev=rbm_stddev, num_hidden=rbm_layers[l],
                     main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
                     verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
 
@@ -72,8 +73,9 @@ class DeepAutoencoder(model.Model):
 
                 # Binary RBMs
 
-                self.rbms.append(rbm.RBM(
-                    model_name=rbm_name + str(l), num_hidden=rbm_layers[l],
+                self.rbms.append(rbm.RBM(model_name=self.model_name + '-' + rbm_str,
+                    models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),  summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
+                    num_hidden=rbm_layers[l],
                     main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
                     verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
 

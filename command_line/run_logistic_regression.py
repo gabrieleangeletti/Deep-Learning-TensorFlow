@@ -1,5 +1,8 @@
 import tensorflow as tf
 import numpy as np
+import os
+
+import config
 
 from yadlt.models.misc_models import logistic_regression
 from yadlt.utils import datasets, utilities
@@ -79,8 +82,13 @@ if __name__ == '__main__':
         teX = None
         teY = None
 
+    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
+    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
+    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
+
     # Create the object
     l = logistic_regression.LogisticRegression(
+        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         model_name=FLAGS.model_name, dataset=FLAGS.dataset, loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir,
         verbose=FLAGS.verbose, learning_rate=FLAGS.learning_rate, num_epochs=FLAGS.num_epochs,
         batch_size=FLAGS.batch_size)

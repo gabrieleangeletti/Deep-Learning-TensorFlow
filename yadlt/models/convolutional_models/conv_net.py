@@ -11,7 +11,7 @@ class ConvolutionalNetwork(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, layers, model_name='convnet', main_dir='convnet',
+    def __init__(self, layers, model_name='convnet', main_dir='convnet', models_dir='models/', data_dir='data/', summary_dir='logs/',
                  loss_func='softmax_cross_entropy', num_epochs=10, batch_size=10, dataset='mnist',
                  opt='gradient_descent', learning_rate=0.01, momentum=0.5, dropout=0.5, verbose=1):
         """
@@ -27,7 +27,7 @@ class ConvolutionalNetwork(model.Model):
         :param dropout: Dropout parameter
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         """
-        model.Model.__init__(self, model_name, main_dir)
+        model.Model.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
                                              dataset, opt, momentum)

@@ -1,5 +1,8 @@
 import tensorflow as tf
 import numpy as np
+import os
+
+import config
 
 from yadlt.models.convolutional_models import conv_net
 from yadlt.utils import datasets, utilities
@@ -82,9 +85,14 @@ if __name__ == '__main__':
 
     else:
         trX, trY, vlX, vlY, teX, teY = None, None, None, None, None, None
+ 
+    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
+    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
+    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
 
     # Create the model object
     convnet = conv_net.ConvolutionalNetwork(
+        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         layers=FLAGS.layers, model_name=FLAGS.model_name, main_dir=FLAGS.main_dir, loss_func=FLAGS.loss_func,
         num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, dataset=FLAGS.dataset, opt=FLAGS.opt,
         learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, dropout=FLAGS.dropout, verbose=FLAGS.verbose

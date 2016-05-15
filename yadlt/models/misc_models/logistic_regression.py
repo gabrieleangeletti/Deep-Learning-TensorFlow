@@ -11,13 +11,13 @@ class LogisticRegression(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, main_dir='lr/', model_name='lr', loss_func='cross_entropy', dataset='mnist',
+    def __init__(self, main_dir='lr/', model_name='lr', models_dir='models/', data_dir='data/', summary_dir='logs/', loss_func='cross_entropy', dataset='mnist',
                  learning_rate=0.01, verbose=0, num_epochs=10, batch_size=10):
 
         """
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         """
-        model.Model.__init__(self, model_name, main_dir)
+        model.Model.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
                                              dataset, None, None)

@@ -1,5 +1,8 @@
 import tensorflow as tf
 import numpy as np
+import os
+
+import config
 
 from yadlt.models.autoencoder_models import stacked_denoising_autoencoder
 from yadlt.utils import datasets, utilities
@@ -132,7 +135,12 @@ if __name__ == '__main__':
     # Create the object
     sdae = None
 
+    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
+    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
+    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
+
     sdae = stacked_denoising_autoencoder.StackedDenoisingAutoencoder(
+        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         do_pretrain=FLAGS.do_pretrain, model_name=FLAGS.model_name,
         dae_layers=dae_params['layers'], finetune_loss_func=FLAGS.finetune_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,

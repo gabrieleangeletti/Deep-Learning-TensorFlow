@@ -12,10 +12,9 @@ class DenoisingAutoencoder(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, model_name='dae', n_components=256, main_dir='dae/', enc_act_func='tanh',
-                 dec_act_func='none', loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
-                 opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none',
-                 corr_frac=0., verbose=1, l2reg=5e-4):
+    def __init__(self, model_name='dae', n_components=256, main_dir='dae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
+                 enc_act_func='tanh', dec_act_func='none', loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
+                 opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0., verbose=1, l2reg=5e-4):
         """
         :param n_components: number of hidden units
         :param enc_act_func: Activation function for the encoder. ['tanh', 'sigmoid']
@@ -25,7 +24,7 @@ class DenoisingAutoencoder(model.Model):
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         :param l2reg: Regularization parameter. If 0, no regularization.
         """
-        model.Model.__init__(self, model_name, main_dir)
+        model.Model.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func=loss_func, learning_rate=learning_rate, num_epochs=num_epochs,
                                              batch_size=batch_size, dataset=dataset, opt=opt, momentum=momentum,

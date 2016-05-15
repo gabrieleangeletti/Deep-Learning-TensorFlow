@@ -1,6 +1,7 @@
-import numpy as np
-import tensorflow as tf
 from tensorflow.python.framework import ops
+import tensorflow as tf
+import numpy as np
+import os
 
 from yadlt.core import model
 from yadlt.models.autoencoder_models import denoising_autoencoder
@@ -13,8 +14,8 @@ class StackedDenoisingAutoencoder(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', dae_enc_act_func=list(['tanh']),
-                 dae_dec_act_func=list(['none']), dae_loss_func=list(['mean_squared']), dae_num_epochs=list([10]),
+    def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
+                 dae_enc_act_func=list(['tanh']), dae_dec_act_func=list(['none']), dae_loss_func=list(['mean_squared']), dae_num_epochs=list([10]),
                  dae_batch_size=list([10]), dataset='mnist', dae_opt=list(['gradient_descent']),
                  dae_learning_rate=list([0.01]), momentum=0.5,  finetune_dropout=1, dae_corr_type='none', dae_corr_frac=0.,
                  verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func='relu', dae_l2reg=5e-4,
@@ -37,7 +38,7 @@ class StackedDenoisingAutoencoder(model.Model):
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
 
-        model.Model.__init__(self, model_name, main_dir)
+        model.Model.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
                                              dropout=finetune_dropout, num_epochs=finetune_num_epochs,
@@ -59,8 +60,11 @@ class StackedDenoisingAutoencoder(model.Model):
         self.autoencoders = []
 
         for l, layer in enumerate(dae_layers):
+            dae_str = 'dae-' + str(l+1)
+            
             self.autoencoders.append(denoising_autoencoder.DenoisingAutoencoder(
-                n_components=layer, main_dir=self.main_dir,
+                n_components=layer, main_dir=self.main_dir, model_name=self.model_name + '-' + dae_str,
+                models_dir=os.path.join(self.models_dir, dae_str), data_dir=os.path.join(self.data_dir, dae_str),  summary_dir=os.path.join(self.tf_summary_dir, dae_str),
                 enc_act_func=dae_enc_act_func[l], dec_act_func=dae_dec_act_func[l], loss_func=dae_loss_func[l],
                 opt=dae_opt[l], learning_rate=dae_learning_rate[l], l2reg=dae_l2reg,
                 momentum=self.momentum, corr_type=dae_corr_type, corr_frac=dae_corr_frac,
