@@ -78,7 +78,8 @@ class DenoisingAutoencoder(model.Model):
 
             # if i % 5 == 0:
             if validation_set is not None:
-                self._run_validation_error_and_summaries(i, validation_set)
+                feed = {self.input_data: validation_set, self.input_data_corr: validation_set}
+                self._run_unsupervised_validation_error_and_summaries(i, feed)
 
     def _run_train_step(self, train_set):
 
@@ -119,26 +120,6 @@ class DenoisingAutoencoder(model.Model):
                 return utilities.salt_and_pepper_noise(data, corruption_ratio)
         else:
             return np.copy(data)
-
-    def _run_validation_error_and_summaries(self, epoch, validation_set):
-
-        """ Run the summaries and error computation on the validation set.
-
-        :param epoch: current epoch
-        :param validation_set: validation data
-
-        :return: self
-        """
-
-        vl_feed = {self.input_data: validation_set, self.input_data_corr: validation_set}
-        result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=vl_feed)
-        summary_str = result[0]
-        err = result[1]
-
-        self.tf_summary_writer.add_summary(summary_str, epoch)
-
-        if self.verbose == 1:
-            print("Validation cost at step %s: %s" % (epoch, err))
 
     def reconstruct(self, data):
 

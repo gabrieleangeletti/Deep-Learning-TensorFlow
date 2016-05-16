@@ -59,6 +59,7 @@ class RBM(model.Model):
         """
 
         with tf.Session() as self.tf_session:
+            self.build_model(train_set.shape[1])
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, validation_set)
             self.tf_saver.save(self.tf_session, self.model_path)
@@ -75,7 +76,7 @@ class RBM(model.Model):
             self._run_train_step(train_set)
 
             if validation_set is not None:
-                self._run_validation_error_and_summaries(i, validation_set)
+                self._run_unsupervised_validation_error_and_summaries(i, self._create_feed_dict(validation_set))
 
     def _run_train_step(self, train_set):
 
@@ -92,25 +93,6 @@ class RBM(model.Model):
 
         for batch in batches:
             self.tf_session.run(updates, feed_dict=self._create_feed_dict(batch))
-
-    def _run_validation_error_and_summaries(self, epoch, validation_set):
-
-        """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch
-        :param validation_set: validation data
-        :return: self
-        """
-
-        result = self.tf_session.run([self.tf_merged_summaries, self.loss_function],
-                                     feed_dict=self._create_feed_dict(validation_set))
-
-        summary_str = result[0]
-        err = result[1]
-
-        self.tf_summary_writer.add_summary(summary_str, 1)
-
-        if self.verbose == 1:
-            print("Validation cost at step %s: %s" % (epoch, err))
 
     def _create_feed_dict(self, data):
 

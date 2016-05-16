@@ -15,7 +15,7 @@ class StackedDenoisingAutoencoder(model.Model):
     """
 
     def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 dae_enc_act_func=list(['tanh']), dae_dec_act_func=list(['none']), dae_loss_func=list(['mean_squared']), dae_num_epochs=list([10]),
+                 dae_enc_act_func=list(['tanh']), dae_dec_act_func=list(['none']), dae_loss_func=list(['cross_entropy']), dae_num_epochs=list([10]),
                  dae_batch_size=list([10]), dataset='mnist', dae_opt=list(['gradient_descent']), dae_l2reg=list([5e-4]),
                  dae_learning_rate=list([0.01]), momentum=0.5,  finetune_dropout=1, dae_corr_type=list(['none']),
                  dae_corr_frac=list([0.]), verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func='relu',
@@ -143,6 +143,7 @@ class StackedDenoisingAutoencoder(model.Model):
         print('Starting Supervised finetuning...')
 
         with tf.Session() as self.tf_session:
+            self.build_model(train_set.shape[1], train_labels.shape[1])
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, train_labels, validation_set, validation_labels)
             self.tf_saver.save(self.tf_session, self.model_path)
@@ -171,26 +172,8 @@ class StackedDenoisingAutoencoder(model.Model):
                                                                 self.keep_prob: self.dropout})
 
             if validation_set is not None:
-                self._run_validation_error_and_summaries(i, validation_set, validation_labels)
-
-    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_labels):
-
-        """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch
-        :param validation_set: validation data
-        :return: self
-        """
-
-        feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
-        result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
-
-        summary_str = result[0]
-        acc = result[1]
-
-        self.tf_summary_writer.add_summary(summary_str, epoch)
-
-        if self.verbose == 1:
-            print("Accuracy at step %s: %s" % (epoch, acc))
+                feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
+                self._run_supervised_validation_error_and_summaries(i, feed)
 
     def get_layers_output(self, dataset):
 

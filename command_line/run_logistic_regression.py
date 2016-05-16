@@ -94,8 +94,7 @@ if __name__ == '__main__':
         batch_size=FLAGS.batch_size)
 
     # Fit the model
-    l.build_model(trX.shape[1], trY.shape[1])
     l.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model
-    print('Test set accuracy: {}'.format(l.predict(teX, teY)))
+    print('Test set accuracy: {}'.format(l.compute_accuracy(teX, teY)))

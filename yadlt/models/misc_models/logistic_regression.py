@@ -86,6 +86,7 @@ class LogisticRegression(model.Model):
         """
 
         with tf.Session() as self.tf_session:
+            self.build_model(train_set.shape[1], train_labels.shape[1])
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, train_labels, validation_set, validation_labels)
             self.tf_saver.save(self.tf_session, self.models_dir + self.model_name)
@@ -112,35 +113,19 @@ class LogisticRegression(model.Model):
                 self.tf_session.run(self.train_step, feed_dict={self.input_data: x_batch, self.input_labels: y_batch})
 
             if validation_set is not None:
-                self._run_validation_error_and_summaries(i, validation_set, validation_labels)
+                feed = {self.input_data: validation_set, self.input_labels: validation_labels}
+                self._run_supervised_validation_error_and_summaries(i, feed)
 
-    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_labels):
-
-        """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch
-        :param validation_set: validation set
-        :param validation_labels: validation labels
-        :return: self
-        """
-
-        feed = {self.input_data: validation_set, self.input_labels: validation_labels}
-        result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
-        summary_str = result[0]
-        acc = result[1]
-
-        self.tf_summary_writer.add_summary(summary_str, epoch)
-
-        if self.verbose == 1:
-            print("Accuracy at step %s: %s" % (epoch, acc))
-
-    def predict(self, test_set, test_labels):
+    def compute_accuracy(self, test_set, test_labels):
 
         """ Compute the accuracy over the test set.
-        :param test_set: Testing data. shape(n_test_samples, n_features).
-        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes).
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
         :return: accuracy
         """
 
         with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.models_dir + self.model_name)
-            return self.accuracy.eval({self.input_data: test_set, self.input_labels: test_labels})
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            return self.accuracy.eval({self.input_data: test_set,
+                                       self.input_labels: test_labels,
+                                       self.keep_prob: 1})

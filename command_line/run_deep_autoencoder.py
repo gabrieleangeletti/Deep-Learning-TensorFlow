@@ -30,8 +30,6 @@ flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print ac
 flags.DEFINE_string('main_dir', 'srbm/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_float('momentum', 0.7, 'Momentum parameter.')
 flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the reconstructions of the model.')
-flags.DEFINE_string('encweights', None, 'Path to a npz array containing the weights of the encoding layers.')
-flags.DEFINE_string('encbiases', None, 'Path to a npz array containing the encoding layers biases.')
 
 # RBMs layers specific parameters
 flags.DEFINE_string('rbm_names', 'rbm', 'Name for the rbm stored_models.')
@@ -147,19 +145,10 @@ if __name__ == '__main__':
             params.append(npzfile[f])
         return params
 
-
-    encodingw = None
-    encodingb = None
-
-    # Fit the model (unsupervised pretraining)
-    if FLAGS.encweights and FLAGS.encbiases:
-        encodingw = load_params_npz(FLAGS.encweights)
-        encodingb = load_params_npz(FLAGS.encbiases)
-    elif FLAGS.do_pretrain:
+    if FLAGS.do_pretrain:
         encoded_X, encoded_vX = srbm.pretrain(trX, vlX)
 
     # Supervised finetuning
-    srbm.build_model(trX.shape[1], encodingw, encodingb)
     srbm.fit(trX, trRef, vlX, vlRef, restore_previous_model=FLAGS.restore_previous_model)
 
     # Compute the reconstruction loss of the model

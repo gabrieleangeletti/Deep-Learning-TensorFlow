@@ -27,8 +27,6 @@ flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pre
 flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the reconstructions of the model.')
 flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
 flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
-flags.DEFINE_string('encweights', None, 'Path to a npz array containing the weights of the encoding layers.')
-flags.DEFINE_string('encbiases', None, 'Path to a npz array containing the encoding layers biases.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_string('model_name', 'un_sdae', 'Name for the model.')
 flags.DEFINE_string('main_dir', 'un_sdae/', 'Directory to store data relative to the algorithm.')
@@ -174,14 +172,10 @@ if __name__ == '__main__':
     encodingb = None
 
     # Fit the model (unsupervised pretraining)
-    if FLAGS.encweights and FLAGS.encbiases:
-        encodingw = load_params_npz(FLAGS.encweights)
-        encodingb = load_params_npz(FLAGS.encbiases)
-    elif FLAGS.do_pretrain:
+    if FLAGS.do_pretrain:
         encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
 
     # Supervised finetuning
-    sdae.build_model(trX.shape[1], encodingw, encodingb)
     sdae.fit(trX, trRef, vlX, vlRef, restore_previous_model=FLAGS.restore_previous_model)
 
     # Compute the reconstruction loss of the model

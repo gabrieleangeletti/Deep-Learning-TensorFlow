@@ -41,11 +41,12 @@ class ConvolutionalNetwork(model.Model):
 
         self.accuracy = None
 
-    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None, restore_previous_model=False):
+    def fit(self, train_set, train_labels, original_shape, validation_set=None, validation_labels=None, restore_previous_model=False):
 
         """ Fit the model to the data.
         :param train_set: Training data. shape(n_samples, n_features)
         :param train_labels: Labels for the data. shape(n_samples, n_classes)
+        :param original_shape: original shape of the images in the dataset
         :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
         :param validation_labels: optional, default None. Labels for the validation data. shape(nval_samples, n_classes)
         :param restore_previous_model:
@@ -57,6 +58,7 @@ class ConvolutionalNetwork(model.Model):
         print('Starting training...')
 
         with tf.Session() as self.tf_session:
+            self.build_model(train_set.shape[1], train_labels.shape[1], original_shape)
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, train_labels, validation_set, validation_labels)
             self.tf_saver.save(self.tf_session, self.model_path)
@@ -85,25 +87,22 @@ class ConvolutionalNetwork(model.Model):
                                                                 self.keep_prob: self.dropout})
 
             if validation_set is not None:
-                self._run_validation_error_and_summaries(i, validation_set, validation_labels)
+                feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
+                self._run_supervised_validation_error_and_summaries(i, feed)
 
-    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_labels):
+    def compute_accuracy(self, test_set, test_labels):
 
-        """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch
-        :param validation_set: validation data
-        :return: self
+        """ Compute the accuracy over the test set.
+        :param test_set: Testing data. shape(n_test_samples, n_features)
+        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
+        :return: accuracy
         """
 
-        feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
-        result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
-        summary_str = result[0]
-        acc = result[1]
-
-        self.tf_summary_writer.add_summary(summary_str, epoch)
-
-        if self.verbose == 1:
-            print("Accuracy at step %s: %s" % (epoch, acc))
+        with tf.Session() as self.tf_session:
+            self.tf_saver.restore(self.tf_session, self.model_path)
+            return self.accuracy.eval({self.input_data: test_set,
+                                       self.input_labels: test_labels,
+                                       self.keep_prob: 1})
 
     def build_model(self, n_features, n_classes, original_shape):
 

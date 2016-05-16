@@ -145,6 +145,7 @@ class DeepAutoencoder(model.Model):
         print('Starting Reconstruction finetuning...')
 
         with tf.Session() as self.tf_session:
+            self.build_model(train_set.shape[1])
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, train_ref, validation_set, validation_ref)
             self.tf_saver.save(self.tf_session, self.model_path)
@@ -173,26 +174,8 @@ class DeepAutoencoder(model.Model):
                                                                 self.keep_prob: self.dropout})
 
             if validation_set is not None:
-                self._run_validation_error_and_summaries(i, validation_set, validation_ref)
-
-    def _run_validation_error_and_summaries(self, epoch, validation_set, validation_ref):
-
-        """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch
-        :param validation_ref: validation reference data
-        :return: self
-        """
-
-        feed = {self.input_data: validation_set, self.input_labels: validation_ref, self.keep_prob: 1}
-        result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
-
-        summary_str = result[0]
-        acc = result[1]
-
-        self.tf_summary_writer.add_summary(summary_str, epoch)
-
-        if self.verbose == 1:
-            print("Reconstruction loss at step %s: %s" % (epoch, acc))
+                feed = {self.input_data: validation_set, self.input_labels: validation_ref, self.keep_prob: 1}
+                self._run_unsupervised_validation_error_and_summaries(i, feed)
 
     def get_layers_output(self, dataset):
 

@@ -99,7 +99,6 @@ if __name__ == '__main__':
 
     # Fit the model
     print('Start training...')
-    r.build_model(trX.shape[1])
     r.fit(trX, teX, restore_previous_model=FLAGS.restore_previous_model)
 
     # Save the model paramenters

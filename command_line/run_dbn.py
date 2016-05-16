@@ -129,7 +129,6 @@ if __name__ == '__main__':
 
     # finetuning
     print('Start deep belief net finetuning...')
-    srbm.build_model(trX.shape[1], trY.shape[1])
     srbm.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model

@@ -35,6 +35,7 @@ class Model(object):
         self.last_out = None
         self.train_step = None
         self.cost = None
+        self.verbose = 0
 
         # tensorflow objects
         self.tf_session = None
@@ -109,6 +110,48 @@ class Model(object):
         self.opt = opt
         self.momentum = momentum
         self.l2reg = l2reg
+
+    def _run_unsupervised_validation_error_and_summaries(self, epoch, feed):
+
+        """ Run the summaries and error computation on the validation set.
+        :param epoch: current epoch
+        :param validation_ref: validation reference data
+        :return: self
+        """
+
+        try:
+            result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
+            summary_str = result[0]
+            err = result[1]
+            self.tf_summary_writer.add_summary(summary_str, epoch)
+        except tf.errors.InvalidArgumentError:
+            print("Summary writer not available at the moment")
+            result = self.tf_session.run([self.cost], feed_dict=feed)
+            err = result[0]
+
+        if self.verbose == 1:
+            print("Reconstruction loss at step %s: %s" % (epoch, err))
+
+    def _run_supervised_validation_error_and_summaries(self, epoch, feed):
+
+        """ Run the summaries and error computation on the validation set.
+        :param epoch: current epoch
+        :param validation_set: validation data
+        :return: self
+        """
+
+        try:
+            result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
+            summary_str = result[0]
+            acc = result[1]
+            self.tf_summary_writer.add_summary(summary_str, epoch)
+        except tf.errors.InvalidArgumentError:
+            print("Summary writer not available at the moment")
+            result = self.tf_session.run([self.accuracy], feed_dict=feed)
+            acc = result[0]
+
+        if self.verbose == 1:
+            print("Accuracy at step %s: %s" % (epoch, acc))
 
     def predict(self, test_set):
 

@@ -100,8 +100,7 @@ if __name__ == '__main__':
 
     # Model training
     print('Start Convolutional Network training...')
-    convnet.build_model(trX.shape[1], trY.shape[1], [int(i) for i in FLAGS.original_shape.split(',')])
-    convnet.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
+    convnet.fit(trX, trY, [int(i) for i in FLAGS.original_shape.split(',')], vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model
-    print('Test set accuracy: {}'.format(convnet.predict(teX, teY)))
+    print('Test set accuracy: {}'.format(convnet.compute_accuracy(teX, teY)))
