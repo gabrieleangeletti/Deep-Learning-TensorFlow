@@ -14,9 +14,8 @@ class DeepBeliefNetwork(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, rbm_layers, model_name='srbm', do_pretrain=True, main_dir='srbm/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 rbm_num_epochs=list([10]),
-                 rbm_gibbs_k=list([1]), rbm_gauss_visible=False, rbm_stddev=0.1,
+    def __init__(self, rbm_layers, model_name='srbm', do_pretrain=True, main_dir='srbm/', models_dir='models/', data_dir='data/',
+                 summary_dir='logs/', rbm_num_epochs=list([10]), rbm_gibbs_k=list([1]), rbm_gauss_visible=False, rbm_stddev=0.1,
                  rbm_batch_size=list([10]), dataset='mnist', rbm_learning_rate=list([0.01]), momentum=0.5,
                  finetune_dropout=1, verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func='relu',
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
@@ -53,6 +52,13 @@ class DeepBeliefNetwork(model.Model):
         self.softmax_W = None
         self.softmax_b = None
 
+        rbm_params = {'num_epochs': rbm_num_epochs, 'gibbs_k': rbm_gibbs_k, 'batch_size': rbm_batch_size,
+                      'learning_rate': rbm_learning_rate}
+        for p in rbm_params:
+            if len(rbm_params[p]) != len(rbm_layers):
+                # The current parameter is not specified by the user, should default it for all the layers
+                rbm_params[p] = [rbm_params[p][0] for _ in rbm_layers]
+
         self.rbms = []
 
         for l, layer in enumerate(rbm_layers):
@@ -61,16 +67,16 @@ class DeepBeliefNetwork(model.Model):
             if l == 0 and rbm_gauss_visible:
                 self.rbms.append(rbm.RBM(model_name=self.model_name + '-' + rbm_str,
                     models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),  summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
-                    num_hidden=layer, main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], dataset=self.dataset,
-                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l],
-                    gibbs_sampling_steps=rbm_gibbs_k[l], visible_unit_type='gauss', stddev=rbm_stddev))
+                    num_hidden=layer, main_dir=self.main_dir, learning_rate=rbm_params['learning_rate'][l], dataset=self.dataset,
+                    verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l], batch_size=rbm_params['batch_size'][l],
+                    gibbs_sampling_steps=rbm_params['gibbs_k'][l], visible_unit_type='gauss', stddev=rbm_stddev))
 
             else:
                 self.rbms.append(rbm.RBM(model_name=self.model_name + '-' + rbm_str,
                     models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),  summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
-                    num_hidden=layer, main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], dataset=self.dataset,
-                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l],
-                    gibbs_sampling_steps=rbm_gibbs_k[l]))
+                    num_hidden=layer, main_dir=self.main_dir, learning_rate=rbm_params['learning_rate'][l], dataset=self.dataset,
+                    verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l], batch_size=rbm_params['batch_size'][l],
+                    gibbs_sampling_steps=rbm_params['gibbs_k'][l]))
 
     def pretrain(self, train_set, validation_set=None):
 

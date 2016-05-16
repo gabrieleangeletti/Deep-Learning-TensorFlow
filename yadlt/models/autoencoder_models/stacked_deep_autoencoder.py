@@ -17,9 +17,9 @@ class StackedDeepAutoencoder(model.Model):
     def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
                  dae_enc_act_func=list(['tanh']), dae_dec_act_func=list(['none']), dae_loss_func=list(['mean_squared']), dae_num_epochs=list([10]),
                  dae_batch_size=list([10]), dataset='mnist', dae_opt=list(['gradient_descent']),
-                 dae_learning_rate=list([0.01]), momentum=0.5,  finetune_dropout=1, dae_corr_type='none', dae_corr_frac=0.,
-                 verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func='relu', tied_weights=True,
-                 finetune_dec_act_func='sigmoid', dae_l2reg=5e-4, finetune_batch_size=20, do_pretrain=True,
+                 dae_learning_rate=list([0.01]), momentum=0.5,  finetune_dropout=1, dae_corr_type=list(['none']),
+                 dae_corr_frac=list([0.]), verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func='relu',
+                 tied_weights=True, finetune_dec_act_func='sigmoid', dae_l2reg=list([5e-4]), finetune_batch_size=20, do_pretrain=True,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10):
         """
         :param dae_layers: list containing the hidden units for each layer
@@ -63,6 +63,15 @@ class StackedDeepAutoencoder(model.Model):
 
         self.reconstruction = None
 
+        dae_params = {'enc_act_func': dae_enc_act_func, 'dec_act_func': dae_dec_act_func, 'loss_func': dae_loss_func,
+                      'opt': dae_opt, 'learning_rate': dae_learning_rate, 'l2reg': dae_l2reg,
+                      'corr_frac': dae_corr_frac, 'corr_type': dae_corr_type, 'num_epochs': dae_num_epochs,
+                      'batch_size': dae_batch_size}
+        for p in dae_params:
+            if len(dae_params[p]) != len(dae_layers):
+                # The current parameter is not specified by the user, should default it for all the layers
+                dae_params[p] = [dae_params[p][0] for _ in dae_layers]
+
         self.autoencoders = []
 
         for l, layer in enumerate(dae_layers):
@@ -71,10 +80,11 @@ class StackedDeepAutoencoder(model.Model):
             self.autoencoders.append(denoising_autoencoder.DenoisingAutoencoder(
                 n_components=layer, main_dir=self.main_dir, model_name=self.model_name + '-' + dae_str,
                 models_dir=os.path.join(self.models_dir, dae_str), data_dir=os.path.join(self.data_dir, dae_str),  summary_dir=os.path.join(self.tf_summary_dir, dae_str),
-                enc_act_func=dae_enc_act_func[l], dec_act_func=dae_dec_act_func[l], loss_func=dae_loss_func[l],
-                opt=dae_opt[l], learning_rate=dae_learning_rate[l], l2reg=dae_l2reg,
-                momentum=self.momentum, corr_type=dae_corr_type, corr_frac=dae_corr_frac,
-                verbose=self.verbose, num_epochs=dae_num_epochs[l], batch_size=dae_batch_size[l],
+                enc_act_func=dae_params['enc_act_func'][l], dec_act_func=dae_params['dec_act_func'][l],
+                loss_func=dae_params['loss_func'][l],
+                opt=dae_params['opt'][l], learning_rate=dae_params['learning_rate'][l], l2reg=dae_params['l2reg'],
+                momentum=self.momentum, corr_type=dae_params['corr_type'][l], corr_frac=dae_params['corr_frac'][l],
+                verbose=self.verbose, num_epochs=dae_params['num_epochs'][l], batch_size=dae_params['batch_size'][l],
                 dataset=self.dataset))
 
     def pretrain(self, train_set, validation_set=None):

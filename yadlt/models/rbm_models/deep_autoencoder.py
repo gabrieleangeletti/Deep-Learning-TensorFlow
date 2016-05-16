@@ -54,6 +54,14 @@ class DeepAutoencoder(model.Model):
 
         self.reconstruction = None
 
+        rbm_params = {'num_epochs': rbm_num_epochs, 'gibbs_k': rbm_gibbs_k, 'batch_size': rbm_batch_size,
+                      'learning_rate': rbm_learning_rate}
+
+        for p in rbm_params:
+            if len(rbm_params[p]) != len(rbm_layers):
+                # The current parameter is not specified by the user, should default it for all the layers
+                rbm_params[p] = [rbm_params[p][0] for _ in rbm_layers]
+
         self.rbms = []
 
         for l, layer in enumerate(rbm_layers):
@@ -65,9 +73,9 @@ class DeepAutoencoder(model.Model):
 
                 self.rbms.append(rbm.RBM(model_name=self.model_name + '-' + rbm_str,
                     models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),  summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
-                    visible_unit_type='gauss', stddev=rbm_stddev, num_hidden=rbm_layers[l],
-                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
-                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
+                    visible_unit_type='gauss', stddev=rbm_stddev, num_hidden=rbm_params['layers'][l],
+                    main_dir=self.main_dir, learning_rate=rbm_params['learning_rate'][l], gibbs_sampling_steps=rbm_gibbs_k[l],
+                    verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l], batch_size=rbm_params['batch_size'][l]))
 
             else:
 
@@ -76,8 +84,8 @@ class DeepAutoencoder(model.Model):
                 self.rbms.append(rbm.RBM(model_name=self.model_name + '-' + rbm_str,
                     models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),  summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
                     num_hidden=rbm_layers[l],
-                    main_dir=self.main_dir, learning_rate=rbm_learning_rate[l], gibbs_sampling_steps=rbm_gibbs_k[l],
-                    verbose=self.verbose, num_epochs=rbm_num_epochs[l], batch_size=rbm_batch_size[l]))
+                    main_dir=self.main_dir, learning_rate=rbm_params['learning_rate'][l], gibbs_sampling_steps=rbm_params['gibbs_k'][l],
+                    verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l], batch_size=rbm_params['batch_size'][l]))
 
     def pretrain(self, train_set, validation_set=None):
 

@@ -48,7 +48,7 @@ flags.DEFINE_integer('finetune_batch_size', 20, 'Size of each mini-batch for the
 
 # Autoencoder layers specific parameters
 flags.DEFINE_string('dae_layers', '256,', 'Comma-separated values for the layers in the sdae.')
-flags.DEFINE_float('dae_l2reg', 5e-4, 'Regularization parameter for the autoencoders. If 0, no regularization.')
+flags.DEFINE_string('dae_l2reg', '5e-4,', 'Regularization parameter for the autoencoders. If 0, no regularization.')
 flags.DEFINE_string('dae_enc_act_func', 'sigmoid,', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dae_dec_act_func', 'none,', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
 flags.DEFINE_string('dae_loss_func', 'mean_squared,', 'Loss function. ["mean_squared" or "cross_entropy"]')
@@ -56,8 +56,8 @@ flags.DEFINE_string('dae_opt', 'gradient_descent,', '["gradient_descent", "ada_g
 flags.DEFINE_string('dae_learning_rate', '0.01,', 'Initial learning rate.')
 flags.DEFINE_string('dae_num_epochs', '10,', 'Number of epochs.')
 flags.DEFINE_string('dae_batch_size', '10,', 'Size of each mini-batch.')
-flags.DEFINE_string('dae_corr_type', 'none', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
-flags.DEFINE_float('dae_corr_frac', 0.0, 'Fraction of the input to corrupt.')
+flags.DEFINE_string('dae_corr_type', 'none,', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
+flags.DEFINE_string('dae_corr_frac', '0.0,', 'Fraction of the input to corrupt.')
 
 # Conversion of Autoencoder layers parameters from string to their specific type
 dae_layers = utilities.flag_to_list(FLAGS.dae_layers, 'int')
@@ -66,22 +66,15 @@ dae_dec_act_func = utilities.flag_to_list(FLAGS.dae_dec_act_func, 'str')
 dae_opt = utilities.flag_to_list(FLAGS.dae_opt, 'str')
 dae_loss_func = utilities.flag_to_list(FLAGS.dae_loss_func, 'str')
 dae_learning_rate = utilities.flag_to_list(FLAGS.dae_learning_rate, 'float')
+dae_l2reg = utilities.flag_to_list(FLAGS.dae_l2reg, 'float')
+dae_corr_type = utilities.flag_to_list(FLAGS.dae_corr_type, 'str')
+dae_corr_frac = utilities.flag_to_list(FLAGS.dae_corr_frac, 'float')
 dae_num_epochs = utilities.flag_to_list(FLAGS.dae_num_epochs, 'int')
 dae_batch_size = utilities.flag_to_list(FLAGS.dae_batch_size, 'int')
 
-# Parameters normalization: if a parameter is not specified, it must be made of the same length of the others
-dae_params = {'layers': dae_layers, 'enc_act_func': dae_enc_act_func,
-              'dec_act_func': dae_dec_act_func, 'loss_func': dae_loss_func, 'learning_rate': dae_learning_rate,
-              'opt': dae_opt, 'num_epochs': dae_num_epochs, 'batch_size': dae_batch_size}
-
-for p in dae_params:
-    if len(dae_params[p]) != len(dae_layers):
-        # The current parameter is not specified by the user, should default it for all the layers
-        dae_params[p] = [dae_params[p][0] for _ in dae_layers]
-
 # Parameters validation
-assert 0. <= FLAGS.dae_corr_frac <= 1.
-assert FLAGS.dae_corr_type in ['masking', 'salt_and_pepper', 'none']
+assert all([0. <= cf <= 1. for cf in dae_corr_frac])
+assert all([ct in ['masking', 'salt_and_pepper', 'none'] for ct in dae_corr_type])
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert len(dae_layers) > 0
 assert all([af in ['sigmoid', 'tanh'] for af in dae_enc_act_func])
@@ -158,16 +151,16 @@ if __name__ == '__main__':
     sdae = stacked_deep_autoencoder.StackedDeepAutoencoder(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         do_pretrain=FLAGS.do_pretrain, model_name=FLAGS.model_name,
-        dae_layers=dae_params['layers'], finetune_loss_func=FLAGS.finetune_loss_func,
+        dae_layers=dae_layers, finetune_loss_func=FLAGS.finetune_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size,
         finetune_dropout=FLAGS.finetune_dropout,
-        dae_enc_act_func=dae_params['enc_act_func'], dae_dec_act_func=dae_params['dec_act_func'],
+        dae_enc_act_func=dae_enc_act_func, dae_dec_act_func=dae_dec_act_func,
         dae_corr_type=FLAGS.dae_corr_type, dae_corr_frac=FLAGS.dae_corr_frac, dae_l2reg=FLAGS.dae_l2reg,
-        dataset=FLAGS.dataset, dae_loss_func=dae_params['loss_func'], main_dir=FLAGS.main_dir,
-        dae_opt=dae_params['opt'], tied_weights=FLAGS.tied_weights,
-        dae_learning_rate=dae_params['learning_rate'], momentum=FLAGS.momentum, verbose=FLAGS.verbose,
-        dae_num_epochs=dae_params['num_epochs'], dae_batch_size=dae_params['batch_size'],
+        dataset=FLAGS.dataset, dae_loss_func=dae_loss_func, main_dir=FLAGS.main_dir,
+        dae_opt=dae_opt, tied_weights=FLAGS.tied_weights,
+        dae_learning_rate=dae_learning_rate, momentum=FLAGS.momentum, verbose=FLAGS.verbose,
+        dae_num_epochs=dae_num_epochs, dae_batch_size=dae_batch_size,
         finetune_enc_act_func=FLAGS.finetune_enc_act_func, finetune_dec_act_func=FLAGS.finetune_dec_act_func)
 
     def load_params_npz(npzfilepath):

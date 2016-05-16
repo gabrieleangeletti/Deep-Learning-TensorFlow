@@ -2,9 +2,9 @@ from setuptools import setup, find_packages
 
 setup(
     name='yadlt',
-    version='0.0.1rc-1',
+    version='0.0.1rc-2',
     url='https://github.com/blackecho/Deep-Learning-Tensorflow',
-    download_url='https://github.com/blackecho/Deep-Learning-TensorFlow/tarball/0.0.1rc-1',
+    download_url='https://github.com/blackecho/Deep-Learning-TensorFlow/tarball/0.0.1rc-2',
     author='Gabriele Angeletti',
     author_email='angeletti.gabriele@gmail.com',
     description='Implementation of various deep learning algorithms using Tensorflow. Class interfaces is sklearn-like.',
@@ -13,7 +13,5 @@ setup(
     include_package_data=True,
     platforms='any',
     license='MIT',
-    install_requires=[
-        'tensorflow==0.8.0rc0',
-    ],
+    install_requires=[],
 )

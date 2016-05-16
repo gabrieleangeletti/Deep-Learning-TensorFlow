@@ -57,6 +57,7 @@ docs/_build/
 target/
 
 # Local data
+PERFORMANCE.md
 MNIST_data/
 data/
 logs/
