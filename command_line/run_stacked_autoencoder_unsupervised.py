@@ -154,7 +154,7 @@ if __name__ == '__main__':
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size,
         finetune_dropout=FLAGS.finetune_dropout,
         dae_enc_act_func=dae_enc_act_func, dae_dec_act_func=dae_dec_act_func,
-        dae_corr_type=FLAGS.dae_corr_type, dae_corr_frac=FLAGS.dae_corr_frac, dae_l2reg=FLAGS.dae_l2reg,
+        dae_corr_type=dae_corr_type, dae_corr_frac=dae_corr_frac, dae_l2reg=dae_l2reg,
         dataset=FLAGS.dataset, dae_loss_func=dae_loss_func, main_dir=FLAGS.main_dir,
         dae_opt=dae_opt, tied_weights=FLAGS.tied_weights,
         dae_learning_rate=dae_learning_rate, momentum=FLAGS.momentum, verbose=FLAGS.verbose,

@@ -143,6 +143,8 @@ class StackedDenoisingAutoencoder(model.Model):
         print('Starting Supervised finetuning...')
 
         with tf.Session() as self.tf_session:
+            # Reset tensorflow's default graph
+            ops.reset_default_graph()
             self.build_model(train_set.shape[1], train_labels.shape[1])
             self._initialize_tf_utilities_and_ops(restore_previous_model)
             self._train_model(train_set, train_labels, validation_set, validation_labels)
