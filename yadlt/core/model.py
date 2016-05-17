@@ -42,6 +42,7 @@ class Model(object):
         self.tf_saver = None
         self.tf_merged_summaries = None
         self.tf_summary_writer = None
+        self.tf_summary_writer_available = True
 
     def _create_dir(self, dirpath):
 
@@ -125,7 +126,9 @@ class Model(object):
             err = result[1]
             self.tf_summary_writer.add_summary(summary_str, epoch)
         except tf.errors.InvalidArgumentError:
-            print("Summary writer not available at the moment")
+            if self.tf_summary_writer_available:
+                print("Summary writer not available at the moment")
+            self.tf_summary_writer_available = False
             result = self.tf_session.run([self.cost], feed_dict=feed)
             err = result[0]
 
