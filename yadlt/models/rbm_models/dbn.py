@@ -86,6 +86,9 @@ class DeepBeliefNetwork(model.Model):
         :return: return data encoded by the last layer
         """
 
+        # Reset tensorflow's default graph
+        ops.reset_default_graph()
+
         next_train = train_set
         next_valid = validation_set
 
