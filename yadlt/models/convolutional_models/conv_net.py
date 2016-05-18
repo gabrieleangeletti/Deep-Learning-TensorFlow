@@ -1,4 +1,3 @@
-from tensorflow.python.framework import ops
 import tensorflow as tf
 import numpy as np
 
@@ -58,13 +57,12 @@ class ConvolutionalNetwork(model.Model):
 
         print('Starting training...')
 
-        with tf.Session() as self.tf_session:
-            # Reset tensorflow's default graph
-            ops.reset_default_graph()
+        with self.tf_graph.as_default():
             self.build_model(train_set.shape[1], train_labels.shape[1], original_shape)
-            self._initialize_tf_utilities_and_ops(restore_previous_model)
-            self._train_model(train_set, train_labels, validation_set, validation_labels)
-            self.tf_saver.save(self.tf_session, self.model_path)
+            with tf.Session() as self.tf_session:
+                self._initialize_tf_utilities_and_ops(restore_previous_model)
+                self._train_model(train_set, train_labels, validation_set, validation_labels)
+                self.tf_saver.save(self.tf_session, self.model_path)
 
     def _train_model(self, train_set, train_labels, validation_set, validation_labels):
 
@@ -101,11 +99,12 @@ class ConvolutionalNetwork(model.Model):
         :return: accuracy
         """
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.accuracy.eval({self.input_data: test_set,
-                                       self.input_labels: test_labels,
-                                       self.keep_prob: 1})
+        with self.tf_graph.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                return self.accuracy.eval({self.input_data: test_set,
+                                           self.input_labels: test_labels,
+                                           self.keep_prob: 1})
 
     def build_model(self, n_features, n_classes, original_shape):
 

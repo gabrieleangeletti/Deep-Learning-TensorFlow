@@ -1,4 +1,3 @@
-from tensorflow.python.framework import ops
 import tensorflow as tf
 import numpy as np
 import os
@@ -60,6 +59,7 @@ class DeepBeliefNetwork(model.Model):
                 rbm_params[p] = [rbm_params[p][0] for _ in rbm_layers]
 
         self.rbms = []
+        self.rbm_graphs = []
 
         for l, layer in enumerate(rbm_layers):
             rbm_str = 'rbm-' + str(l+1)
@@ -78,6 +78,8 @@ class DeepBeliefNetwork(model.Model):
                     verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l], batch_size=rbm_params['batch_size'][l],
                     gibbs_sampling_steps=rbm_params['gibbs_k'][l]))
 
+            self.rbm_graphs.append(tf.Graph())
+
     def pretrain(self, train_set, validation_set=None):
 
         """ Perform unsupervised pretraining of the stack of denoising autoencoders.
@@ -86,40 +88,37 @@ class DeepBeliefNetwork(model.Model):
         :return: return data encoded by the last layer
         """
 
-        # Reset tensorflow's default graph
-        ops.reset_default_graph()
-
         next_train = train_set
         next_valid = validation_set
 
         for l, rbmachine in enumerate(self.rbms):
             print('Training layer {}...'.format(l+1))
-            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rbmachine, next_train, next_valid)
-
-            # Reset tensorflow's default graph between different autoencoders
-            ops.reset_default_graph()
+            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rbmachine,
+                                                                     next_train,
+                                                                     next_valid,
+                                                                     self.rbm_graphs[l])
 
         return next_train, next_valid
 
-    def _pretrain_rbm_and_gen_feed(self, rbmachine, train_set, validation_set):
+    def _pretrain_rbm_and_gen_feed(self, rbmachine, train_set, validation_set, graph=None):
 
         """ Pretrain a single autoencoder and encode the data for the next layer.
         :param rbmachine: autoencoder reference
         :param train_set: training set
         :param validation_set: validation set
+        :param graph: tf object for the rbm
         :return: encoded train data, encoded validation data
         """
 
-        rbmachine.build_model(train_set.shape[1])
-        rbmachine.fit(train_set, validation_set)
+        rbmachine.fit(train_set, validation_set, graph=graph)
 
-        params = rbmachine.get_model_parameters()
+        with graph.as_default():
+            params = rbmachine.get_model_parameters(graph=graph)
+            self.encoding_w_.append(params['W'])
+            self.encoding_b_.append(params['bh_'])
 
-        self.encoding_w_.append(params['W'])
-        self.encoding_b_.append(params['bh_'])
-
-        next_train = rbmachine.transform(train_set)
-        next_valid = rbmachine.transform(validation_set)
+            next_train = rbmachine.transform(train_set, graph=graph)
+            next_valid = rbmachine.transform(validation_set, graph=graph)
 
         return next_train, next_valid
 
@@ -138,13 +137,12 @@ class DeepBeliefNetwork(model.Model):
 
         print('Starting Supervised finetuning...')
 
-        with tf.Session() as self.tf_session:
-            # Reset tensorflow's default graph
-            ops.reset_default_graph()
+        with self.tf_graph.as_default():
             self.build_model(train_set.shape[1], train_labels.shape[1])
-            self._initialize_tf_utilities_and_ops(restore_previous_model)
-            self._train_model(train_set, train_labels, validation_set, validation_labels)
-            self.tf_saver.save(self.tf_session, self.model_path)
+            with tf.Session() as self.tf_session:
+                self._initialize_tf_utilities_and_ops(restore_previous_model)
+                self._train_model(train_set, train_labels, validation_set, validation_labels)
+                self.tf_saver.save(self.tf_session, self.model_path)
 
     def _train_model(self, train_set, train_labels, validation_set, validation_labels):
 
@@ -182,11 +180,12 @@ class DeepBeliefNetwork(model.Model):
 
         layers_out = []
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            for l in self.layer_nodes:
-                layers_out.append(l.eval({self.input_data: dataset,
-                                          self.keep_prob: 1}))
+        with self.tf_graph.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                for l in self.layer_nodes:
+                    layers_out.append(l.eval({self.input_data: dataset,
+                                              self.keep_prob: 1}))
         return layers_out
 
     def compute_accuracy(self, test_set, test_labels):
@@ -197,11 +196,12 @@ class DeepBeliefNetwork(model.Model):
         :return: accuracy
         """
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.accuracy.eval({self.input_data: test_set,
-                                       self.input_labels: test_labels,
-                                       self.keep_prob: 1})
+        with self.tf_graph.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                return self.accuracy.eval({self.input_data: test_set,
+                                           self.input_labels: test_labels,
+                                           self.keep_prob: 1})
 
     def build_model(self, n_features, n_classes):
 

@@ -63,6 +63,7 @@ class DeepAutoencoder(model.Model):
                 rbm_params[p] = [rbm_params[p][0] for _ in rbm_layers]
 
         self.rbms = []
+        self.rbm_graphs = []
 
         for l, layer in enumerate(rbm_layers):
             rbm_str = 'rbm-' + str(l+1)
@@ -87,6 +88,8 @@ class DeepAutoencoder(model.Model):
                     main_dir=self.main_dir, learning_rate=rbm_params['learning_rate'][l], gibbs_sampling_steps=rbm_params['gibbs_k'][l],
                     verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l], batch_size=rbm_params['batch_size'][l]))
 
+            self.rbm_graphs.append(tf.Graph())
+
     def pretrain(self, train_set, validation_set=None):
 
         """ Perform unsupervised pretraining of the stack of rbms.
@@ -95,40 +98,37 @@ class DeepAutoencoder(model.Model):
         :return: return data encoded by the last layer
         """
 
-        # Reset tensorflow's default graph
-        ops.reset_default_graph()
-
         next_train = train_set
         next_valid = validation_set
 
         for l, rbm in enumerate(self.rbms):
             print('Training layer {}...'.format(l+1))
-            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rbm, next_train, next_valid)
-
-            # Reset tensorflow's default graph between different autoencoders
-            ops.reset_default_graph()
+            next_train, next_valid = self._pretrain_rbm_and_gen_feed(rbm,
+                                                                     next_train,
+                                                                     next_valid,
+                                                                     self.rbm_graphs[l])
 
         return next_train, next_valid
 
-    def _pretrain_rbm_and_gen_feed(self, rbm, train_set, validation_set):
+    def _pretrain_rbm_and_gen_feed(self, rbm, train_set, validation_set, graph):
 
         """ Pretrain a single autoencoder and encode the data for the next layer.
         :param rbm: autoencoder reference
         :param train_set: training set
         :param validation_set: validation set
+        :param graph: tf object for the rbm
         :return: encoded train data, encoded validation data
         """
 
-        rbm.build_model(train_set.shape[1])
-        rbm.fit(train_set, validation_set)
+        rbm.fit(train_set, validation_set, graph=graph)
 
-        params = rbm.get_model_parameters()
+        with graph.as_default():
+            params = rbm.get_model_parameters(graph=graph)
+            self.encoding_w_.append(params['W'])
+            self.encoding_b_.append(params['bh_'])
 
-        self.encoding_w_.append(params['W'])
-        self.encoding_b_.append(params['bh_'])
-
-        next_train = rbm.transform(train_set)
-        next_valid = rbm.transform(validation_set)
+            next_train = rbm.transform(train_set, graph=graph)
+            next_valid = rbm.transform(validation_set, graph=graph)
 
         return next_train, next_valid
 
@@ -147,13 +147,12 @@ class DeepAutoencoder(model.Model):
 
         print('Starting Reconstruction finetuning...')
 
-        with tf.Session() as self.tf_session:
-            # Reset tensorflow's default graph
-            ops.reset_default_graph()
+        with self.tf_graph.as_default():
             self.build_model(train_set.shape[1])
-            self._initialize_tf_utilities_and_ops(restore_previous_model)
-            self._train_model(train_set, train_ref, validation_set, validation_ref)
-            self.tf_saver.save(self.tf_session, self.model_path)
+            with tf.Session() as self.tf_session:
+                self._initialize_tf_utilities_and_ops(restore_previous_model)
+                self._train_model(train_set, train_ref, validation_set, validation_ref)
+                self.tf_saver.save(self.tf_session, self.model_path)
 
     def _train_model(self, train_set, train_ref, validation_set, validation_ref):
 
@@ -191,11 +190,12 @@ class DeepAutoencoder(model.Model):
 
         layers_out = []
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            for l in self.layer_nodes:
-                layers_out.append(l.eval({self.input_data: dataset,
-                                          self.keep_prob: 1}))
+        with self.tf_graph.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                for l in self.layer_nodes:
+                    layers_out.append(l.eval({self.input_data: dataset,
+                                              self.keep_prob: 1}))
         return layers_out
 
     def reconstruct(self, test_set):
@@ -205,10 +205,11 @@ class DeepAutoencoder(model.Model):
         :return: labels
         """
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.reconstruction.eval({self.input_data: test_set,
-                                             self.keep_prob: 1})
+        with self.tf_graph.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                return self.reconstruction.eval({self.input_data: test_set,
+                                                 self.keep_prob: 1})
 
     def compute_reconstruction_loss(self, test_set, test_ref):
 
@@ -218,11 +219,12 @@ class DeepAutoencoder(model.Model):
         :return: reconstruction loss
         """
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.cost.eval({self.input_data: test_set,
-                                   self.input_labels: test_ref,
-                                   self.keep_prob: 1})
+        with self.tf_graph.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                return self.cost.eval({self.input_data: test_set,
+                                       self.input_labels: test_ref,
+                                       self.keep_prob: 1})
 
     def build_model(self, n_features, encoding_w=None, encoding_b=None):
 

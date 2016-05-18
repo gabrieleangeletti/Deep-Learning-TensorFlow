@@ -38,6 +38,7 @@ class Model(object):
         self.verbose = 0
 
         # tensorflow objects
+        self.tf_graph = tf.Graph()
         self.tf_session = None
         self.tf_saver = None
         self.tf_merged_summaries = None
@@ -129,8 +130,7 @@ class Model(object):
             if self.tf_summary_writer_available:
                 print("Summary writer not available at the moment")
             self.tf_summary_writer_available = False
-            result = self.tf_session.run([self.cost], feed_dict=feed)
-            err = result[0]
+            err = self.tf_session.run(self.cost, feed_dict=feed)
 
         if self.verbose == 1:
             print("Reconstruction loss at step %s: %s" % (epoch, err))
@@ -149,9 +149,10 @@ class Model(object):
             acc = result[1]
             self.tf_summary_writer.add_summary(summary_str, epoch)
         except tf.errors.InvalidArgumentError:
-            print("Summary writer not available at the moment")
-            result = self.tf_session.run([self.accuracy], feed_dict=feed)
-            acc = result[0]
+            if self.tf_summary_writer_available:
+                print("Summary writer not available at the moment")
+            self.tf_summary_writer_available = False
+            acc = self.tf_session.run(self.accuracy, feed_dict=feed)
 
         if self.verbose == 1:
             print("Accuracy at step %s: %s" % (epoch, acc))
@@ -163,10 +164,11 @@ class Model(object):
         :return: labels
         """
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.model_predictions.eval({self.input_data: test_set,
-                                                self.keep_prob: 1})
+        with self.tf_graph.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                return self.model_predictions.eval({self.input_data: test_set,
+                                                    self.keep_prob: 1})
 
     def _create_last_layer(self, last_layer, n_classes):
 

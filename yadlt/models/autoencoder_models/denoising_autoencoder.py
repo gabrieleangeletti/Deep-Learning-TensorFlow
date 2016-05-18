@@ -1,4 +1,3 @@
-from tensorflow.python.framework import ops
 import tensorflow as tf
 import numpy as np
 import os
@@ -48,7 +47,7 @@ class DenoisingAutoencoder(model.Model):
         self.encode = None
         self.decode = None
 
-    def fit(self, train_set, validation_set=None, restore_previous_model=False):
+    def fit(self, train_set, validation_set=None, restore_previous_model=False, graph=None):
 
         """ Fit the model to the data.
         :param train_set: Training data.
@@ -59,12 +58,14 @@ class DenoisingAutoencoder(model.Model):
         :return: self
         """
 
-        with tf.Session() as self.tf_session:
-            # Reset tensorflow's default graph
-            ops.reset_default_graph()
-            self._initialize_tf_utilities_and_ops(restore_previous_model)
-            self._train_model(train_set, validation_set)
-            self.tf_saver.save(self.tf_session, self.model_path)
+        g = graph if graph is not None else self.tf_graph
+
+        with g.as_default():
+            self.build_model(train_set.shape[1])
+            with tf.Session() as self.tf_session:
+                self._initialize_tf_utilities_and_ops(restore_previous_model)
+                self._train_model(train_set, validation_set)
+                self.tf_saver.save(self.tf_session, self.model_path)
 
     def _train_model(self, train_set, validation_set):
 
@@ -79,7 +80,6 @@ class DenoisingAutoencoder(model.Model):
 
             self._run_train_step(train_set)
 
-            # if i % 5 == 0:
             if validation_set is not None:
                 feed = {self.input_data: validation_set, self.input_data_corr: validation_set}
                 self._run_unsupervised_validation_error_and_summaries(i, feed)
@@ -131,9 +131,10 @@ class DenoisingAutoencoder(model.Model):
         :return: labels
         """
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.decode.eval({self.input_data_corr: data})
+        with self.tf_graph.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                return self.decode.eval({self.input_data_corr: data})
 
     def build_model(self, n_features, W_=None, bh_=None, bv_=None):
 
@@ -228,23 +229,27 @@ class DenoisingAutoencoder(model.Model):
             else:
                 self.decode = None
 
-    def transform(self, data, name='train', save=False):
+    def transform(self, data, name='train', save=False, graph=None):
 
         """ Transform data according to the model.
         :param data: Data to transform
         :param name: Identifier for the data that is being encoded
         :param save: If true, save data to disk
+        :param graph: tf graph object
         :return: transformed data
         """
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            encoded_data = self.encode.eval({self.input_data_corr: data})
+        g = graph if graph is not None else self.tf_graph
 
-            if save:
-                np.save(self.data_dir + self.model_name + '-' + name, encoded_data)
+        with g.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                encoded_data = self.encode.eval({self.input_data_corr: data})
 
-            return encoded_data
+                if save:
+                    np.save(self.data_dir + self.model_name + '-' + name, encoded_data)
+
+                return encoded_data
 
     def load_model(self, shape, model_path):
 
@@ -264,21 +269,25 @@ class DenoisingAutoencoder(model.Model):
             self.tf_session.run(init_op)
             self.tf_saver.restore(self.tf_session, model_path)
 
-    def get_model_parameters(self):
+    def get_model_parameters(self, graph=None):
 
         """ Return the model parameters in the form of numpy arrays.
+        :param graph: tf graph object
         :return: model parameters
         """
 
-        with tf.Session() as self.tf_session:
+        g = graph if graph is not None else self.tf_graph
 
-            self.tf_saver.restore(self.tf_session, self.model_path)
+        with g.as_default():
+            with tf.Session() as self.tf_session:
 
-            return {
-                'enc_w': self.W_.eval(),
-                'enc_b': self.bh_.eval(),
-                'dec_b': self.bv_.eval()
-            }
+                self.tf_saver.restore(self.tf_session, self.model_path)
+
+                return {
+                    'enc_w': self.W_.eval(),
+                    'enc_b': self.bh_.eval(),
+                    'dec_b': self.bv_.eval()
+                }
 
     def get_weights_as_images(self, width, height, outdir='img/', max_images=10, model_path=None):
 

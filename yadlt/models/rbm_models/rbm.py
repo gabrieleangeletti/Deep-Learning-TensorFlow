@@ -42,13 +42,13 @@ class RBM(model.Model):
         self.bh_upd8 = None
         self.bv_upd8 = None
 
-        self.loss_function = None
+        self.cost = None
 
         self.input_data = None
         self.hrand = None
         self.vrand = None
 
-    def fit(self, train_set, validation_set=None, restore_previous_model=False):
+    def fit(self, train_set, validation_set=None, restore_previous_model=False, graph=None):
 
         """ Fit the model to the training data.
         :param train_set: training set
@@ -56,16 +56,19 @@ class RBM(model.Model):
         :param restore_previous_model:
                     if true, a previous trained model
                     with the same name of this model is restored from disk to continue training.
+
+        :param graph: tf graph object
         :return: self
         """
 
-        with tf.Session() as self.tf_session:
-            # Reset tensorflow's default graph
-            ops.reset_default_graph()
+        g = graph if graph is not None else self.tf_graph
+
+        with g.as_default():
             self.build_model(train_set.shape[1])
-            self._initialize_tf_utilities_and_ops(restore_previous_model)
-            self._train_model(train_set, validation_set)
-            self.tf_saver.save(self.tf_session, self.model_path)
+            with tf.Session() as self.tf_session:
+                self._initialize_tf_utilities_and_ops(restore_previous_model)
+                self._train_model(train_set, validation_set)
+                self.tf_saver.save(self.tf_session, self.model_path)
 
     def _train_model(self, train_set, validation_set):
 
@@ -135,8 +138,8 @@ class RBM(model.Model):
         self.bh_upd8 = self.bh_.assign_add(self.learning_rate * tf.reduce_mean(hprobs0 - hprobs1, 0))
         self.bv_upd8 = self.bv_.assign_add(self.learning_rate * tf.reduce_mean(self.input_data - vprobs, 0))
 
-        self.loss_function = tf.sqrt(tf.reduce_mean(tf.square(self.input_data - vprobs)))
-        _ = tf.scalar_summary("cost", self.loss_function)
+        self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.input_data - vprobs)))
+        _ = tf.scalar_summary("cost", self.cost)
 
     def _create_placeholders(self, n_features):
 
@@ -231,38 +234,44 @@ class RBM(model.Model):
 
         return positive
 
-    def transform(self, data, name='train', save=False):
+    def transform(self, data, name='train', save=False, graph=None):
 
         """ Transform data according to the model.
         :param data: Data to transform
         :param name: Identifier for the data that is being encoded. string, default 'train'
         :param save: If true, save data to disk. boolean, default 'False'
+        :param graph: tf graph object
         :return: transformed data
         """
 
-        with tf.Session() as self.tf_session:
+        g = graph if graph is not None else self.tf_graph
 
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            encoded_data = self.sample_hidden_from_visible(data)[0].eval()
+        with g.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                encoded_data = self.sample_hidden_from_visible(data)[0].eval()
 
-            if save:
-                np.save(self.data_dir + self.model_name + '-' + name, encoded_data)
+                if save:
+                    np.save(self.data_dir + self.model_name + '-' + name, encoded_data)
 
-            return encoded_data
+        return encoded_data
 
-    def reconstruct(self, data):
+    def reconstruct(self, data, graph=None):
 
         """ Reconstruct the test set data using the learned model.
         :param data: Testing data. shape(n_test_samples, n_features)
+        :param graph: tf graph object
         :return: labels
         """
 
-        with tf.Session() as self.tf_session:
+        g = graph if graph is not None else self.tf_graph
 
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            hprobs, _ = self.sample_hidden_from_visible(data)
-            vprobs = self.sample_visible_from_hidden(hprobs, data.shape[1])
-            return vprobs.eval()
+        with g.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                hprobs, _ = self.sample_hidden_from_visible(data)
+                vprobs = self.sample_visible_from_hidden(hprobs, data.shape[1])
+                return vprobs.eval()
 
     def load_model(self, shape, gibbs_sampling_steps, model_path):
 
@@ -288,21 +297,24 @@ class RBM(model.Model):
             self.tf_session.run(init_op)
             self.tf_saver.restore(self.tf_session, model_path)
 
-    def get_model_parameters(self):
+    def get_model_parameters(self, graph=None):
 
         """ Return the model parameters in the form of numpy arrays.
+        :param graph: tf graph object
         :return: model parameters
         """
 
-        with tf.Session() as self.tf_session:
+        g = graph if graph is not None else self.tf_graph
 
-            self.tf_saver.restore(self.tf_session, self.model_path)
+        with g.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
 
-            return {
-                'W': self.W.eval(),
-                'bh_': self.bh_.eval(),
-                'bv_': self.bv_.eval()
-            }
+                return {
+                    'W': self.W.eval(),
+                    'bh_': self.bh_.eval(),
+                    'bv_': self.bv_.eval()
+                }
 
     def get_weights_as_images(self, width, height, outdir='img/', n_images=10, img_type='grey'):
 

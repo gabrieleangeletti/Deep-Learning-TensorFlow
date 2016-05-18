@@ -1,4 +1,3 @@
-from tensorflow.python.framework import ops
 import tensorflow as tf
 import numpy as np
 
@@ -12,8 +11,8 @@ class LogisticRegression(model.Model):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, main_dir='lr/', model_name='lr', models_dir='models/', data_dir='data/', summary_dir='logs/', loss_func='cross_entropy', dataset='mnist',
-                 learning_rate=0.01, verbose=0, num_epochs=10, batch_size=10):
+    def __init__(self, main_dir='lr/', model_name='lr', models_dir='models/', data_dir='data/', summary_dir='logs/',
+                 loss_func='cross_entropy', dataset='mnist', learning_rate=0.01, verbose=0, num_epochs=10, batch_size=10):
 
         """
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
@@ -86,13 +85,12 @@ class LogisticRegression(model.Model):
         :return: self
         """
 
-        with tf.Session() as self.tf_session:
-            # Reset tensorflow's default graph
-            ops.reset_default_graph()
+        with self.tf_graph.as_default():
             self.build_model(train_set.shape[1], train_labels.shape[1])
-            self._initialize_tf_utilities_and_ops(restore_previous_model)
-            self._train_model(train_set, train_labels, validation_set, validation_labels)
-            self.tf_saver.save(self.tf_session, self.models_dir + self.model_name)
+            with tf.Session() as self.tf_session:
+                self._initialize_tf_utilities_and_ops(restore_previous_model)
+                self._train_model(train_set, train_labels, validation_set, validation_labels)
+                self.tf_saver.save(self.tf_session, self.models_dir + self.model_name)
 
     def _train_model(self, train_set, train_labels, validation_set, validation_labels):
 
@@ -127,8 +125,9 @@ class LogisticRegression(model.Model):
         :return: accuracy
         """
 
-        with tf.Session() as self.tf_session:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-            return self.accuracy.eval({self.input_data: test_set,
-                                       self.input_labels: test_labels,
-                                       self.keep_prob: 1})
+        with self.tf_graph.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                return self.accuracy.eval({self.input_data: test_set,
+                                           self.input_labels: test_labels,
+                                           self.keep_prob: 1})

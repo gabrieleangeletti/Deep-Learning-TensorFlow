@@ -24,6 +24,8 @@ flags.DEFINE_string('test_ref', '', 'Path to test reference data .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('model_name', 'srbm', 'Name of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
+flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
+flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
@@ -159,9 +161,25 @@ if __name__ == '__main__':
         print('Saving the reconstructions for the test set...')
         np.save(FLAGS.save_reconstructions, srbm.reconstruct(teX))
 
+
+    def save_layers_output(which_set):
+        if which_set == 'train':
+            trout = srbm.get_layers_output(trX)
+            for i, o in enumerate(trout):
+                np.save(FLAGS.save_layers_output_train + '-layer-' + str(i + 1) + '-train', o)
+
+        elif which_set == 'test':
+            teout = srbm.get_layers_output(teX)
+            for i, o in enumerate(teout):
+                np.save(FLAGS.save_layers_output_test + '-layer-' + str(i + 1) + '-test', o)
+
+
     # Save output from each layer of the model
-    if FLAGS.save_layers_output:
+    if FLAGS.save_layers_output_test:
         print('Saving the output of each layer for the test set')
-        out = srbm.get_layers_output(teX)
-        for i, o in enumerate(out):
-            np.save(FLAGS.save_layers_output + '-layer-' + str(i + 1), o)
+        save_layers_output('test')
+
+    # Save output from each layer of the model
+    if FLAGS.save_layers_output_train:
+        print('Saving the output of each layer for the train set')
+        save_layers_output('train')
