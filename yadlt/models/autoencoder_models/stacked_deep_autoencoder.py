@@ -14,16 +14,16 @@ class StackedDeepAutoencoder(model.Model):
     """
 
     def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 dae_enc_act_func=list(['tanh']), dae_dec_act_func=list(['none']), dae_loss_func=list(['cross_entropy']), dae_num_epochs=list([10]),
+                 dae_enc_act_func=list([tf.nn.tanh]), dae_dec_act_func=list([None]), dae_loss_func=list(['cross_entropy']), dae_num_epochs=list([10]),
                  dae_batch_size=list([10]), dataset='mnist', dae_opt=list(['gradient_descent']),
-                 dae_learning_rate=list([0.01]), momentum=0.5,  finetune_dropout=1, dae_corr_type=list(['none']),
-                 dae_corr_frac=list([0.]), verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func='relu',
-                 tied_weights=True, finetune_dec_act_func='sigmoid', dae_l2reg=list([5e-4]), finetune_batch_size=20, do_pretrain=True,
+                 dae_learning_rate=list([0.01]), momentum=0.5, finetune_dropout=1, dae_corr_type=list(['none']),
+                 dae_corr_frac=list([0.]), verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=tf.nn.relu,
+                 tied_weights=True, finetune_dec_act_func=tf.nn.sigmoid, dae_l2reg=list([5e-4]), finetune_batch_size=20, do_pretrain=True,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10):
         """
         :param dae_layers: list containing the hidden units for each layer
-        :param dae_enc_act_func: Activation function for the encoder. ['sigmoid', 'tanh']
-        :param dae_dec_act_func: Activation function for the decoder. ['sigmoid', 'tanh', 'none']
+        :param enc_act_func: Activation function for the encoder. [tf.nn.tanh, tf.nn.sigmoid]
+        :param dec_act_func: Activation function for the decoder. [[tf.nn.tanh, tf.nn.sigmoid, None]
         :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
@@ -75,8 +75,8 @@ class StackedDeepAutoencoder(model.Model):
         self.autoencoder_graphs = []
 
         for l, layer in enumerate(dae_layers):
-            dae_str = 'dae-' + str(l+1)
-            
+            dae_str = 'dae-' + str(l + 1)
+
             self.autoencoders.append(denoising_autoencoder.DenoisingAutoencoder(
                 n_components=layer, main_dir=self.main_dir, model_name=self.model_name + '-' + dae_str,
                 models_dir=os.path.join(self.models_dir, dae_str), data_dir=os.path.join(self.data_dir, dae_str),  summary_dir=os.path.join(self.tf_summary_dir, dae_str),
@@ -101,7 +101,7 @@ class StackedDeepAutoencoder(model.Model):
         next_valid = validation_set
 
         for l, autoenc in enumerate(self.autoencoders):
-            print('Training layer {}...'.format(l+1))
+            print('Training layer {}...'.format(l + 1))
             next_train, next_valid = self._pretrain_autoencoder_and_gen_feed(autoenc,
                                                                              next_train,
                                                                              next_valid,
@@ -316,14 +316,8 @@ class StackedDeepAutoencoder(model.Model):
 
                 y_act = tf.matmul(next_train, self.encoding_w_[l]) + self.encoding_b_[l]
 
-                if self.finetune_enc_act_func == 'sigmoid':
-                    layer_y = tf.nn.sigmoid(y_act)
-
-                elif self.finetune_enc_act_func == 'tanh':
-                    layer_y = tf.nn.tanh(y_act)
-
-                elif self.finetune_enc_act_func == 'relu':
-                    layer_y = tf.nn.relu(y_act)
+                if self.finetune_enc_act_func:
+                    layer_y = self.finetune_enc_act_func(y_act)
 
                 else:
                     layer_y = None
@@ -360,14 +354,8 @@ class StackedDeepAutoencoder(model.Model):
 
                 y_act = tf.matmul(next_decode, dec_w) + dec_b
 
-                if self.finetune_dec_act_func == 'sigmoid':
-                    layer_y = tf.nn.sigmoid(y_act)
-
-                elif self.finetune_dec_act_func == 'tanh':
-                    layer_y = tf.nn.tanh(y_act)
-
-                elif self.finetune_dec_act_func == 'relu':
-                    layer_y = tf.nn.relu(y_act)
+                if self.finetune_dec_act_func:
+                    layer_y = self.finetune_dec_act_func(y_act)
 
                 else:
                     layer_y = None

@@ -13,12 +13,12 @@ class DenoisingAutoencoder(model.Model):
     """
 
     def __init__(self, model_name='dae', n_components=256, main_dir='dae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 enc_act_func='tanh', dec_act_func='none', loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
+                 enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
                  opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0., verbose=1, l2reg=5e-4):
         """
         :param n_components: number of hidden units
-        :param enc_act_func: Activation function for the encoder. ['tanh', 'sigmoid']
-        :param dec_act_func: Activation function for the decoder. ['tanh', 'sigmoid', 'none']
+        :param enc_act_func: Activation function for the encoder. [tf.nn.tanh, tf.nn.sigmoid]
+        :param dec_act_func: Activation function for the decoder. [[tf.nn.tanh, tf.nn.sigmoid, None]
         :param corr_type: Type of input corruption. ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt.
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
@@ -198,12 +198,8 @@ class DenoisingAutoencoder(model.Model):
 
             activation = tf.matmul(self.input_data_corr, self.W_) + self.bh_
 
-            if self.enc_act_func == 'sigmoid':
-                self.encode = tf.nn.sigmoid(activation)
-
-            elif self.enc_act_func == 'tanh':
-                self.encode = tf.nn.tanh(activation)
-
+            if self.enc_act_func:
+                self.encode = self.enc_act_func(activation)
             else:
                 self.encode = None
 
@@ -217,13 +213,9 @@ class DenoisingAutoencoder(model.Model):
 
             activation = tf.matmul(self.encode, tf.transpose(self.W_)) + self.bv_
 
-            if self.dec_act_func == 'sigmoid':
-                self.decode = tf.nn.sigmoid(activation)
-
-            elif self.dec_act_func == 'tanh':
-                self.decode = tf.nn.tanh(activation)
-
-            elif self.dec_act_func == 'none':
+            if self.dec_act_func:
+                self.decode = self.dec_act_func(activation)
+            elif self.dec_act_func is None:
                 self.decode = activation
 
             else:

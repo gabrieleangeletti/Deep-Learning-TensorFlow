@@ -17,7 +17,7 @@ class DeepAutoencoder(model.Model):
     def __init__(self, rbm_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
                  rbm_num_epochs=list([10]),
                  rbm_batch_size=list([10]), dataset='mnist', rbm_learning_rate=list([0.01]), rbm_gibbs_k=list([1]),
-                 momentum=0.5,  finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_act_func='relu',
+                 momentum=0.5, finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_act_func=tf.nn.relu,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10, rbm_gauss_visible=False,
                  rbm_stddev=0.1, finetune_batch_size=20, do_pretrain=True):
         """
@@ -66,7 +66,7 @@ class DeepAutoencoder(model.Model):
         self.rbm_graphs = []
 
         for l, layer in enumerate(rbm_layers):
-            rbm_str = 'rbm-' + str(l+1)
+            rbm_str = 'rbm-' + str(l + 1)
 
             if l == 0 and rbm_gauss_visible:
 
@@ -102,7 +102,7 @@ class DeepAutoencoder(model.Model):
         next_valid = validation_set
 
         for l, rbm in enumerate(self.rbms):
-            print('Training layer {}...'.format(l+1))
+            print('Training layer {}...'.format(l + 1))
             next_train, next_valid = self._pretrain_rbm_and_gen_feed(rbm,
                                                                      next_train,
                                                                      next_valid,
@@ -317,14 +317,8 @@ class DeepAutoencoder(model.Model):
 
                 y_act = tf.matmul(next_train, self.encoding_w_[l]) + self.encoding_b_[l]
 
-                if self.finetune_act_func == 'sigmoid':
-                    layer_y = tf.nn.sigmoid(y_act)
-
-                elif self.finetune_act_func == 'tanh':
-                    layer_y = tf.nn.tanh(y_act)
-
-                elif self.finetune_act_func == 'relu':
-                    layer_y = tf.nn.relu(y_act)
+                if self.finetune_act_func:
+                    layer_y = self.finetune_act_func(y_act)
 
                 else:
                     layer_y = None
@@ -357,14 +351,8 @@ class DeepAutoencoder(model.Model):
 
                 y_act = tf.matmul(next_decode, dec_w) + dec_b
 
-                if self.finetune_act_func == 'sigmoid':
-                    layer_y = tf.nn.sigmoid(y_act)
-
-                elif self.finetune_act_func == 'tanh':
-                    layer_y = tf.nn.tanh(y_act)
-
-                elif self.finetune_act_func == 'relu':
-                    layer_y = tf.nn.relu(y_act)
+                if self.finetune_act_func:
+                    layer_y = self.finetune_act_func(y_act)
 
                 else:
                     layer_y = None
