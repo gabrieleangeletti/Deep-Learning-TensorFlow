@@ -1,4 +1,3 @@
-from tensorflow.python.framework import ops
 import tensorflow as tf
 import numpy as np
 import os
