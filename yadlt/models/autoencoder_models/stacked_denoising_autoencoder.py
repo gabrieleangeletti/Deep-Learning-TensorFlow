@@ -14,10 +14,10 @@ class StackedDenoisingAutoencoder(model.Model):
     """
 
     def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 dae_enc_act_func=list([tf.train.tanh]), dae_dec_act_func=list([None]), dae_loss_func=list(['cross_entropy']), dae_num_epochs=list([10]),
-                 dae_batch_size=list([10]), dataset='mnist', dae_opt=list(['gradient_descent']), dae_l2reg=list([5e-4]),
-                 dae_learning_rate=list([0.01]), momentum=0.5,  finetune_dropout=1, dae_corr_type=list(['none']),
-                 dae_corr_frac=list([0.]), verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func=tf.relu,
+                 dae_enc_act_func=['tanh'], dae_dec_act_func=['none'], dae_loss_func=['cross_entropy'], dae_num_epochs=[10],
+                 dae_batch_size=[10], dataset='mnist', dae_opt=['gradient_descent'], dae_l2reg=[5e-4],
+                 dae_learning_rate=[0.01], momentum=0.5, finetune_dropout=1, dae_corr_type=['none'],
+                 dae_corr_frac=[0.], verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func=tf.nn.relu,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
                  finetune_batch_size=20, do_pretrain=True):
         """

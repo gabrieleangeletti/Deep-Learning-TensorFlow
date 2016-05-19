@@ -14,11 +14,11 @@ class StackedDeepAutoencoder(model.Model):
     """
 
     def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 dae_enc_act_func=list([tf.nn.tanh]), dae_dec_act_func=list([None]), dae_loss_func=list(['cross_entropy']), dae_num_epochs=list([10]),
-                 dae_batch_size=list([10]), dataset='mnist', dae_opt=list(['gradient_descent']),
-                 dae_learning_rate=list([0.01]), momentum=0.5, finetune_dropout=1, dae_corr_type=list(['none']),
-                 dae_corr_frac=list([0.]), verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=tf.nn.relu,
-                 tied_weights=True, finetune_dec_act_func=tf.nn.sigmoid, dae_l2reg=list([5e-4]), finetune_batch_size=20, do_pretrain=True,
+                 dae_enc_act_func=['tanh'], dae_dec_act_func=['none'], dae_loss_func=['cross_entropy'], dae_num_epochs=[10],
+                 dae_batch_size=[10], dataset='mnist', dae_opt=['gradient_descent'],
+                 dae_learning_rate=[0.01], momentum=0.5, finetune_dropout=1, dae_corr_type=['none'],
+                 dae_corr_frac=[0.], verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=tf.nn.relu,
+                 tied_weights=True, finetune_dec_act_func='sigmoid', dae_l2reg=[5e-4], finetune_batch_size=20, do_pretrain=True,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10):
         """
         :param dae_layers: list containing the hidden units for each layer
