@@ -126,7 +126,10 @@ class DeepAutoencoder(model.Model):
             self.encoding_b_.append(params['bh_'])
 
             next_train = rbm.transform(train_set, graph=graph)
-            next_valid = rbm.transform(validation_set, graph=graph)
+            if validation_set:
+                next_valid = rbm.transform(validation_set, graph=graph)
+            else:
+                next_valid = None
 
         return next_train, next_valid
 

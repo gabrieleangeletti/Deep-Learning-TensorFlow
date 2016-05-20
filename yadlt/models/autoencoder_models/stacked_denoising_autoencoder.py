@@ -125,7 +125,10 @@ class StackedDenoisingAutoencoder(model.Model):
             self.encoding_b_.append(params['enc_b'])
 
             next_train = autoenc.transform(train_set, graph=graph)
-            next_valid = autoenc.transform(validation_set, graph=graph)
+            if validation_set:
+                next_valid = autoenc.transform(validation_set, graph=graph)
+            else:
+                next_valid = None
 
         return next_train, next_valid
 
