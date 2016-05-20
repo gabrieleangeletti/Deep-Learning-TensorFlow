@@ -111,11 +111,13 @@ if __name__ == '__main__':
     summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
 
     # Create the object
+    finetune_act_func = utilities.str2actfunc(FLAGS.finetune_act_func)
+
     srbm = dbn.DeepBeliefNetwork(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         model_name=FLAGS.model_name, do_pretrain=FLAGS.do_pretrain,
         rbm_layers=rbm_layers, dataset=FLAGS.dataset, main_dir=FLAGS.main_dir,
-        finetune_act_func=FLAGS.finetune_act_func, rbm_learning_rate=rbm_learning_rate,
+        finetune_act_func=finetune_act_func, rbm_learning_rate=rbm_learning_rate,
         verbose=FLAGS.verbose, rbm_num_epochs=rbm_num_epochs, rbm_gibbs_k = rbm_gibbs_k,
         rbm_gauss_visible=FLAGS.rbm_gauss_visible, rbm_stddev=FLAGS.rbm_stddev,
         momentum=FLAGS.momentum, rbm_batch_size=rbm_batch_size, finetune_learning_rate=FLAGS.finetune_learning_rate,

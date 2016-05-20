@@ -146,6 +146,11 @@ if __name__ == '__main__':
     data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
     summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
 
+    dae_enc_act_func = [utilities.str2actfunc(af) for af in dae_enc_act_func]
+    dae_dec_act_func = [utilities.str2actfunc(af) for af in dae_dec_act_func]
+    finetune_enc_act_func = utilities.str2actfunc(FLAGS.finetune_enc_act_func)
+    finetune_dec_act_func = utilities.str2actfunc(FLAGS.finetune_dec_act_func)
+
     sdae = stacked_deep_autoencoder.StackedDeepAutoencoder(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         do_pretrain=FLAGS.do_pretrain, model_name=FLAGS.model_name,
@@ -159,7 +164,7 @@ if __name__ == '__main__':
         dae_opt=dae_opt, tied_weights=FLAGS.tied_weights,
         dae_learning_rate=dae_learning_rate, momentum=FLAGS.momentum, verbose=FLAGS.verbose,
         dae_num_epochs=dae_num_epochs, dae_batch_size=dae_batch_size,
-        finetune_enc_act_func=FLAGS.finetune_enc_act_func, finetune_dec_act_func=FLAGS.finetune_dec_act_func)
+        finetune_enc_act_func=finetune_enc_act_func, finetune_dec_act_func=finetune_dec_act_func)
 
     def load_params_npz(npzfilepath):
         params = []

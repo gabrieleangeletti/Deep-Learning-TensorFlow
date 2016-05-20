@@ -132,6 +132,10 @@ if __name__ == '__main__':
     data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
     summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
 
+    dae_enc_act_func = [utilities.str2actfunc(af) for af in dae_enc_act_func]
+    dae_dec_act_func = [utilities.str2actfunc(af) for af in dae_dec_act_func]
+    finetune_act_func = utilities.str2actfunc(FLAGS.finetune_act_func)
+
     sdae = stacked_denoising_autoencoder.StackedDenoisingAutoencoder(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         do_pretrain=FLAGS.do_pretrain, model_name=FLAGS.model_name,
@@ -144,7 +148,7 @@ if __name__ == '__main__':
         dataset=FLAGS.dataset, dae_loss_func=dae_loss_func, main_dir=FLAGS.main_dir, dae_opt=dae_opt,
         dae_learning_rate=dae_learning_rate, momentum=FLAGS.momentum, verbose=FLAGS.verbose,
         dae_num_epochs=dae_num_epochs, dae_batch_size=dae_batch_size,
-        finetune_act_func=FLAGS.finetune_act_func)
+        finetune_act_func=finetune_act_func)
 
     # Fit the model (unsupervised pretraining)
     if FLAGS.do_pretrain:

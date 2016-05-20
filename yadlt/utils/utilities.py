@@ -185,6 +185,17 @@ def flag_to_list(flagval, flagtype):
         raise Exception("incorrect type")
 
 
+def str2actfunc(act_func):
+    if act_func == 'sigmoid':
+        return tf.nn.sigmoid
+
+    elif act_func == 'tanh':
+        return tf.nn.tanh
+
+    elif act_func == 'relu':
+        return tf.nn.relu
+
+
 def random_seed_np_tf(seed):
     """ seed numpy and tensorflow random number generators.
     :param seed: seed parameter
