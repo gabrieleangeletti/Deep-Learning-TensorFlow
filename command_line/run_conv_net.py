@@ -85,14 +85,14 @@ if __name__ == '__main__':
 
     else:
         trX, trY, vlX, vlY, teX, teY = None, None, None, None, None, None
- 
+
     models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
     data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
     summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
 
     # Create the model object
     convnet = conv_net.ConvolutionalNetwork(
-        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
+        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir, original_shape=[int(i) for i in FLAGS.original_shape.split(',')],
         layers=FLAGS.layers, model_name=FLAGS.model_name, main_dir=FLAGS.main_dir, loss_func=FLAGS.loss_func,
         num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, dataset=FLAGS.dataset, opt=FLAGS.opt,
         learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, dropout=FLAGS.dropout, verbose=FLAGS.verbose
@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     # Model training
     print('Start Convolutional Network training...')
-    convnet.fit(trX, trY, [int(i) for i in FLAGS.original_shape.split(',')], vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
+    convnet.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model
     print('Test set accuracy: {}'.format(convnet.compute_accuracy(teX, teY)))

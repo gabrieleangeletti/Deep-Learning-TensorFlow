@@ -61,6 +61,7 @@ PERFORMANCE.md
 MNIST_data/
 data/
 logs/
+models/
 stored_models/
 
 .idea/

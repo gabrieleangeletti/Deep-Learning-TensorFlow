@@ -4,7 +4,7 @@ import os
 
 import config
 
-from yadlt.models.autoencoder_models import stacked_deep_autoencoder
+from yadlt.models.autoencoder_models import deep_autoencoder
 from yadlt.utils import datasets, utilities
 
 # #################### #
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     finetune_enc_act_func = utilities.str2actfunc(FLAGS.finetune_enc_act_func)
     finetune_dec_act_func = utilities.str2actfunc(FLAGS.finetune_dec_act_func)
 
-    sdae = stacked_deep_autoencoder.StackedDeepAutoencoder(
+    sdae = deep_autoencoder.DeepAutoencoder(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         do_pretrain=FLAGS.do_pretrain, model_name=FLAGS.model_name,
         dae_layers=dae_layers, finetune_loss_func=FLAGS.finetune_loss_func,

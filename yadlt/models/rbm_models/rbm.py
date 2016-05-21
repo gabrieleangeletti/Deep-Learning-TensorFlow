@@ -1,11 +1,11 @@
 import tensorflow as tf
 import numpy as np
 
-from yadlt.core import model
+from yadlt.core.unsupervised_model import UnsupervisedModel
 from yadlt.utils import utilities
 
 
-class RBM(model.Model):
+class RBM(UnsupervisedModel):
 
     """ Restricted Boltzmann Machine implementation using TensorFlow.
     The interface of the class is sklearn-like.
@@ -22,7 +22,7 @@ class RBM(model.Model):
         :param stddev: optional, default 0.1. Ignored if visible_unit_type is not 'gauss'
         :param verbose: level of verbosity. optional, default 0
         """
-        model.Model.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        UnsupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(None, learning_rate, num_epochs, batch_size,
                                              dataset, None, None)
@@ -47,29 +47,7 @@ class RBM(model.Model):
         self.hrand = None
         self.vrand = None
 
-    def fit(self, train_set, validation_set=None, restore_previous_model=False, graph=None):
-
-        """ Fit the model to the training data.
-        :param train_set: training set
-        :param validation_set: validation set. optional, default None
-        :param restore_previous_model:
-                    if true, a previous trained model
-                    with the same name of this model is restored from disk to continue training.
-
-        :param graph: tf graph object
-        :return: self
-        """
-
-        g = graph if graph is not None else self.tf_graph
-
-        with g.as_default():
-            self.build_model(train_set.shape[1])
-            with tf.Session() as self.tf_session:
-                self._initialize_tf_utilities_and_ops(restore_previous_model)
-                self._train_model(train_set, validation_set)
-                self.tf_saver.save(self.tf_session, self.model_path)
-
-    def _train_model(self, train_set, validation_set):
+    def _train_model(self, train_set, validation_set, train_ref=None, Validation_ref=None):
 
         """ Train the model.
         :param train_set: training set
@@ -81,7 +59,7 @@ class RBM(model.Model):
             self._run_train_step(train_set)
 
             if validation_set is not None:
-                self._run_unsupervised_validation_error_and_summaries(i, self._create_feed_dict(validation_set))
+                self._run_validation_error_and_summaries(i, self._create_feed_dict(validation_set))
 
     def _run_train_step(self, train_set):
 
@@ -121,6 +99,8 @@ class RBM(model.Model):
 
         self._create_placeholders(n_features)
         self._create_variables(n_features)
+        self.encode = self.sample_hidden_from_visible(self.input_data)[0]
+        self.reconstruction = self.sample_visible_from_hidden(self.encode, n_features)
 
         hprobs0, hstates0, vprobs, hprobs1, hstates1 = self.gibbs_sampling_step(self.input_data, n_features)
         positive = self.compute_positive_association(self.input_data, hprobs0, hstates0)
@@ -150,6 +130,9 @@ class RBM(model.Model):
         self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
         self.hrand = tf.placeholder('float', [None, self.num_hidden], name='hrand')
         self.vrand = tf.placeholder('float', [None, n_features], name='vrand')
+        # not used in this model, created just to comply with unsupervised_model.py
+        self.input_labels = tf.placeholder('float')
+        self.keep_prob = tf.placeholder('float', name='keep-probs')
 
     def _create_variables(self, n_features):
 
@@ -233,45 +216,6 @@ class RBM(model.Model):
 
         return positive
 
-    def transform(self, data, name='train', save=False, graph=None):
-
-        """ Transform data according to the model.
-        :param data: Data to transform
-        :param name: Identifier for the data that is being encoded. string, default 'train'
-        :param save: If true, save data to disk. boolean, default 'False'
-        :param graph: tf graph object
-        :return: transformed data
-        """
-
-        g = graph if graph is not None else self.tf_graph
-
-        with g.as_default():
-            with tf.Session() as self.tf_session:
-                self.tf_saver.restore(self.tf_session, self.model_path)
-                encoded_data = self.sample_hidden_from_visible(data)[0].eval()
-
-                if save:
-                    np.save(self.data_dir + self.model_name + '-' + name, encoded_data)
-
-        return encoded_data
-
-    def reconstruct(self, data, graph=None):
-
-        """ Reconstruct the test set data using the learned model.
-        :param data: Testing data. shape(n_test_samples, n_features)
-        :param graph: tf graph object
-        :return: labels
-        """
-
-        g = graph if graph is not None else self.tf_graph
-
-        with g.as_default():
-            with tf.Session() as self.tf_session:
-                self.tf_saver.restore(self.tf_session, self.model_path)
-                hprobs, _ = self.sample_hidden_from_visible(data)
-                vprobs = self.sample_visible_from_hidden(hprobs, data.shape[1])
-                return vprobs.eval()
-
     def load_model(self, shape, gibbs_sampling_steps, model_path):
 
         """ Load a trained model from disk. The shape of the model
@@ -314,30 +258,3 @@ class RBM(model.Model):
                     'bh_': self.bh_.eval(),
                     'bv_': self.bv_.eval()
                 }
-
-    def get_weights_as_images(self, width, height, outdir='img/', n_images=10, img_type='grey'):
-
-        """ Create and save the weights of the hidden units with respect to the
-        visible units as images.
-        :param width:
-        :param height:
-        :param outdir:
-        :param n_images:
-        :param img_type:
-        :return: self
-        """
-
-        outdir = self.data_dir + outdir
-
-        with tf.Session() as self.tf_session:
-
-            self.tf_saver.restore(self.tf_session, self.model_path)
-
-            weights = self.W.eval()
-
-            perm = np.random.permutation(self.num_hidden)[:n_images]
-
-            for p in perm:
-                w = np.array([i[p] for i in weights])
-                image_path = outdir + self.model_name + '_{}.png'.format(p)
-                utilities.gen_image(w, width, height, image_path, img_type)

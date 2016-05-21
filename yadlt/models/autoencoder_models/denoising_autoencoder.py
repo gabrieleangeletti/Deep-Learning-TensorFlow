@@ -1,18 +1,17 @@
 import tensorflow as tf
 import numpy as np
-import os
 
-from yadlt.core import model
+from yadlt.core.unsupervised_model import UnsupervisedModel
 from yadlt.utils import utilities
 
 
-class DenoisingAutoencoder(model.Model):
+class DenoisingAutoencoder(UnsupervisedModel):
 
     """ Implementation of Denoising Autoencoders using TensorFlow.
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, model_name='dae', n_components=256, main_dir='dae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
+    def __init__(self, n_components, model_name='dae', main_dir='dae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
                  enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
                  opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0., verbose=1, l2reg=5e-4):
         """
@@ -24,7 +23,7 @@ class DenoisingAutoencoder(model.Model):
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         :param l2reg: Regularization parameter. If 0, no regularization.
         """
-        model.Model.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        UnsupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func=loss_func, learning_rate=learning_rate, num_epochs=num_epochs,
                                              batch_size=batch_size, dataset=dataset, opt=opt, momentum=momentum,
@@ -37,37 +36,14 @@ class DenoisingAutoencoder(model.Model):
         self.corr_frac = corr_frac
         self.verbose = verbose
 
+        self.input_data_orig = None
         self.input_data = None
-        self.input_data_corr = None
 
         self.W_ = None
         self.bh_ = None
         self.bv_ = None
 
-        self.encode = None
-        self.decode = None
-
-    def fit(self, train_set, validation_set=None, restore_previous_model=False, graph=None):
-
-        """ Fit the model to the data.
-        :param train_set: Training data.
-        :param validation_set: optional, default None. Validation data.
-        :param restore_previous_model:
-                    if true, a previous trained model
-                    with the same name of this model is restored from disk to continue training.
-        :return: self
-        """
-
-        g = graph if graph is not None else self.tf_graph
-
-        with g.as_default():
-            self.build_model(train_set.shape[1])
-            with tf.Session() as self.tf_session:
-                self._initialize_tf_utilities_and_ops(restore_previous_model)
-                self._train_model(train_set, validation_set)
-                self.tf_saver.save(self.tf_session, self.model_path)
-
-    def _train_model(self, train_set, validation_set):
+    def _train_model(self, train_set, validation_set, train_ref=None, Validation_ref=None):
 
         """Train the model.
         :param train_set: training set
@@ -81,8 +57,8 @@ class DenoisingAutoencoder(model.Model):
             self._run_train_step(train_set)
 
             if validation_set is not None:
-                feed = {self.input_data: validation_set, self.input_data_corr: validation_set}
-                self._run_unsupervised_validation_error_and_summaries(i, feed)
+                feed = {self.input_data_orig: validation_set, self.input_data: validation_set}
+                self._run_validation_error_and_summaries(i, feed)
 
     def _run_train_step(self, train_set):
 
@@ -100,7 +76,7 @@ class DenoisingAutoencoder(model.Model):
 
         for batch in batches:
             x_batch, x_corr_batch = zip(*batch)
-            tr_feed = {self.input_data: x_batch, self.input_data_corr: x_corr_batch}
+            tr_feed = {self.input_data_orig: x_batch, self.input_data: x_corr_batch}
             self.tf_session.run(self.train_step, feed_dict=tr_feed)
 
     def _corrupt_input(self, data):
@@ -124,18 +100,6 @@ class DenoisingAutoencoder(model.Model):
         else:
             return np.copy(data)
 
-    def reconstruct(self, data):
-
-        """ Reconstruct the test set data using the learned model.
-        :param data: Testing data. shape(n_test_samples, n_features)
-        :return: labels
-        """
-
-        with self.tf_graph.as_default():
-            with tf.Session() as self.tf_session:
-                self.tf_saver.restore(self.tf_session, self.model_path)
-                return self.decode.eval({self.input_data_corr: data})
-
     def build_model(self, n_features, W_=None, bh_=None, bv_=None):
 
         """ Creates the computational graph.
@@ -155,7 +119,7 @@ class DenoisingAutoencoder(model.Model):
         regularizers = tf.nn.l2_loss(self.W_) + tf.nn.l2_loss(self.bh_) + tf.nn.l2_loss(self.bv_)
         regterm = self.l2reg * regularizers
 
-        self._create_cost_function_node(self.decode, self.input_data, regterm)
+        self._create_cost_function_node(self.reconstruction, self.input_data, regterm)
         self._create_train_step_node()
 
     def _create_placeholders(self, n_features):
@@ -164,8 +128,11 @@ class DenoisingAutoencoder(model.Model):
         :return: self
         """
 
-        self.input_data = tf.placeholder('float', [None, n_features], name='x-input')
-        self.input_data_corr = tf.placeholder('float', [None, n_features], name='x-corr-input')
+        self.input_data_orig = tf.placeholder('float', [None, n_features], name='x-input')
+        self.input_data = tf.placeholder('float', [None, n_features], name='x-corr-input')
+        # not used in this model, created just to comply with unsupervised_model.py
+        self.input_labels = tf.placeholder('float')
+        self.keep_prob = tf.placeholder('float', name='keep-probs')
 
     def _create_variables(self, n_features, W_=None, bh_=None, bv_=None):
 
@@ -196,7 +163,7 @@ class DenoisingAutoencoder(model.Model):
 
         with tf.name_scope("encoder"):
 
-            activation = tf.matmul(self.input_data_corr, self.W_) + self.bh_
+            activation = tf.matmul(self.input_data, self.W_) + self.bh_
 
             if self.enc_act_func:
                 self.encode = self.enc_act_func(activation)
@@ -214,52 +181,11 @@ class DenoisingAutoencoder(model.Model):
             activation = tf.matmul(self.encode, tf.transpose(self.W_)) + self.bv_
 
             if self.dec_act_func:
-                self.decode = self.dec_act_func(activation)
+                self.reconstruction = self.dec_act_func(activation)
             elif self.dec_act_func is None:
-                self.decode = activation
-
+                self.reconstruction = activation
             else:
-                self.decode = None
-
-    def transform(self, data, name='train', save=False, graph=None):
-
-        """ Transform data according to the model.
-        :param data: Data to transform
-        :param name: Identifier for the data that is being encoded
-        :param save: If true, save data to disk
-        :param graph: tf graph object
-        :return: transformed data
-        """
-
-        g = graph if graph is not None else self.tf_graph
-
-        with g.as_default():
-            with tf.Session() as self.tf_session:
-                self.tf_saver.restore(self.tf_session, self.model_path)
-                encoded_data = self.encode.eval({self.input_data_corr: data})
-
-                if save:
-                    np.save(self.data_dir + self.model_name + '-' + name, encoded_data)
-
-                return encoded_data
-
-    def load_model(self, shape, model_path):
-
-        """ Restore a previously trained model from disk.
-        :param shape: tuple(n_features, n_components)
-        :param model_path: path to the trained model
-        :return: self, the trained model
-        """
-
-        self.n_components = shape[1]
-        self.build_model(shape[0])
-        init_op = tf.initialize_all_variables()
-        self.tf_saver = tf.train.Saver()
-
-        with tf.Session() as self.tf_session:
-
-            self.tf_session.run(init_op)
-            self.tf_saver.restore(self.tf_session, model_path)
+                self.reconstruction = None
 
     def get_model_parameters(self, graph=None):
 
@@ -272,7 +198,6 @@ class DenoisingAutoencoder(model.Model):
 
         with g.as_default():
             with tf.Session() as self.tf_session:
-
                 self.tf_saver.restore(self.tf_session, self.model_path)
 
                 return {
@@ -280,39 +205,3 @@ class DenoisingAutoencoder(model.Model):
                     'enc_b': self.bh_.eval(),
                     'dec_b': self.bv_.eval()
                 }
-
-    def get_weights_as_images(self, width, height, outdir='img/', max_images=10, model_path=None):
-
-        """ Save the weights of this autoencoder as images, one image per hidden unit.
-        Useful to visualize what the autoencoder has learned.
-
-        :param width: Width of the images. int
-        :param height: Height of the images. int
-        :param outdir: Output directory for the images. This path is appended to self.data_dir. string, default 'img/'
-        :param max_images: Number of images to return. int, default 10
-        :param model_path: if True, restore previous model with the same name of this autoencoder
-        """
-
-        assert max_images <= self.n_components
-
-        outdir = self.data_dir + outdir
-
-        if not os.path.isdir(outdir):
-            os.mkdir(outdir)
-
-        with tf.Session() as self.tf_session:
-
-            if model_path is not None:
-                self.tf_saver.restore(self.tf_session, model_path)
-            else:
-                self.tf_saver.restore(self.tf_session, self.model_path)
-
-            enc_weights = self.W_.eval()
-
-            perm = np.random.permutation(self.n_components)[:max_images]
-
-            for p in perm:
-
-                enc_w = np.array([i[p] for i in enc_weights])
-                image_path = outdir + self.model_name + '-enc_weights_{}.png'.format(p)
-                utilities.gen_image(enc_w, width, height, image_path)

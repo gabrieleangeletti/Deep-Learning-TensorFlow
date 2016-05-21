@@ -12,6 +12,9 @@ class Model(object):
         """
         :param model_name: name of the model, used as filename. string, default 'dae'
         :param main_dir: main directory to put the stored_models, data and summary directories
+        :param models_dir: directory to store trained models
+        :param data_dir: directory to store generated data
+        :param summary_dir: directory to store tensorflow logs
         """
 
         self.model_name = model_name
@@ -20,7 +23,7 @@ class Model(object):
         self.data_dir = data_dir
         self.tf_summary_dir = summary_dir
         self.model_path = os.path.join(self.models_dir, self.model_name)
-        
+
         print('Creating %s directory to save/restore models' % (self.models_dir))
         self._create_dir(self.models_dir)
         print('Creating %s directory to save model generated data' % (self.data_dir))
@@ -47,12 +50,12 @@ class Model(object):
 
     def _create_dir(self, dirpath):
 
-        """ 
         """
-        
+        """
+
         try:
             os.makedirs(dirpath)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
 
@@ -113,62 +116,71 @@ class Model(object):
         self.momentum = momentum
         self.l2reg = l2reg
 
-    def _run_unsupervised_validation_error_and_summaries(self, epoch, feed):
+    def pretrain_procedure(self, layer_objs, layer_graphs, set_params_func, train_set, validation_set=None):
 
-        """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch
-        :param validation_ref: validation reference data
-        :return: self
+        """ Perform unsupervised pretraining of the stack of denoising autoencoders.
+        :param layer_objs: list of model objects (autoencoders or rbms)
+        :param layer_graphs: list of model tf.Graph objects
+        :param set_params_func: function used to set the parameters after pretraining
+        :param train_set: training set
+        :param validation_set: validation set
+        :return: return data encoded by the last layer
         """
 
-        try:
-            result = self.tf_session.run([self.tf_merged_summaries, self.cost], feed_dict=feed)
-            summary_str = result[0]
-            err = result[1]
-            self.tf_summary_writer.add_summary(summary_str, epoch)
-        except tf.errors.InvalidArgumentError:
-            if self.tf_summary_writer_available:
-                print("Summary writer not available at the moment")
-            self.tf_summary_writer_available = False
-            err = self.tf_session.run(self.cost, feed_dict=feed)
+        next_train = train_set
+        next_valid = validation_set
 
-        if self.verbose == 1:
-            print("Reconstruction loss at step %s: %s" % (epoch, err))
+        for l, layer_obj in enumerate(layer_objs):
+            print('Training layer {}...'.format(l + 1))
+            next_train, next_valid = self._pretrain_layer_and_gen_feed(layer_obj, set_params_func,
+                                                                       next_train, next_valid, layer_graphs[l])
 
-    def _run_supervised_validation_error_and_summaries(self, epoch, feed):
+        return next_train, next_valid
 
-        """ Run the summaries and error computation on the validation set.
-        :param epoch: current epoch
-        :param validation_set: validation data
-        :return: self
+    def _pretrain_layer_and_gen_feed(self, layer_obj, set_params_func, train_set, validation_set, graph):
+
+        """ Pretrain a single autoencoder and encode the data for the next layer.
+        :param layer_obj: layer model
+        :param set_params_func: function used to set the parameters after pretraining
+        :param train_set: training set
+        :param validation_set: validation set
+        :param graph: tf object for the rbm
+        :return: encoded train data, encoded validation data
         """
 
-        try:
-            result = self.tf_session.run([self.tf_merged_summaries, self.accuracy], feed_dict=feed)
-            summary_str = result[0]
-            acc = result[1]
-            self.tf_summary_writer.add_summary(summary_str, epoch)
-        except tf.errors.InvalidArgumentError:
-            if self.tf_summary_writer_available:
-                print("Summary writer not available at the moment")
-            self.tf_summary_writer_available = False
-            acc = self.tf_session.run(self.accuracy, feed_dict=feed)
+        layer_obj.fit(train_set, validation_set, graph=graph)
 
-        if self.verbose == 1:
-            print("Accuracy at step %s: %s" % (epoch, acc))
+        with graph.as_default():
+            set_params_func(layer_obj, graph)
 
-    def predict(self, test_set):
+            next_train = layer_obj.transform(train_set, graph=graph)
+            if validation_set is not None:
+                next_valid = layer_obj.transform(validation_set, graph=graph)
+            else:
+                next_valid = None
 
-        """ Predict the labels for the test set.
-        :param test_set: Testing data. shape(n_test_samples, n_features)
-        :return: labels
+        return next_train, next_valid
+
+    def get_layers_output(self, dataset):
+
+        """ Get output from each layer of the network.
+        :param dataset: input data
+        :return: list of np array, element i in the list is the output of layer i
         """
+
+        layers_out = []
 
         with self.tf_graph.as_default():
             with tf.Session() as self.tf_session:
                 self.tf_saver.restore(self.tf_session, self.model_path)
-                return self.model_predictions.eval({self.input_data: test_set,
-                                                    self.keep_prob: 1})
+                for l in self.layer_nodes:
+                    layers_out.append(l.eval({self.input_data: dataset,
+                                              self.keep_prob: 1}))
+
+        if layers_out == []:
+            raise Exception("This method is not implemented for this model")
+        else:
+            return layers_out
 
     def _create_last_layer(self, last_layer, n_classes):
 
@@ -239,14 +251,3 @@ class Model(object):
             else:
                 self.train_step = None
 
-    def _create_supervised_test_node(self):
-
-        """ Create the supervised test node of the network.
-        :return: self
-        """
-
-        with tf.name_scope("test"):
-            self.model_predictions = tf.argmax(self.last_out, 1)
-            correct_prediction = tf.equal(self.model_predictions, tf.argmax(self.input_labels, 1))
-            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-            _ = tf.scalar_summary('accuracy', self.accuracy)

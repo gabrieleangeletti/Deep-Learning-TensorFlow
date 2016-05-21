@@ -216,3 +216,23 @@ def gen_image(img, width, height, outfile, img_type='grey'):
 
     elif img_type == 'color':
         misc.imsave(outfile, img.reshape(3, width, height))
+
+def get_weights_as_images(self, weights, width, height, outdir='img/', n_images=10, img_type='grey'):
+
+        """ Create and save the weights of the hidden units with respect to the
+        visible units as images.
+        :param weights:
+        :param width:
+        :param height:
+        :param outdir:
+        :param n_images:
+        :param img_type:
+        :return: self
+        """
+
+        perm = np.random.permutation(weights.shape[1])[:n_images]
+
+        for p in perm:
+            w = np.array([i[p] for i in weights])
+            image_path = outdir + 'w_{}.png'.format(p)
+            utilities.gen_image(w, width, height, image_path, img_type)

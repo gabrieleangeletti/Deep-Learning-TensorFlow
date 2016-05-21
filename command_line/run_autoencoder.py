@@ -31,7 +31,6 @@ flags.DEFINE_string('h_bias', None, 'Path to a numpy array containing the encode
 flags.DEFINE_string('v_bias', None, 'Path to a numpy array containing the decoder bias vector.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
-
 # Stacked Denoising Autoencoder specific parameters
 flags.DEFINE_integer('n_components', 256, 'Number of hidden units in the dae.')
 flags.DEFINE_float('l2reg', 5e-4, 'Regularization parameter. If 0, no regularization.')
@@ -142,8 +141,3 @@ if __name__ == '__main__':
     if FLAGS.save_reconstructions:
         print('Saving the reconstructions for the test set...')
         np.save(FLAGS.save_reconstructions, dae.reconstruct(teX))
-
-    # Encode the training data and store it
-    dae.transform(trX, name='train', save=FLAGS.encode_train)
-    dae.transform(vlX, name='valid', save=FLAGS.encode_valid)
-    dae.transform(teX, name='test', save=FLAGS.encode_test)

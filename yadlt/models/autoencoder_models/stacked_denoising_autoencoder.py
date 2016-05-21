@@ -2,24 +2,24 @@ import tensorflow as tf
 import numpy as np
 import os
 
-from yadlt.core import model
+from yadlt.core.supervised_model import SupervisedModel
 from yadlt.models.autoencoder_models import denoising_autoencoder
 from yadlt.utils import utilities
 
 
-class StackedDenoisingAutoencoder(model.Model):
+class StackedDenoisingAutoencoder(SupervisedModel):
 
     """ Implementation of Stacked Denoising Autoencoders for Supervised Learning using TensorFlow.
     The interface of the class is sklearn-like.
     """
 
     def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 dae_enc_act_func=['tanh'], dae_dec_act_func=['none'], dae_loss_func=['cross_entropy'], dae_num_epochs=[10],
+                 dae_enc_act_func=[tf.nn.tanh], dae_dec_act_func=[None], dae_loss_func=['cross_entropy'], dae_num_epochs=[10],
                  dae_batch_size=[10], dataset='mnist', dae_opt=['gradient_descent'], dae_l2reg=[5e-4],
                  dae_learning_rate=[0.01], momentum=0.5, finetune_dropout=1, dae_corr_type=['none'],
                  dae_corr_frac=[0.], verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func=tf.nn.relu,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
-                 finetune_batch_size=20, do_pretrain=True):
+                 finetune_batch_size=20, do_pretrain=False):
         """
         :param dae_layers: list containing the hidden units for each layer
         :param enc_act_func: Activation function for the encoder. [tf.nn.tanh, tf.nn.sigmoid]
@@ -37,7 +37,7 @@ class StackedDenoisingAutoencoder(model.Model):
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
 
-        model.Model.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        SupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
                                              dropout=finetune_dropout, num_epochs=finetune_num_epochs,
@@ -60,8 +60,6 @@ class StackedDenoisingAutoencoder(model.Model):
                       'opt': dae_opt, 'learning_rate': dae_learning_rate, 'l2reg': dae_l2reg,
                       'corr_frac': dae_corr_frac, 'corr_type': dae_corr_type, 'num_epochs': dae_num_epochs,
                       'batch_size': dae_batch_size}
-
-        print 'here'
 
         for p in dae_params:
             if len(dae_params[p]) != len(dae_layers):
@@ -88,71 +86,16 @@ class StackedDenoisingAutoencoder(model.Model):
             self.autoencoder_graphs.append(tf.Graph())
 
     def pretrain(self, train_set, validation_set=None):
+        self.do_pretrain = True
 
-        """ Perform unsupervised pretraining of the stack of denoising autoencoders.
-        :param train_set: training set
-        :param validation_set: validation set
-        :return: return data encoded by the last layer
-        """
-
-        next_train = train_set
-        next_valid = validation_set
-
-        for l, autoenc in enumerate(self.autoencoders):
-            print('Training layer {}...'.format(l + 1))
-            next_train, next_valid = self._pretrain_autoencoder_and_gen_feed(autoenc,
-                                                                             next_train,
-                                                                             next_valid,
-                                                                             self.autoencoder_graphs[l])
-
-        return next_train, next_valid
-
-    def _pretrain_autoencoder_and_gen_feed(self, autoenc, train_set, validation_set, graph):
-
-        """ Pretrain a single autoencoder and encode the data for the next layer.
-        :param autoenc: autoencoder reference
-        :param train_set: training set
-        :param validation_set: validation set
-        :param graph: tf graph for the autoencoder
-        :return: encoded train data, encoded validation data
-        """
-
-        autoenc.fit(train_set, validation_set, graph=graph)
-
-        with graph.as_default():
-            params = autoenc.get_model_parameters(graph=graph)
+        def set_params_func(autoenc, autoencgraph):
+            params = autoenc.get_model_parameters(graph=autoencgraph)
             self.encoding_w_.append(params['enc_w'])
             self.encoding_b_.append(params['enc_b'])
 
-            next_train = autoenc.transform(train_set, graph=graph)
-            if validation_set:
-                next_valid = autoenc.transform(validation_set, graph=graph)
-            else:
-                next_valid = None
-
-        return next_train, next_valid
-
-    def fit(self, train_set, train_labels, validation_set=None, validation_labels=None, restore_previous_model=False):
-
-        """ Fit the model to the data.
-        :param train_set: Training data. shape(n_samples, n_features)
-        :param train_labels: Labels for the data. shape(n_samples, n_classes)
-        :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
-        :param validation_labels: optional, default None. Labels for the validation data. shape(nval_samples, n_classes)
-        :param restore_previous_model:
-                    if true, a previous trained model
-                    with the same name of this model is restored from disk to continue training.
-        :return: self
-        """
-
-        print('Starting Supervised finetuning...')
-
-        with self.tf_graph.as_default():
-            self.build_model(train_set.shape[1], train_labels.shape[1])
-            with tf.Session() as self.tf_session:
-                self._initialize_tf_utilities_and_ops(restore_previous_model)
-                self._train_model(train_set, train_labels, validation_set, validation_labels)
-                self.tf_saver.save(self.tf_session, self.model_path)
+        return SupervisedModel.pretrain_procedure(self, self.autoencoders, self.autoencoder_graphs,
+                                                  set_params_func=set_params_func, train_set=train_set,
+                                                  validation_set=validation_set)
 
     def _train_model(self, train_set, train_labels, validation_set, validation_labels):
 
@@ -179,39 +122,7 @@ class StackedDenoisingAutoencoder(model.Model):
 
             if validation_set is not None:
                 feed = {self.input_data: validation_set, self.input_labels: validation_labels, self.keep_prob: 1}
-                self._run_supervised_validation_error_and_summaries(i, feed)
-
-    def get_layers_output(self, dataset):
-
-        """ Get output from each layer of the network.
-        :param dataset: input data
-        :return: list of np array, element i in the list is the output of layer i
-        """
-
-        layers_out = []
-
-        with self.tf_graph.as_default():
-            with tf.Session() as self.tf_session:
-                self.tf_saver.restore(self.tf_session, self.model_path)
-                for l in self.layer_nodes:
-                    layers_out.append(l.eval({self.input_data: dataset,
-                                              self.keep_prob: 1}))
-        return layers_out
-
-    def compute_accuracy(self, test_set, test_labels):
-
-        """ Compute the accuracy over the test set.
-        :param test_set: Testing data. shape(n_test_samples, n_features)
-        :param test_labels: Labels for the test data. shape(n_test_samples, n_classes)
-        :return: accuracy
-        """
-
-        with self.tf_graph.as_default():
-            with tf.Session() as self.tf_session:
-                self.tf_saver.restore(self.tf_session, self.model_path)
-                return self.accuracy.eval({self.input_data: test_set,
-                                           self.input_labels: test_labels,
-                                           self.keep_prob: 1})
+                self._run_validation_error_and_summaries(i, feed)
 
     def build_model(self, n_features, n_classes):
 
@@ -231,8 +142,7 @@ class StackedDenoisingAutoencoder(model.Model):
 
         self._create_cost_function_node(last_out, self.input_labels)
         self._create_train_step_node()
-
-        self._create_supervised_test_node()
+        self._create_accuracy_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
 
