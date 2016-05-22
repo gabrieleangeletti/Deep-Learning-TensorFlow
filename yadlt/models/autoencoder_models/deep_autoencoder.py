@@ -17,8 +17,8 @@ class DeepAutoencoder(UnsupervisedModel):
                  dae_enc_act_func=[tf.nn.tanh], dae_dec_act_func=[None], dae_loss_func=['cross_entropy'], dae_num_epochs=[10],
                  dae_batch_size=[10], dataset='mnist', dae_opt=['gradient_descent'],
                  dae_learning_rate=[0.01], momentum=0.5, finetune_dropout=1, dae_corr_type=['none'],
-                 dae_corr_frac=[0.], verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=tf.nn.relu,
-                 tied_weights=True, finetune_dec_act_func=tf.nn.sigmoid, dae_l2reg=[5e-4], finetune_batch_size=20, do_pretrain=False,
+                 dae_corr_frac=[0.], verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
+                 tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], dae_l2reg=[5e-4], finetune_batch_size=20, do_pretrain=False,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10):
         """
         :param dae_layers: list containing the hidden units for each layer
@@ -46,10 +46,18 @@ class DeepAutoencoder(UnsupervisedModel):
 
         self.do_pretrain = do_pretrain
         self.layers = dae_layers
-        self.finetune_enc_act_func = finetune_enc_act_func
-        self.finetune_dec_act_func = finetune_dec_act_func
         self.tied_weights = tied_weights
         self.verbose = verbose
+
+        if len(finetune_enc_act_func) != len(dae_layers):
+            self.finetune_enc_act_func = [finetune_enc_act_func[0] for _ in dae_layers]
+        else:
+            self.finetune_enc_act_func = finetune_enc_act_func
+
+        if len(finetune_dec_act_func) != len(dae_layers):
+            self.finetune_dec_act_func = [finetune_dec_act_func[0] for _ in dae_layers]
+        else:
+            self.finetune_dec_act_func = finetune_dec_act_func
 
         self.input_ref = None
 
@@ -219,9 +227,8 @@ class DeepAutoencoder(UnsupervisedModel):
 
                 y_act = tf.matmul(next_train, self.encoding_w_[l]) + self.encoding_b_[l]
 
-                if self.finetune_enc_act_func:
-                    layer_y = self.finetune_enc_act_func(y_act)
-
+                if self.finetune_enc_act_func[l] is not None:
+                    layer_y = self.finetune_enc_act_func[l](y_act)
                 else:
                     layer_y = None
 
@@ -256,9 +263,8 @@ class DeepAutoencoder(UnsupervisedModel):
 
                 y_act = tf.matmul(next_decode, dec_w) + dec_b
 
-                if self.finetune_dec_act_func:
-                    layer_y = self.finetune_dec_act_func(y_act)
-
+                if self.finetune_dec_act_func[l] is not None:
+                    layer_y = self.finetune_dec_act_func[l](y_act)
                 else:
                     layer_y = None
 

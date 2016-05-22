@@ -15,15 +15,16 @@ class DeepAutoencoder(UnsupervisedModel):
 
     def __init__(self, rbm_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
                  rbm_num_epochs=[10], rbm_batch_size=[10], dataset='mnist', rbm_learning_rate=[0.01], rbm_gibbs_k=[1],
-                 momentum=0.5, finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_act_func=tf.nn.relu,
-                 finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10, rbm_gauss_visible=False,
-                 rbm_stddev=0.1, finetune_batch_size=20, do_pretrain=True):
+                 momentum=0.5, finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
+                 finetune_dec_act_func=[tf.nn.sigmoid], finetune_opt='gradient_descent', finetune_learning_rate=0.001,
+                 finetune_num_epochs=10, rbm_gauss_visible=False, rbm_stddev=0.1, finetune_batch_size=20, do_pretrain=True):
         """
         :param rbm_layers: list containing the hidden units for each layer
         :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
-        :param finetune_act_func: activation function for the finetuning phase
+        :param finetune_enc_act_func: activation function for the encoder finetuning phase
+        :param finetune_dec_act_func: activation function for the decoder finetuning phase
         :param finetune_opt: optimizer for the finetuning phase
         :param finetune_num_epochs: Number of epochs for the finetuning. int, default 20
         :param finetune_batch_size: Size of each mini-batch for the finetuning. int, default 20
@@ -38,8 +39,17 @@ class DeepAutoencoder(UnsupervisedModel):
 
         self.do_pretrain = do_pretrain
         self.layers = rbm_layers
-        self.finetune_act_func = finetune_act_func
         self.verbose = verbose
+
+        if len(finetune_enc_act_func) != len(rbm_layers):
+            self.finetune_enc_act_func = [finetune_enc_act_func[0] for _ in rbm_layers]
+        else:
+            self.finetune_enc_act_func = finetune_enc_act_func
+
+        if len(finetune_dec_act_func) != len(rbm_layers):
+            self.finetune_dec_act_func = [finetune_dec_act_func[0] for _ in rbm_layers]
+        else:
+            self.finetune_dec_act_func = finetune_dec_act_func
 
         self.input_ref = None
 
@@ -217,8 +227,8 @@ class DeepAutoencoder(UnsupervisedModel):
 
                 y_act = tf.matmul(next_train, self.encoding_w_[l]) + self.encoding_b_[l]
 
-                if self.finetune_act_func:
-                    layer_y = self.finetune_act_func(y_act)
+                if self.finetune_enc_act_func[l] is not None:
+                    layer_y = self.finetune_enc_act_func[l](y_act)
 
                 else:
                     layer_y = None
@@ -250,8 +260,8 @@ class DeepAutoencoder(UnsupervisedModel):
 
                 y_act = tf.matmul(next_decode, dec_w) + dec_b
 
-                if self.finetune_act_func:
-                    layer_y = self.finetune_act_func(y_act)
+                if self.finetune_dec_act_func[l] is not None:
+                    layer_y = self.finetune_dec_act_func[l](y_act)
 
                 else:
                     layer_y = None
