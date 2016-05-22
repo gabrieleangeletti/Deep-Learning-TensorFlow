@@ -119,7 +119,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
         regularizers = tf.nn.l2_loss(self.W_) + tf.nn.l2_loss(self.bh_) + tf.nn.l2_loss(self.bv_)
         regterm = self.l2reg * regularizers
 
-        self._create_cost_function_node(self.reconstruction, self.input_data, regterm)
+        self._create_cost_function_node(self.reconstruction, self.input_data_orig, regterm)
         self._create_train_step_node()
 
     def _create_placeholders(self, n_features):
