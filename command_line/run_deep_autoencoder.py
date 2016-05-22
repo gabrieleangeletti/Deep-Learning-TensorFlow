@@ -44,6 +44,8 @@ flags.DEFINE_string('rbm_batch_size', '10,', 'Size of each mini-batch.')
 flags.DEFINE_string('rbm_gibbs_k', '1,', 'Gibbs sampling steps.')
 # Supervised fine tuning parameters
 flags.DEFINE_float('finetune_learning_rate', 0.01, 'Learning rate.')
+flags.DEFINE_string('finetune_enc_act_func', 'relu,', 'Activation function for the encoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
+flags.DEFINE_string('finetune_dec_act_func', 'sigmoid,', 'Activation function for the decoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
 flags.DEFINE_integer('finetune_num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('finetune_batch_size', 10, 'Size of each mini-batch.')
 flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
@@ -57,6 +59,9 @@ rbm_learning_rate = utilities.flag_to_list(FLAGS.rbm_learning_rate, 'float')
 rbm_num_epochs = utilities.flag_to_list(FLAGS.rbm_num_epochs, 'int')
 rbm_batch_size = utilities.flag_to_list(FLAGS.rbm_batch_size, 'int')
 rbm_gibbs_k = utilities.flag_to_list(FLAGS.rbm_gibbs_k, 'int')
+
+finetune_enc_act_func = utilities.flag_to_list(FLAGS.finetune_enc_act_func, 'str')
+finetune_dec_act_func = utilities.flag_to_list(FLAGS.finetune_dec_act_func, 'str')
 
 # Parameters validation
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
@@ -127,6 +132,9 @@ if __name__ == '__main__':
     data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
     summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
 
+    finetune_enc_act_func = [utilities.str2actfunc(af) for af in finetune_enc_act_func]
+    finetune_dec_act_func = [utilities.str2actfunc(af) for af in finetune_dec_act_func]
+
     # Create the object
     srbm = deep_autoencoder.DeepAutoencoder(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
@@ -135,6 +143,7 @@ if __name__ == '__main__':
         rbm_learning_rate=rbm_learning_rate, rbm_gibbs_k=rbm_gibbs_k,
         verbose=FLAGS.verbose, rbm_num_epochs=rbm_num_epochs, momentum=FLAGS.momentum,
         rbm_batch_size=rbm_batch_size, finetune_learning_rate=FLAGS.finetune_learning_rate,
+        finetune_enc_act_func=finetune_enc_act_func, finetune_dec_act_func=finetune_dec_act_func,
         finetune_num_epochs=FLAGS.finetune_num_epochs, finetune_batch_size=FLAGS.finetune_batch_size,
         finetune_opt=FLAGS.finetune_opt, finetune_loss_func=FLAGS.finetune_loss_func, finetune_dropout=FLAGS.finetune_dropout,
         rbm_gauss_visible=FLAGS.rbm_gauss_visible, rbm_stddev=FLAGS.rbm_stddev)

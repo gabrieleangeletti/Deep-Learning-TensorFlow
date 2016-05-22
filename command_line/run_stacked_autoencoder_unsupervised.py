@@ -38,8 +38,8 @@ flags.DEFINE_boolean('tied_weights', True, 'Whether to use tied weights for the 
 flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
 flags.DEFINE_integer('finetune_num_epochs', 30, 'Number of epochs for the fine-tuning phase.')
 flags.DEFINE_float('finetune_learning_rate', 0.001, 'Learning rate for the fine-tuning phase.')
-flags.DEFINE_string('finetune_enc_act_func', 'relu', 'Activation function for the encoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
-flags.DEFINE_string('finetune_dec_act_func', 'sigmoid', 'Activation function for the decoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
+flags.DEFINE_string('finetune_enc_act_func', 'relu,', 'Activation function for the encoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
+flags.DEFINE_string('finetune_dec_act_func', 'sigmoid,', 'Activation function for the decoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
 flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
 flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum"]')
 flags.DEFINE_integer('finetune_batch_size', 20, 'Size of each mini-batch for the fine-tuning phase.')
@@ -69,6 +69,9 @@ dae_corr_type = utilities.flag_to_list(FLAGS.dae_corr_type, 'str')
 dae_corr_frac = utilities.flag_to_list(FLAGS.dae_corr_frac, 'float')
 dae_num_epochs = utilities.flag_to_list(FLAGS.dae_num_epochs, 'int')
 dae_batch_size = utilities.flag_to_list(FLAGS.dae_batch_size, 'int')
+
+finetune_enc_act_func = utilities.flag_to_list(FLAGS.finetune_enc_act_func, 'str')
+finetune_dec_act_func = utilities.flag_to_list(FLAGS.finetune_dec_act_func, 'str')
 
 # Parameters validation
 assert all([0. <= cf <= 1. for cf in dae_corr_frac])
@@ -148,8 +151,8 @@ if __name__ == '__main__':
 
     dae_enc_act_func = [utilities.str2actfunc(af) for af in dae_enc_act_func]
     dae_dec_act_func = [utilities.str2actfunc(af) for af in dae_dec_act_func]
-    finetune_enc_act_func = utilities.str2actfunc(FLAGS.finetune_enc_act_func)
-    finetune_dec_act_func = utilities.str2actfunc(FLAGS.finetune_dec_act_func)
+    finetune_enc_act_func = [utilities.str2actfunc(af) for af in finetune_enc_act_func]
+    finetune_dec_act_func = [utilities.str2actfunc(af) for af in finetune_dec_act_func]
 
     sdae = deep_autoencoder.DeepAutoencoder(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
