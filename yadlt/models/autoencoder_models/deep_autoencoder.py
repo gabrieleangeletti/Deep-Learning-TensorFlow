@@ -156,7 +156,9 @@ class DeepAutoencoder(UnsupervisedModel):
         self._create_encoding_layers()
         self._create_decoding_layers()
 
-        self._create_cost_function_node(self.reconstruction, self.input_labels)
+        regterm = 0.01 * tf.reduce_mean(tf.math_ops.abs(5 - tf.reduce_sum(tf.square(self.encode))))
+
+        self._create_cost_function_node(self.reconstruction, self.input_labels, regterm=regterm)
         self._create_train_step_node()
 
     def _create_placeholders(self, n_features, n_classes):
