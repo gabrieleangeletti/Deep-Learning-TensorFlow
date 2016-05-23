@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 
 from yadlt.core.unsupervised_model import UnsupervisedModel
-from yadlt.core.loss_function import LossFunction
 from yadlt.utils import utilities
 
 
@@ -13,7 +12,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
     """
 
     def __init__(self, n_components, model_name='dae', main_dir='dae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func=LossFunction.mean_squared_error, num_epochs=10, batch_size=10, dataset='mnist',
+                 enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
                  opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0., verbose=1, l2reg=5e-4):
         """
         :param n_components: number of hidden units
@@ -120,7 +119,6 @@ class DenoisingAutoencoder(UnsupervisedModel):
         regularizers = tf.nn.l2_loss(self.W_) + tf.nn.l2_loss(self.bh_) + tf.nn.l2_loss(self.bv_)
         regterm = self.l2reg * regularizers
 
-        self.cost = self.loss_func()
         self._create_cost_function_node(self.reconstruction, self.input_data_orig, regterm)
         self._create_train_step_node()
 
