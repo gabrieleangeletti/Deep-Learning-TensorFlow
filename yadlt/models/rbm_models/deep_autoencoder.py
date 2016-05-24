@@ -63,7 +63,7 @@ class DeepAutoencoder(UnsupervisedModel):
         self.reconstruction = None
 
         rbm_params = {'num_epochs': rbm_num_epochs, 'gibbs_k': rbm_gibbs_k, 'batch_size': rbm_batch_size,
-                      'learning_rate': rbm_learning_rate}
+                      'learning_rate': rbm_learning_rate, 'layers': rbm_layers}
 
         for p in rbm_params:
             if len(rbm_params[p]) != len(rbm_layers):
