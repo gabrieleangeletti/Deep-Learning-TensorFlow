@@ -91,7 +91,8 @@ class Model(object):
         self.tf_summary_writer = tf.train.SummaryWriter(run_dir, self.tf_session.graph)
 
     def _initialize_training_parameters(self, loss_func, learning_rate, num_epochs, batch_size,
-                                        dataset, opt, dropout=1, momentum=None, l2reg=None):
+                                        dataset, opt='gradient_descent', dropout=1, momentum=None, regtype='none',
+                                        l2reg=None):
 
         """ Initialize training parameters common to all models.
         :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
@@ -114,23 +115,23 @@ class Model(object):
         self.dataset = dataset
         self.opt = opt
         self.momentum = momentum
+        self.regtype = regtype
         self.l2reg = l2reg
 
-    def compute_regularization(self, vars, regtype):
+    def compute_regularization(self, vars):
         """ Compute the regularization tensor.
         :param vars: list of model variables
-        :param regtype: regularization type, can be 'l2','l1' and 'none'
         :return:
         """
 
-        if regtype != 'none':
+        if self.regtype != 'none':
 
             regularizers = tf.constant(0.0)
 
             for v in vars:
-                if regtype == 'l2':
+                if self.regtype == 'l2':
                     regularizers = tf.add(regularizers, tf.nn.l2_loss(v))
-                elif regtype == 'l1':
+                elif self.regtype == 'l1':
                     regularizers = tf.add(regularizers, tf.reduce_sum(v))
 
             return tf.mul(self.l2reg, regularizers)
@@ -169,7 +170,7 @@ class Model(object):
         :return: encoded train data, encoded validation data
         """
 
-        layer_obj.fit(train_set, validation_set, graph=graph)
+        layer_obj.fit(train_set, validation_set, regtype=self.regtype, graph=graph)
 
         with graph.as_default():
             set_params_func(layer_obj, graph)

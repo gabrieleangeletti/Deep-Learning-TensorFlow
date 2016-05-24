@@ -15,8 +15,8 @@ class DeepAutoencoder(UnsupervisedModel):
 
     def __init__(self, layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
                  enc_act_func=[tf.nn.tanh], dec_act_func=[None], loss_func=['cross_entropy'], num_epochs=[10],
-                 batch_size=[10], dataset='mnist', opt=['gradient_descent'],
-                 learning_rate=[0.01], momentum=0.5, finetune_dropout=1, corr_type=['none'],
+                 batch_size=[10], dataset='mnist', opt=['gradient_descent'], regtype=['none'],
+                 learning_rate=[0.01], momentum=0.5, finetune_dropout=1, corr_type=['none'], finetune_regtype='none',
                  corr_frac=[0.], verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
                  tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], l2reg=[5e-4], finetune_batch_size=20, do_pretrain=False,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10):
@@ -24,6 +24,8 @@ class DeepAutoencoder(UnsupervisedModel):
         :param layers: list containing the hidden units for each layer
         :param enc_act_func: Activation function for the encoder. [tf.nn.tanh, tf.nn.sigmoid]
         :param dec_act_func: Activation function for the decoder. [[tf.nn.tanh, tf.nn.sigmoid, None]
+        :param regtype: regularization type, can be 'l2','l1' and 'none'
+        :param finetune_regtype: regularization type for finetuning
         :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
@@ -47,6 +49,7 @@ class DeepAutoencoder(UnsupervisedModel):
 
         self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
                                              num_epochs=finetune_num_epochs, batch_size=finetune_batch_size, l2reg=l2reg,
+                                             regtype=finetune_regtype,
                                              dropout=finetune_dropout, dataset=dataset, opt=finetune_opt, momentum=momentum)
 
         self.do_pretrain = do_pretrain
@@ -78,7 +81,7 @@ class DeepAutoencoder(UnsupervisedModel):
                 models_dir=os.path.join(self.models_dir, dae_str), data_dir=os.path.join(self.data_dir, dae_str),
                 summary_dir=os.path.join(self.tf_summary_dir, dae_str),
                 enc_act_func=expanded_args['enc_act_func'][l], dec_act_func=expanded_args['dec_act_func'][l],
-                loss_func=expanded_args['loss_func'][l],
+                loss_func=expanded_args['loss_func'][l], regtype=expanded_args['regtype'][l],
                 opt=expanded_args['opt'][l], learning_rate=expanded_args['learning_rate'][l], l2reg=expanded_args['l2reg'],
                 momentum=self.momentum, corr_type=expanded_args['corr_type'][l], corr_frac=expanded_args['corr_frac'][l],
                 verbose=self.verbose, num_epochs=expanded_args['num_epochs'][l], batch_size=expanded_args['batch_size'][l],
@@ -124,10 +127,9 @@ class DeepAutoencoder(UnsupervisedModel):
                 feed = {self.input_data: validation_set, self.input_labels: validation_ref, self.keep_prob: 1}
                 self._run_validation_error_and_summaries(i, feed)
 
-    def build_model(self, n_features, regtype='none', encoding_w=None, encoding_b=None):
+    def build_model(self, n_features, encoding_w=None, encoding_b=None):
         """ Creates the computational graph for the reconstruction task.
         :param n_features: Number of features
-        :param regtype: regularization type, can be 'l2','l1' and 'none'
         :param encoding_w: list of weights for the encoding layers.
         :param encoding_b: list of biases for the encoding layers.
         :return: self
@@ -147,7 +149,7 @@ class DeepAutoencoder(UnsupervisedModel):
         vars = []
         vars.extend(self.encoding_w_)
         vars.extend(self.encoding_b_)
-        regterm = self.compute_regularization(vars, regtype)
+        regterm = self.compute_regularization(vars)
 
         self._create_cost_function_node(self.reconstruction, self.input_labels, regterm=regterm)
         self._create_train_step_node()

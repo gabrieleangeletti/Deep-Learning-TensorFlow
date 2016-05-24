@@ -13,7 +13,8 @@ class DenoisingAutoencoder(UnsupervisedModel):
 
     def __init__(self, n_components, model_name='dae', main_dir='dae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
                  enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
-                 opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0., verbose=1, l2reg=5e-4):
+                 opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0., verbose=1,
+                 regtype='none', l2reg=5e-4):
         """
         :param n_components: number of hidden units
         :param enc_act_func: Activation function for the encoder. [tf.nn.tanh, tf.nn.sigmoid]
@@ -27,7 +28,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
 
         self._initialize_training_parameters(loss_func=loss_func, learning_rate=learning_rate, num_epochs=num_epochs,
                                              batch_size=batch_size, dataset=dataset, opt=opt, momentum=momentum,
-                                             l2reg=l2reg)
+                                             regtype=regtype, l2reg=l2reg)
 
         self.n_components = n_components
         self.enc_act_func = enc_act_func
@@ -100,7 +101,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
         else:
             return np.copy(data)
 
-    def build_model(self, n_features, regtype='none', W_=None, bh_=None, bv_=None):
+    def build_model(self, n_features, W_=None, bh_=None, bv_=None):
 
         """ Creates the computational graph.
         :param n_features: Number of features.
@@ -118,7 +119,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
         self._create_decode_layer()
 
         vars = [self.W_, self.bh_, self.bv_]
-        regterm = self.compute_regularization(vars, regtype)
+        regterm = self.compute_regularization(vars)
 
         self._create_cost_function_node(self.reconstruction, self.input_data_orig, regterm=regterm)
         self._create_train_step_node()

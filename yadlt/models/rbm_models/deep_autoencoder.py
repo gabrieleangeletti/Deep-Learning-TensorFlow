@@ -17,7 +17,8 @@ class DeepAutoencoder(UnsupervisedModel):
                  num_epochs=[10], batch_size=[10], dataset='mnist', learning_rate=[0.01], gibbs_k=[1], loss_func=['mean_squared'],
                  momentum=0.5, finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
                  finetune_dec_act_func=[tf.nn.sigmoid], finetune_opt='gradient_descent', finetune_learning_rate=0.001, l2reg=5e-4,
-                 finetune_num_epochs=10, noise=['gauss'], stddev=0.1, finetune_batch_size=20, do_pretrain=True, tied_weights=False):
+                 finetune_num_epochs=10, noise=['gauss'], stddev=0.1, finetune_batch_size=20, do_pretrain=False, tied_weights=False,
+                 regtype=['none'], finetune_reg_type='none'):
         """
         :param layers: list containing the hidden units for each layer
         :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
@@ -39,6 +40,7 @@ class DeepAutoencoder(UnsupervisedModel):
         UnsupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
+                                             regtype=finetune_reg_type,
                                              num_epochs=finetune_num_epochs, batch_size=finetune_batch_size, l2reg=l2reg,
                                              dropout=finetune_dropout, dataset=dataset, opt=finetune_opt, momentum=momentum)
 
@@ -70,7 +72,7 @@ class DeepAutoencoder(UnsupervisedModel):
                               summary_dir=os.path.join(self.tf_summary_dir, rbm_str), visible_unit_type=expanded_args['noise'][l],
                               stddev=stddev, num_hidden=expanded_args['layers'][l], main_dir=self.main_dir, learning_rate=expanded_args['learning_rate'][l],
                               gibbs_sampling_steps=expanded_args['gibbs_k'][l], verbose=self.verbose, num_epochs=expanded_args['num_epochs'][l],
-                              batch_size=expanded_args['batch_size'][l])
+                              batch_size=expanded_args['batch_size'][l], regtype=expanded_args['regtype'][l])
             self.rbms.append(new_rbm)
             self.rbm_graphs.append(tf.Graph())
 
@@ -134,7 +136,7 @@ class DeepAutoencoder(UnsupervisedModel):
         vars = []
         vars.extend(self.encoding_w_)
         vars.extend(self.encoding_b_)
-        regterm = self.compute_regularization(vars, regtype)
+        regterm = self.compute_regularization(vars)
 
         self._create_cost_function_node(self.reconstruction, self.input_labels, regterm=regterm)
         self._create_train_step_node()
