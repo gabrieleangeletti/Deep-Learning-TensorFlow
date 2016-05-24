@@ -169,12 +169,13 @@ def salt_and_pepper_noise(X, v):
 # ############# #
 
 
-def expand_args(layers, args_to_expand):
+def expand_args(**args_to_expand):
     """Expands all the lists in args_to_expand into the length of layers.
     This is used as a convenience so that the user does not need to specify the
     complete list of parameters for model initialization.
     IE: the user can just specify one parameter and this function will expand it
     """
+    layers = args_to_expand['layers']
     for key, val in args_to_expand.iteritems():
         if isinstance(val, list) and len(val) != len(layers):
             args_to_expand[key] = [val[0] for _ in layers]
@@ -247,4 +248,4 @@ def get_weights_as_images(self, weights, width, height, outdir='img/', n_images=
     for p in perm:
         w = np.array([i[p] for i in weights])
         image_path = outdir + 'w_{}.png'.format(p)
-        utilities.gen_image(w, width, height, image_path, img_type)
+        gen_image(w, width, height, image_path, img_type)

@@ -11,13 +11,14 @@ class UnsupervisedModel(model.Model):
         self.encode = None
         self.reconstruction = None
 
-    def fit(self, train_set, train_ref, validation_set=None, validation_ref=None, restore_previous_model=False, graph=None):
+    def fit(self, train_set, train_ref, validation_set=None, validation_ref=None, regtype='none', restore_previous_model=False, graph=None):
 
         """ Fit the model to the data.
         :param train_set: Training data. shape(n_samples, n_features)
         :param train_ref: Reference data. shape(n_samples, n_features)
         :param validation_set: optional, default None. Validation data. shape(nval_samples, n_features)
         :param validation_ref: optional, default None. Reference validation data. shape(nval_samples, n_features)
+        :param regtype: regularization type, can be 'l2', 'l1' or 'none'
         :param restore_previous_model:
                     if true, a previous trained model
                     with the same name of this model is restored from disk to continue training.
@@ -28,13 +29,13 @@ class UnsupervisedModel(model.Model):
         g = graph if graph is not None else self.tf_graph
 
         with g.as_default():
-            self.build_model(train_set.shape[1])
+            self.build_model(train_set.shape[1], regtype=regtype)
             with tf.Session() as self.tf_session:
                 self._initialize_tf_utilities_and_ops(restore_previous_model)
                 self._train_model(train_set, train_ref, validation_set, validation_ref)
                 self.tf_saver.save(self.tf_session, self.model_path)
 
-    def build_model(self, num_features):
+    def build_model(self, num_features, regtype=None):
         pass
 
     def _train_model(self, train_set, train_labels, validation_set, validation_labels):

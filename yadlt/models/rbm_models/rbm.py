@@ -12,11 +12,12 @@ class RBM(UnsupervisedModel):
     """
 
     def __init__(self, num_hidden, visible_unit_type='bin', main_dir='rbm', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 model_name='rbm', dataset='mnist',
+                 model_name='rbm', dataset='mnist', loss_func='mean_squared',
                  gibbs_sampling_steps=1, learning_rate=0.01, batch_size=10, num_epochs=10, stddev=0.1, verbose=0):
 
         """
         :param num_hidden: number of hidden units
+        :param loss_function: type of loss function
         :param visible_unit_type: type of the visible units (binary or gaussian)
         :param gibbs_sampling_steps: optional, default 1
         :param stddev: optional, default 0.1. Ignored if visible_unit_type is not 'gauss'
@@ -24,7 +25,7 @@ class RBM(UnsupervisedModel):
         """
         UnsupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
-        self._initialize_training_parameters(None, learning_rate, num_epochs, batch_size,
+        self._initialize_training_parameters(loss_func, learning_rate, num_epochs, batch_size,
                                              dataset, None, None)
 
         self.num_hidden = num_hidden
@@ -90,10 +91,11 @@ class RBM(UnsupervisedModel):
             self.vrand: np.random.rand(data.shape[0], data.shape[1])
         }
 
-    def build_model(self, n_features):
+    def build_model(self, n_features, regtype='none'):
 
         """ Build the Restricted Boltzmann Machine model in TensorFlow.
         :param n_features: number of features
+        :param regtype: regularization type
         :return: self
         """
 
@@ -117,8 +119,10 @@ class RBM(UnsupervisedModel):
         self.bh_upd8 = self.bh_.assign_add(self.learning_rate * tf.reduce_mean(hprobs0 - hprobs1, 0))
         self.bv_upd8 = self.bv_.assign_add(self.learning_rate * tf.reduce_mean(self.input_data - vprobs, 0))
 
-        self.cost = tf.sqrt(tf.reduce_mean(tf.square(self.input_data - vprobs)))
-        _ = tf.scalar_summary("cost", self.cost)
+        vars = [self.W, self.bh_, self.bv_]
+        regterm = self.compute_regularization(vars, regtype)
+
+        self._create_cost_function_node(vprobs, self.input_data, regterm=regterm)
 
     def _create_placeholders(self, n_features):
 

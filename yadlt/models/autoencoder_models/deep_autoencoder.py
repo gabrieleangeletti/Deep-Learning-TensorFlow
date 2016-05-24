@@ -41,12 +41,12 @@ class DeepAutoencoder(UnsupervisedModel):
         # WARNING! This must be the first expression in the function or else it will send other variables to expanded_args()
         # This function takes all the passed parameters that are lists and expands them to the number of layers, if the number
         # of layers is more than the list of the parameter.
-        expanded_args = utilities.expand_args(layers, **locals())
+        expanded_args = utilities.expand_args(**locals())
 
         UnsupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
-                                             num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
+                                             num_epochs=finetune_num_epochs, batch_size=finetune_batch_size, l2reg=l2reg,
                                              dropout=finetune_dropout, dataset=dataset, opt=finetune_opt, momentum=momentum)
 
         self.do_pretrain = do_pretrain
@@ -124,9 +124,10 @@ class DeepAutoencoder(UnsupervisedModel):
                 feed = {self.input_data: validation_set, self.input_labels: validation_ref, self.keep_prob: 1}
                 self._run_validation_error_and_summaries(i, feed)
 
-    def build_model(self, n_features, encoding_w=None, encoding_b=None):
+    def build_model(self, n_features, regtype='none', encoding_w=None, encoding_b=None):
         """ Creates the computational graph for the reconstruction task.
         :param n_features: Number of features
+        :param regtype: regularization type, can be 'l2','l1' and 'none'
         :param encoding_w: list of weights for the encoding layers.
         :param encoding_b: list of biases for the encoding layers.
         :return: self
@@ -143,7 +144,12 @@ class DeepAutoencoder(UnsupervisedModel):
         self._create_encoding_layers()
         self._create_decoding_layers()
 
-        self._create_cost_function_node(self.reconstruction, self.input_labels)
+        vars = []
+        vars.extend(self.encoding_w_)
+        vars.extend(self.encoding_b_)
+        regterm = self.compute_regularization(vars, regtype)
+
+        self._create_cost_function_node(self.reconstruction, self.input_labels, regterm=regterm)
         self._create_train_step_node()
 
     def _create_placeholders(self, n_features, n_classes):

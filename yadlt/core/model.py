@@ -116,6 +116,27 @@ class Model(object):
         self.momentum = momentum
         self.l2reg = l2reg
 
+    def compute_regularization(self, vars, regtype):
+        """ Compute the regularization tensor.
+        :param vars: list of model variables
+        :param regtype: regularization type, can be 'l2','l1' and 'none'
+        :return:
+        """
+
+        if regtype != 'none':
+
+            regularizers = tf.constant(0.0)
+
+            for v in vars:
+                if regtype == 'l2':
+                    regularizers = tf.add(regularizers, tf.nn.l2_loss(v))
+                elif regtype == 'l1':
+                    regularizers = tf.add(regularizers, tf.reduce_sum(v))
+
+            return tf.mul(self.l2reg, regularizers)
+        else:
+            return None
+
     def pretrain_procedure(self, layer_objs, layer_graphs, set_params_func, train_set, validation_set=None):
 
         """ Perform unsupervised pretraining of the stack of denoising autoencoders.

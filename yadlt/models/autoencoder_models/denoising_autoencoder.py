@@ -100,10 +100,11 @@ class DenoisingAutoencoder(UnsupervisedModel):
         else:
             return np.copy(data)
 
-    def build_model(self, n_features, W_=None, bh_=None, bv_=None):
+    def build_model(self, n_features, regtype='none', W_=None, bh_=None, bv_=None):
 
         """ Creates the computational graph.
         :param n_features: Number of features.
+        :param regtype: regularization type
         :param W_: weight matrix np array
         :param bh_: hidden bias np array
         :param bv_: visible bias np array
@@ -116,10 +117,10 @@ class DenoisingAutoencoder(UnsupervisedModel):
         self._create_encode_layer()
         self._create_decode_layer()
 
-        regularizers = tf.nn.l2_loss(self.W_) + tf.nn.l2_loss(self.bh_) + tf.nn.l2_loss(self.bv_)
-        regterm = self.l2reg * regularizers
+        vars = [self.W_, self.bh_, self.bv_]
+        regterm = self.compute_regularization(vars, regtype)
 
-        self._create_cost_function_node(self.reconstruction, self.input_data_orig, regterm)
+        self._create_cost_function_node(self.reconstruction, self.input_data_orig, regterm=regterm)
         self._create_train_step_node()
 
     def _create_placeholders(self, n_features):
