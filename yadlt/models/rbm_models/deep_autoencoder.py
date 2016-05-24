@@ -17,7 +17,7 @@ class DeepAutoencoder(UnsupervisedModel):
                  rbm_num_epochs=[10], rbm_batch_size=[10], dataset='mnist', rbm_learning_rate=[0.01], rbm_gibbs_k=[1],
                  momentum=0.5, finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
                  finetune_dec_act_func=[tf.nn.sigmoid], finetune_opt='gradient_descent', finetune_learning_rate=0.001,
-                 finetune_num_epochs=10, rbm_gauss_visible=False, rbm_stddev=0.1, finetune_batch_size=20, do_pretrain=True):
+                 finetune_num_epochs=10, rbm_noise=['gauss'], rbm_stddev=0.1, finetune_batch_size=20, do_pretrain=True):
         """
         :param rbm_layers: list containing the hidden units for each layer
         :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
@@ -63,7 +63,7 @@ class DeepAutoencoder(UnsupervisedModel):
         self.reconstruction = None
 
         rbm_params = {'num_epochs': rbm_num_epochs, 'gibbs_k': rbm_gibbs_k, 'batch_size': rbm_batch_size,
-                      'learning_rate': rbm_learning_rate, 'layers': rbm_layers}
+                      'learning_rate': rbm_learning_rate, 'layers': rbm_layers, 'rbm_noise': rbm_noise}
 
         for p in rbm_params:
             if len(rbm_params[p]) != len(rbm_layers):
@@ -75,27 +75,13 @@ class DeepAutoencoder(UnsupervisedModel):
 
         for l, layer in enumerate(rbm_layers):
             rbm_str = 'rbm-' + str(l + 1)
-
-            if l == 0 and rbm_gauss_visible:
-
-                # Gaussian visible units
-
-                self.rbms.append(rbm.RBM(model_name=self.model_name + '-' + rbm_str,
-                    models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),  summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
-                    visible_unit_type='gauss', stddev=rbm_stddev, num_hidden=rbm_params['layers'][l],
-                    main_dir=self.main_dir, learning_rate=rbm_params['learning_rate'][l], gibbs_sampling_steps=rbm_gibbs_k[l],
-                    verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l], batch_size=rbm_params['batch_size'][l]))
-
-            else:
-
-                # Binary RBMs
-
-                self.rbms.append(rbm.RBM(model_name=self.model_name + '-' + rbm_str,
-                    models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),  summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
-                    num_hidden=rbm_layers[l],
-                    main_dir=self.main_dir, learning_rate=rbm_params['learning_rate'][l], gibbs_sampling_steps=rbm_params['gibbs_k'][l],
-                    verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l], batch_size=rbm_params['batch_size'][l]))
-
+            new_rbm = rbm.RBM(model_name=self.model_name + '-' + rbm_str,
+                              models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),
+                              summary_dir=os.path.join(self.tf_summary_dir, rbm_str), visible_unit_type=rbm_params['rbm_noise'][l],
+                              stddev=rbm_stddev, num_hidden=rbm_params['layers'][l], main_dir=self.main_dir, learning_rate=rbm_params['learning_rate'][l],
+                              gibbs_sampling_steps=rbm_gibbs_k[l], verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l],
+                              batch_size=rbm_params['batch_size'][l])
+            self.rbms.append(new_rbm)
             self.rbm_graphs.append(tf.Graph())
 
     def pretrain(self, train_set, validation_set=None):
@@ -110,7 +96,6 @@ class DeepAutoencoder(UnsupervisedModel):
                                                     train_set=train_set, validation_set=validation_set)
 
     def _train_model(self, train_set, train_ref, validation_set, validation_ref):
-
         """ Train the model.
         :param train_set: training set
         :param train_ref: training reference data
@@ -137,7 +122,6 @@ class DeepAutoencoder(UnsupervisedModel):
                 self._run_validation_error_and_summaries(i, feed)
 
     def build_model(self, n_features, encoding_w=None, encoding_b=None):
-
         """ Creates the computational graph for the reconstruction task.
         :param n_features: Number of features
         :param encoding_w: list of weights for the encoding layers.
@@ -160,7 +144,6 @@ class DeepAutoencoder(UnsupervisedModel):
         self._create_train_step_node()
 
     def _create_placeholders(self, n_features, n_classes):
-
         """ Create the TensorFlow placeholders for the model.
         :param n_features: number of features of the first layer
         :param n_classes: number of classes
@@ -172,7 +155,6 @@ class DeepAutoencoder(UnsupervisedModel):
         self.keep_prob = tf.placeholder('float', name='keep-probs')
 
     def _create_variables(self, n_features):
-
         """ Create the TensorFlow variables for the model.
         :param n_features: number of features
         :return: self
@@ -184,7 +166,6 @@ class DeepAutoencoder(UnsupervisedModel):
             self._create_variables_no_pretrain(n_features)
 
     def _create_variables_no_pretrain(self, n_features):
-
         """ Create model variables (no previous unsupervised pretraining)
         :param n_features: number of features
         :return: self
@@ -199,11 +180,10 @@ class DeepAutoencoder(UnsupervisedModel):
                 self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[n_features, self.layers[l]], stddev=0.1)))
                 self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.1)))
             else:
-                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l-1], self.layers[l]], stddev=0.1)))
+                self.encoding_w_.append(tf.Variable(tf.truncated_normal(shape=[self.layers[l - 1], self.layers[l]], stddev=0.1)))
                 self.encoding_b_.append(tf.Variable(tf.truncated_normal([self.layers[l]], stddev=0.1)))
 
     def _create_variables_pretrain(self):
-
         """ Create model variables (previous unsupervised pretraining)
         :return: self
         """
@@ -213,7 +193,6 @@ class DeepAutoencoder(UnsupervisedModel):
             self.encoding_b_[l] = tf.Variable(self.encoding_b_[l], name='enc-b-{}'.format(l))
 
     def _create_encoding_layers(self):
-
         """ Create the encoding layers for supervised finetuning.
         :return: output of the final encoding layer.
         """
@@ -241,7 +220,6 @@ class DeepAutoencoder(UnsupervisedModel):
         self.encode = next_train
 
     def _create_decoding_layers(self):
-
         """ Create the decoding layers for reconstruction finetuning.
         :return: output of the final encoding layer.
         """
