@@ -36,6 +36,10 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
+        # WARNING! This must be the first expression in the function or else it will send other variables to expanded_args()
+        # This function takes all the passed parameters that are lists and expands them to the number of layers, if the number
+        # of layers is more than the list of the parameter.
+        expanded_args = utilities.expand_args(dae_layers, **locals())
 
         SupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
@@ -56,16 +60,6 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         self.last_W = None
         self.last_b = None
 
-        dae_params = {'enc_act_func': dae_enc_act_func, 'dec_act_func': dae_dec_act_func, 'loss_func': dae_loss_func,
-                      'opt': dae_opt, 'learning_rate': dae_learning_rate, 'l2reg': dae_l2reg,
-                      'corr_frac': dae_corr_frac, 'corr_type': dae_corr_type, 'num_epochs': dae_num_epochs,
-                      'batch_size': dae_batch_size}
-
-        for p in dae_params:
-            if len(dae_params[p]) != len(dae_layers):
-                # The current parameter is not specified by the user, should default it for all the layers
-                dae_params[p] = [dae_params[p][0] for _ in dae_layers]
-
         self.autoencoders = []
         self.autoencoder_graphs = []
 
@@ -76,11 +70,11 @@ class StackedDenoisingAutoencoder(SupervisedModel):
                 n_components=layer, main_dir=self.main_dir, model_name=self.model_name + '-' + dae_str,
                 models_dir=os.path.join(self.models_dir, dae_str), data_dir=os.path.join(self.data_dir, dae_str),
                 summary_dir=os.path.join(self.tf_summary_dir, dae_str),
-                enc_act_func=dae_params['enc_act_func'][l], dec_act_func=dae_params['dec_act_func'][l],
-                loss_func=dae_params['loss_func'][l],
-                opt=dae_params['opt'][l], learning_rate=dae_params['learning_rate'][l], l2reg=dae_params['l2reg'],
-                momentum=self.momentum, corr_type=dae_params['corr_type'][l], corr_frac=dae_params['corr_frac'][l],
-                verbose=self.verbose, num_epochs=dae_params['num_epochs'][l], batch_size=dae_params['batch_size'][l],
+                enc_act_func=expanded_args['enc_act_func'][l], dec_act_func=expanded_args['dec_act_func'][l],
+                loss_func=expanded_args['loss_func'][l],
+                opt=expanded_args['opt'][l], learning_rate=expanded_args['learning_rate'][l], l2reg=expanded_args['l2reg'],
+                momentum=self.momentum, corr_type=expanded_args['corr_type'][l], corr_frac=expanded_args['corr_frac'][l],
+                verbose=self.verbose, num_epochs=expanded_args['num_epochs'][l], batch_size=expanded_args['batch_size'][l],
                 dataset=self.dataset))
 
             self.autoencoder_graphs.append(tf.Graph())

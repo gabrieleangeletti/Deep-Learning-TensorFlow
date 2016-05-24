@@ -31,6 +31,11 @@ class DeepAutoencoder(UnsupervisedModel):
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
+        # WARNING! This must be the first expression in the function or else it will send other variables to expanded_args()
+        # This function takes all the passed parameters that are lists and expands them to the number of layers, if the number
+        # of layers is more than the list of the parameter.
+        expanded_args = utilities.expand_args(rbm_layers, **locals())
+
         UnsupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
@@ -41,15 +46,8 @@ class DeepAutoencoder(UnsupervisedModel):
         self.layers = rbm_layers
         self.verbose = verbose
 
-        if len(finetune_enc_act_func) != len(rbm_layers):
-            self.finetune_enc_act_func = [finetune_enc_act_func[0] for _ in rbm_layers]
-        else:
-            self.finetune_enc_act_func = finetune_enc_act_func
-
-        if len(finetune_dec_act_func) != len(rbm_layers):
-            self.finetune_dec_act_func = [finetune_dec_act_func[0] for _ in rbm_layers]
-        else:
-            self.finetune_dec_act_func = finetune_dec_act_func
+        self.finetune_enc_act_func = expanded_args['finetune_enc_act_func']
+        self.finetune_dec_act_func = expanded_args['finetune_dec_act_func']
 
         self.input_ref = None
 
@@ -61,15 +59,6 @@ class DeepAutoencoder(UnsupervisedModel):
         self.decoding_b = []  # list of arrays of decoding biases (one per layer)
 
         self.reconstruction = None
-
-        rbm_params = {'num_epochs': rbm_num_epochs, 'gibbs_k': rbm_gibbs_k, 'batch_size': rbm_batch_size,
-                      'learning_rate': rbm_learning_rate, 'layers': rbm_layers, 'rbm_noise': rbm_noise}
-
-        for p in rbm_params:
-            if len(rbm_params[p]) != len(rbm_layers):
-                # The current parameter is not specified by the user, should default it for all the layers
-                rbm_params[p] = [rbm_params[p][0] for _ in rbm_layers]
-
         self.rbms = []
         self.rbm_graphs = []
 
@@ -77,10 +66,10 @@ class DeepAutoencoder(UnsupervisedModel):
             rbm_str = 'rbm-' + str(l + 1)
             new_rbm = rbm.RBM(model_name=self.model_name + '-' + rbm_str,
                               models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),
-                              summary_dir=os.path.join(self.tf_summary_dir, rbm_str), visible_unit_type=rbm_params['rbm_noise'][l],
-                              stddev=rbm_stddev, num_hidden=rbm_params['layers'][l], main_dir=self.main_dir, learning_rate=rbm_params['learning_rate'][l],
-                              gibbs_sampling_steps=rbm_gibbs_k[l], verbose=self.verbose, num_epochs=rbm_params['num_epochs'][l],
-                              batch_size=rbm_params['batch_size'][l])
+                              summary_dir=os.path.join(self.tf_summary_dir, rbm_str), visible_unit_type=expanded_args['rbm_noise'][l],
+                              stddev=rbm_stddev, num_hidden=expanded_args['layers'][l], main_dir=self.main_dir, learning_rate=expanded_args['learning_rate'][l],
+                              gibbs_sampling_steps=expanded_args['rbm_gibbs_k'][l], verbose=self.verbose, num_epochs=expanded_args['num_epochs'][l],
+                              batch_size=expanded_args['batch_size'][l])
             self.rbms.append(new_rbm)
             self.rbm_graphs.append(tf.Graph())
 

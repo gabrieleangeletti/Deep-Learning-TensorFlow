@@ -49,7 +49,7 @@ def gen_batches(data, batch_size):
     data = np.array(data)
 
     for i in range(0, data.shape[0], batch_size):
-        yield data[i:i+batch_size]
+        yield data[i:i + batch_size]
 
 
 def conv2bin(data):
@@ -123,7 +123,6 @@ def bins2sets(bin_data):
 
 
 def masking_noise(data, sess, v):
-
     """ Apply masking noise to data in X, in other words a fraction v of elements of X
     (chosen at random) is forced to zero.
     :param data: array_like, Input data
@@ -168,6 +167,19 @@ def salt_and_pepper_noise(X, v):
 # ############# #
 #   Utilities   #
 # ############# #
+
+
+def expand_args(layers, args_to_expand):
+    """Expands all the lists in args_to_expand into the length of layers.
+    This is used as a convenience so that the user does not need to specify the
+    complete list of parameters for model initialization.
+    IE: the user can just specify one parameter and this function will expand it
+    """
+    for key, val in args_to_expand.iteritems():
+        if isinstance(val, list) and len(val) != len(layers):
+            args_to_expand[key] = [val[0] for _ in layers]
+
+    return args_to_expand
 
 
 def flag_to_list(flagval, flagtype):
@@ -217,22 +229,22 @@ def gen_image(img, width, height, outfile, img_type='grey'):
     elif img_type == 'color':
         misc.imsave(outfile, img.reshape(3, width, height))
 
+
 def get_weights_as_images(self, weights, width, height, outdir='img/', n_images=10, img_type='grey'):
+    """ Create and save the weights of the hidden units with respect to the
+    visible units as images.
+    :param weights:
+    :param width:
+    :param height:
+    :param outdir:
+    :param n_images:
+    :param img_type:
+    :return: self
+    """
 
-        """ Create and save the weights of the hidden units with respect to the
-        visible units as images.
-        :param weights:
-        :param width:
-        :param height:
-        :param outdir:
-        :param n_images:
-        :param img_type:
-        :return: self
-        """
+    perm = np.random.permutation(weights.shape[1])[:n_images]
 
-        perm = np.random.permutation(weights.shape[1])[:n_images]
-
-        for p in perm:
-            w = np.array([i[p] for i in weights])
-            image_path = outdir + 'w_{}.png'.format(p)
-            utilities.gen_image(w, width, height, image_path, img_type)
+    for p in perm:
+        w = np.array([i[p] for i in weights])
+        image_path = outdir + 'w_{}.png'.format(p)
+        utilities.gen_image(w, width, height, image_path, img_type)
