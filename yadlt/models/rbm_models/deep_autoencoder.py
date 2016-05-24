@@ -13,13 +13,13 @@ class DeepAutoencoder(UnsupervisedModel):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, rbm_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 rbm_num_epochs=[10], rbm_batch_size=[10], dataset='mnist', rbm_learning_rate=[0.01], rbm_gibbs_k=[1],
+    def __init__(self, layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
+                 num_epochs=[10], batch_size=[10], dataset='mnist', learning_rate=[0.01], gibbs_k=[1],
                  momentum=0.5, finetune_dropout=1, verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
                  finetune_dec_act_func=[tf.nn.sigmoid], finetune_opt='gradient_descent', finetune_learning_rate=0.001,
-                 finetune_num_epochs=10, rbm_noise=['gauss'], rbm_stddev=0.1, finetune_batch_size=20, do_pretrain=True):
+                 finetune_num_epochs=10, noise=['gauss'], stddev=0.1, finetune_batch_size=20, do_pretrain=True):
         """
-        :param rbm_layers: list containing the hidden units for each layer
+        :param layers: list containing the hidden units for each layer
         :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning. float, default 0.001
@@ -34,7 +34,7 @@ class DeepAutoencoder(UnsupervisedModel):
         # WARNING! This must be the first expression in the function or else it will send other variables to expanded_args()
         # This function takes all the passed parameters that are lists and expands them to the number of layers, if the number
         # of layers is more than the list of the parameter.
-        expanded_args = utilities.expand_args(rbm_layers, **locals())
+        expanded_args = utilities.expand_args(layers, **locals())
 
         UnsupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
@@ -43,7 +43,7 @@ class DeepAutoencoder(UnsupervisedModel):
                                              dropout=finetune_dropout, dataset=dataset, opt=finetune_opt, momentum=momentum)
 
         self.do_pretrain = do_pretrain
-        self.layers = rbm_layers
+        self.layers = layers
         self.verbose = verbose
 
         self.finetune_enc_act_func = expanded_args['finetune_enc_act_func']
@@ -62,13 +62,13 @@ class DeepAutoencoder(UnsupervisedModel):
         self.rbms = []
         self.rbm_graphs = []
 
-        for l, layer in enumerate(rbm_layers):
+        for l, layer in enumerate(layers):
             rbm_str = 'rbm-' + str(l + 1)
             new_rbm = rbm.RBM(model_name=self.model_name + '-' + rbm_str,
                               models_dir=os.path.join(self.models_dir, rbm_str), data_dir=os.path.join(self.data_dir, rbm_str),
-                              summary_dir=os.path.join(self.tf_summary_dir, rbm_str), visible_unit_type=expanded_args['rbm_noise'][l],
-                              stddev=rbm_stddev, num_hidden=expanded_args['layers'][l], main_dir=self.main_dir, learning_rate=expanded_args['learning_rate'][l],
-                              gibbs_sampling_steps=expanded_args['rbm_gibbs_k'][l], verbose=self.verbose, num_epochs=expanded_args['num_epochs'][l],
+                              summary_dir=os.path.join(self.tf_summary_dir, rbm_str), visible_unit_type=expanded_args['noise'][l],
+                              stddev=stddev, num_hidden=expanded_args['layers'][l], main_dir=self.main_dir, learning_rate=expanded_args['learning_rate'][l],
+                              gibbs_sampling_steps=expanded_args['gibbs_k'][l], verbose=self.verbose, num_epochs=expanded_args['num_epochs'][l],
                               batch_size=expanded_args['batch_size'][l])
             self.rbms.append(new_rbm)
             self.rbm_graphs.append(tf.Graph())

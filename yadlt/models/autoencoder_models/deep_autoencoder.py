@@ -13,15 +13,15 @@ class DeepAutoencoder(UnsupervisedModel):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, dae_layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
-                 dae_enc_act_func=[tf.nn.tanh], dae_dec_act_func=[None], dae_loss_func=['cross_entropy'], dae_num_epochs=[10],
-                 dae_batch_size=[10], dataset='mnist', dae_opt=['gradient_descent'],
-                 dae_learning_rate=[0.01], momentum=0.5, finetune_dropout=1, dae_corr_type=['none'],
-                 dae_corr_frac=[0.], verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
-                 tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], dae_l2reg=[5e-4], finetune_batch_size=20, do_pretrain=False,
+    def __init__(self, layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
+                 enc_act_func=[tf.nn.tanh], dec_act_func=[None], loss_func=['cross_entropy'], num_epochs=[10],
+                 batch_size=[10], dataset='mnist', opt=['gradient_descent'],
+                 learning_rate=[0.01], momentum=0.5, finetune_dropout=1, corr_type=['none'],
+                 corr_frac=[0.], verbose=1, finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
+                 tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], l2reg=[5e-4], finetune_batch_size=20, do_pretrain=False,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10):
         """
-        :param dae_layers: list containing the hidden units for each layer
+        :param layers: list containing the hidden units for each layer
         :param enc_act_func: Activation function for the encoder. [tf.nn.tanh, tf.nn.sigmoid]
         :param dec_act_func: Activation function for the decoder. [[tf.nn.tanh, tf.nn.sigmoid, None]
         :param finetune_loss_func: Loss function for the softmax layer. string, default ['cross_entropy', 'mean_squared']
@@ -33,15 +33,15 @@ class DeepAutoencoder(UnsupervisedModel):
         :param finetune_num_epochs: Number of epochs for the finetuning. int, default 20
         :param finetune_batch_size: Size of each mini-batch for the finetuning. int, default 20
         :param tied_weights: if True, the decoder layers weights are constrained to be the transpose of the encoder layers
-        :param dae_corr_type: Type of input corruption. string, default 'none'. ["none", "masking", "salt_and_pepper"]
-        :param dae_corr_frac: Fraction of the input to corrupt. float, default 0.0
+        :param corr_type: Type of input corruption. string, default 'none'. ["none", "masking", "salt_and_pepper"]
+        :param corr_frac: Fraction of the input to corrupt. float, default 0.0
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy. int, default 0
         :param do_pretrain: True: uses variables from pretraining, False: initialize new variables.
         """
         # WARNING! This must be the first expression in the function or else it will send other variables to expanded_args()
         # This function takes all the passed parameters that are lists and expands them to the number of layers, if the number
         # of layers is more than the list of the parameter.
-        expanded_args = utilities.expand_args(dae_layers, **locals())
+        expanded_args = utilities.expand_args(layers, **locals())
 
         UnsupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
@@ -50,7 +50,7 @@ class DeepAutoencoder(UnsupervisedModel):
                                              dropout=finetune_dropout, dataset=dataset, opt=finetune_opt, momentum=momentum)
 
         self.do_pretrain = do_pretrain
-        self.layers = dae_layers
+        self.layers = layers
         self.tied_weights = tied_weights
         self.verbose = verbose
 
@@ -70,7 +70,7 @@ class DeepAutoencoder(UnsupervisedModel):
         self.autoencoders = []
         self.autoencoder_graphs = []
 
-        for l, layer in enumerate(dae_layers):
+        for l, layer in enumerate(layers):
             dae_str = 'dae-' + str(l + 1)
 
             self.autoencoders.append(denoising_autoencoder.DenoisingAutoencoder(
