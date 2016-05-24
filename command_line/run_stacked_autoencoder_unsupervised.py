@@ -157,16 +157,16 @@ if __name__ == '__main__':
     sdae = deep_autoencoder.DeepAutoencoder(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         do_pretrain=FLAGS.do_pretrain, model_name=FLAGS.model_name,
-        dae_layers=dae_layers, finetune_loss_func=FLAGS.finetune_loss_func,
+        layers=dae_layers, finetune_loss_func=FLAGS.finetune_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size,
         finetune_dropout=FLAGS.finetune_dropout,
-        dae_enc_act_func=dae_enc_act_func, dae_dec_act_func=dae_dec_act_func,
-        dae_corr_type=dae_corr_type, dae_corr_frac=dae_corr_frac, dae_l2reg=dae_l2reg,
-        dataset=FLAGS.dataset, dae_loss_func=dae_loss_func, main_dir=FLAGS.main_dir,
-        dae_opt=dae_opt, tied_weights=FLAGS.tied_weights,
-        dae_learning_rate=dae_learning_rate, momentum=FLAGS.momentum, verbose=FLAGS.verbose,
-        dae_num_epochs=dae_num_epochs, dae_batch_size=dae_batch_size,
+        enc_act_func=dae_enc_act_func, dec_act_func=dae_dec_act_func,
+        corr_type=dae_corr_type, corr_frac=dae_corr_frac, l2reg=dae_l2reg,
+        dataset=FLAGS.dataset, loss_func=dae_loss_func, main_dir=FLAGS.main_dir,
+        opt=dae_opt, tied_weights=FLAGS.tied_weights,
+        learning_rate=dae_learning_rate, momentum=FLAGS.momentum, verbose=FLAGS.verbose,
+        num_epochs=dae_num_epochs, batch_size=dae_batch_size,
         finetune_enc_act_func=finetune_enc_act_func, finetune_dec_act_func=finetune_dec_act_func)
 
     def load_params_npz(npzfilepath):

@@ -36,7 +36,7 @@ flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the
 # RBMs layers specific parameters
 flags.DEFINE_string('rbm_names', 'rbm', 'Name for the rbm stored_models.')
 flags.DEFINE_string('rbm_layers', '256,', 'Comma-separated values for the layers in the srbm.')
-flags.DEFINE_boolean('rbm_gauss_visible', False, 'Whether to use Gaussian units for the visible layer.')
+flags.DEFINE_boolean('rbm_noise', 'gauss', 'Type of noise. Default: "gauss".')
 flags.DEFINE_float('rbm_stddev', 0.1, 'Standard deviation for Gaussian visible units.')
 flags.DEFINE_string('rbm_learning_rate', '0.01,', 'Initial learning rate.')
 flags.DEFINE_string('rbm_num_epochs', '10,', 'Number of epochs.')
@@ -139,14 +139,14 @@ if __name__ == '__main__':
     srbm = deep_autoencoder.DeepAutoencoder(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         model_name=FLAGS.model_name, do_pretrain=FLAGS.do_pretrain,
-        rbm_layers=rbm_layers, dataset=FLAGS.dataset, main_dir=FLAGS.main_dir,
-        rbm_learning_rate=rbm_learning_rate, rbm_gibbs_k=rbm_gibbs_k,
-        verbose=FLAGS.verbose, rbm_num_epochs=rbm_num_epochs, momentum=FLAGS.momentum,
-        rbm_batch_size=rbm_batch_size, finetune_learning_rate=FLAGS.finetune_learning_rate,
+        layers=rbm_layers, dataset=FLAGS.dataset, main_dir=FLAGS.main_dir,
+        learning_rate=rbm_learning_rate, gibbs_k=rbm_gibbs_k,
+        verbose=FLAGS.verbose, num_epochs=rbm_num_epochs, momentum=FLAGS.momentum,
+        batch_size=rbm_batch_size, finetune_learning_rate=FLAGS.finetune_learning_rate,
         finetune_enc_act_func=finetune_enc_act_func, finetune_dec_act_func=finetune_dec_act_func,
         finetune_num_epochs=FLAGS.finetune_num_epochs, finetune_batch_size=FLAGS.finetune_batch_size,
         finetune_opt=FLAGS.finetune_opt, finetune_loss_func=FLAGS.finetune_loss_func, finetune_dropout=FLAGS.finetune_dropout,
-        rbm_gauss_visible=FLAGS.rbm_gauss_visible, rbm_stddev=FLAGS.rbm_stddev)
+        noise=FLAGS.rbm_noise, stddev=FLAGS.rbm_stddev)
 
 
     def load_params_npz(npzfilepath):
