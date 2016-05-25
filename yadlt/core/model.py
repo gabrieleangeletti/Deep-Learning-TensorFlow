@@ -132,7 +132,7 @@ class Model(object):
                 if self.regtype == 'l2':
                     regularizers = tf.add(regularizers, tf.nn.l2_loss(v))
                 elif self.regtype == 'l1':
-                    regularizers = tf.add(regularizers, tf.reduce_sum(v))
+                    regularizers = tf.add(regularizers, tf.reduce_sum(tf.abs(v)))
 
             return tf.mul(self.l2reg, regularizers)
         else:
