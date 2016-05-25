@@ -13,9 +13,9 @@ class DeepBeliefNetwork(SupervisedModel):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, rbm_layers, model_name='srbm', do_pretrain=False, main_dir='srbm/', models_dir='models/', data_dir='data/',
-                 summary_dir='logs/', rbm_num_epochs=[10], rbm_gibbs_k=[1], rbm_gauss_visible=False, rbm_stddev=0.1,
-                 rbm_batch_size=[10], dataset='mnist', rbm_learning_rate=[0.01], momentum=0.5,
+    def __init__(self, rbm_layers, model_name='srbm', do_pretrain=False, main_dir='~/.yadlt/srbm/', models_dir='~/.yadlt/models/',
+                 data_dir='~/.yadlt/data/', summary_dir='~/.yadlt/logs/', rbm_num_epochs=[10], rbm_gibbs_k=[1], rbm_gauss_visible=False,
+                 rbm_stddev=0.1, rbm_batch_size=[10], dataset='mnist', rbm_learning_rate=[0.01], momentum=0.5,
                  finetune_dropout=1, verbose=1, finetune_loss_func='softmax_cross_entropy', finetune_act_func=tf.nn.relu,
                  finetune_opt='gradient_descent', finetune_learning_rate=0.001, finetune_num_epochs=10,
                  finetune_batch_size=20):

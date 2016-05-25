@@ -11,7 +11,8 @@ class ConvolutionalNetwork(SupervisedModel):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, layers, original_shape, model_name='convnet', main_dir='convnet', models_dir='models/', data_dir='data/', summary_dir='logs/',
+    def __init__(self, layers, original_shape, model_name='convnet', main_dir='~/.yadlt/convnet',
+                 models_dir='~/.yadlt/models/', data_dir='~/.yadlt/data/', summary_dir='~/.yadlt/logs/',
                  loss_func='softmax_cross_entropy', num_epochs=10, batch_size=10, dataset='mnist',
                  opt='gradient_descent', learning_rate=0.01, momentum=0.5, dropout=0.5, verbose=1):
         """

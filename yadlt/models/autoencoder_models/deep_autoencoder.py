@@ -13,7 +13,8 @@ class DeepAutoencoder(UnsupervisedModel):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, layers, model_name='sdae', main_dir='sdae/', models_dir='models/', data_dir='data/', summary_dir='logs/',
+    def __init__(self, layers, model_name='sdae', main_dir='~/.yadlt/sdae/', models_dir='~/.yadlt/models/',
+                 data_dir='~/.yadlt/data/', summary_dir='~/.yadlt/logs/',
                  enc_act_func=[tf.nn.tanh], dec_act_func=[None], loss_func=['cross_entropy'], num_epochs=[10],
                  batch_size=[10], dataset='mnist', opt=['gradient_descent'], regtype=['none'],
                  learning_rate=[0.01], momentum=0.5, finetune_dropout=1, corr_type=['none'], finetune_regtype='none',

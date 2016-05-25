@@ -11,7 +11,8 @@ class LogisticRegression(SupervisedModel):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, main_dir='lr/', model_name='lr', models_dir='models/', data_dir='data/', summary_dir='logs/',
+    def __init__(self, main_dir='~/.yadlt/lr/', model_name='lr', models_dir='~/.yadlt/models/', data_dir='~/.yadlt/data/',
+                 summary_dir='~/.yadlt/logs/',
                  loss_func='cross_entropy', dataset='mnist', learning_rate=0.01, verbose=0, num_epochs=10, batch_size=10):
 
         """
