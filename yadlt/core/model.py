@@ -170,7 +170,7 @@ class Model(object):
         :return: encoded train data, encoded validation data
         """
 
-        layer_obj.fit(train_set, validation_set, regtype=self.regtype, graph=graph)
+        layer_obj.fit(train_set, validation_set, graph=graph)
 
         with graph.as_default():
             set_params_func(layer_obj, graph)
