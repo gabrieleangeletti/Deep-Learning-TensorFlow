@@ -51,6 +51,17 @@ def gen_batches(data, batch_size):
     for i in range(0, data.shape[0], batch_size):
         yield data[i:i + batch_size]
 
+def to_one_hot(dataY):
+    """ Convert the vector of labels dataY into one-hot encoding.
+    :param dataY: vector of labels
+    :return: one-hot encoded labels
+    """
+    nc = 1 + np.max(dataY)
+    onehot = [np.zeros(nc, dtype=np.int8) for _ in dataY]
+    for i, j in enumerate(dataY):
+        onehot[i][j] = 1
+    return onehot
+
 
 def conv2bin(data):
     """ Convert a matrix of probabilities into
