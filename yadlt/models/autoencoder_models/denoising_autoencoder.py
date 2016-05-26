@@ -11,8 +11,8 @@ class DenoisingAutoencoder(UnsupervisedModel):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, n_components, model_name='dae', main_dir='~/.yadlt/dae/', models_dir='~/.yadlt/models/',
-                 data_dir='~/.yadlt/data/', summary_dir='~/.yadlt/logs/',
+    def __init__(self, n_components, model_name='dae', main_dir='dae/', models_dir='models/',
+                 data_dir='data/', summary_dir='logs/',
                  enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
                  opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0., verbose=1,
                  regtype='none', l2reg=5e-4):

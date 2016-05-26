@@ -1,5 +1,6 @@
 import tensorflow as tf
 import os, errno
+from os.path import expanduser
 
 
 class Model(object):
@@ -16,6 +17,12 @@ class Model(object):
         :param data_dir: directory to store generated data
         :param summary_dir: directory to store tensorflow logs
         """
+
+        home = os.path.join(expanduser("~"), '.yadlt')
+        main_dir = os.path.join(home, main_dir)
+        models_dir = os.path.join(home, models_dir)
+        data_dir = os.path.join(home, data_dir)
+        summary_dir = os.path.join(home, summary_dir)
 
         self.model_name = model_name
         self.main_dir = main_dir
