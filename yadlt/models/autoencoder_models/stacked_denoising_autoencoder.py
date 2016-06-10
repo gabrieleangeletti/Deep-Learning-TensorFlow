@@ -40,7 +40,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         # WARNING! This must be the first expression in the function or else it will send other variables to expanded_args()
         # This function takes all the passed parameters that are lists and expands them to the number of layers, if the number
         # of layers is more than the list of the parameter.
-        expanded_args = utilities.expand_args(layers, **locals())
+        expanded_args = utilities.expand_args(**locals())
 
         SupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
