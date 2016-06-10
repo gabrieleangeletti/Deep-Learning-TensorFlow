@@ -169,15 +169,15 @@ def salt_and_pepper_noise(X, v):
 # ############# #
 
 
-def expand_args(layers, args_to_expand):
+def expand_args(layer_config, args_to_expand):
     """Expands all the lists in args_to_expand into the length of layers.
     This is used as a convenience so that the user does not need to specify the
     complete list of parameters for model initialization.
     IE: the user can just specify one parameter and this function will expand it
     """
     for key, val in args_to_expand.iteritems():
-        if isinstance(val, list) and len(val) != len(layers):
-            args_to_expand[key] = [val[0] for _ in layers]
+        if isinstance(val, list) and len(val) != len(layer_config):
+            args_to_expand[key] = [val[0] for _ in layer_config]
 
     return args_to_expand
 
