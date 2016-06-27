@@ -37,6 +37,30 @@ def xavier_init(fan_in, fan_out, const=1):
     return tf.random_uniform((fan_in, fan_out), minval=low, maxval=high)
 
 
+def seq_data_iterator(raw_data, batch_size, num_steps):
+    """Sequence data iterator.
+
+    Taken from tensorflow/models/rnn/ptb/reader.py
+    """
+    raw_data = np.array(raw_data, dtype=np.int32)
+
+    data_len = len(raw_data)
+    batch_len = data_len // batch_size
+    data = np.zeros([batch_size, batch_len], dtype=np.int32)
+    for i in range(batch_size):
+        data[i] = raw_data[batch_len * i:batch_len * (i + 1)]
+
+    epoch_size = (batch_len - 1) // num_steps
+
+    if epoch_size == 0:
+        raise ValueError("epoch_size == 0, decrease batch_size or num_steps")
+
+    for i in range(epoch_size):
+        x = data[:, i * num_steps: (i+1) * num_steps]
+        y = data[:, i * num_steps + 1: (i+1) * num_steps + 1]
+    yield (x, y)
+
+
 # ################ #
 #   Data helpers   #
 # ################ #
@@ -105,34 +129,6 @@ def normalize(data):
 
     for i, sample in enumerate(out_data):
         out_data[i] /= sum(out_data[i])
-
-    return out_data
-
-
-def bins2sets(bin_data):
-    """Convert a binary matrix into a collection of sets.
-
-    This function is used to convert binary matrix of feature activations into
-    sets representing which feature detector was activated for which input
-    sample.
-    For example the matrix [ [1, 0, 1, 0], [0, 0, 1, 0] ] will be converted in:
-    [ ['f0', 'f2'], ['f2'] ]
-
-    :type bin_data: numpy array
-    :param bin_data: binary matrix
-    :return: list of sets representing the binary matrix
-    """
-    feat = 'f'  # feature id
-    out_data = {}
-
-    for i, sample in enumerate(bin_data):
-        sample_set = set()
-
-        for j, activation in enumerate(sample):
-            if activation == 1.:
-                sample_set.add(feat + str(j))
-
-        out_data[i] = sample_set
 
     return out_data
 
