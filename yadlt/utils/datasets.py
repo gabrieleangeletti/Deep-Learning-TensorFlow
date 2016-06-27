@@ -1,21 +1,23 @@
-from tensorflow.examples.tutorials.mnist import input_data
+"""Datasets module. Provides utilities to load popular datasets."""
 
-import numpy as np
+from tensorflow.examples.tutorials.mnist import input_data
+from tensorflow.models.rnn.ptb import reader
+
 import cPickle
+import numpy as np
 import os
 
 
-def load_mnist_dataset(mode='supervised'):
-    """ Load the MNIST handwritten digits dataset.
+def load_mnist_dataset(mode='supervised', one_hot=True):
+    """Load the MNIST handwritten digits dataset.
 
     :param mode: 'supervised' or 'unsupervised' mode
-
+    :param one_hot: whether to get one hot encoded labels
     :return: train, validation, test data:
             for (X, y) if 'supervised',
             for (X) if 'unsupervised'
     """
-
-    mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+    mnist = input_data.read_data_sets("MNIST_data/", one_hot=one_hot)
 
     # Training set
     trX = mnist.train.images
@@ -37,16 +39,16 @@ def load_mnist_dataset(mode='supervised'):
 
 
 def load_cifar10_dataset(cifar_dir, mode='supervised'):
-    """ Load the cifar10 dataset.
+    """Load the cifar10 dataset.
 
-    :param cifar_dir: path to the dataset directory (cPicle format from: https://www.cs.toronto.edu/~kriz/cifar.html)
+    :param cifar_dir: path to the dataset directory
+        (cPicle format from: https://www.cs.toronto.edu/~kriz/cifar.html)
     :param mode: 'supervised' or 'unsupervised' mode
 
     :return: train, test data:
             for (X, y) if 'supervised',
             for (X) if 'unsupervised'
     """
-
     # Training set
     trX = None
     trY = np.array([])
@@ -83,3 +85,17 @@ def load_cifar10_dataset(cifar_dir, mode='supervised'):
 
     elif mode == 'unsupervised':
         return trX, teX
+
+
+def load_ptb_dataset(data_path):
+    """Load the PTB dataset.
+
+    You can download the PTB dataset from here:
+    http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz
+
+    :param data_path: path to the data/ dir of the PTB dataset.
+    :return: train, validation, test data
+    """
+    raw_data = reader.ptb_raw_data(data_path)
+    trX, vlX, teX, _ = raw_data
+    return trX, vlX, teX
