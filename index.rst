@@ -11,7 +11,7 @@ Requirements
 ============
 
 * python 2.7
-* tensorflow >= 0.8 (tested on tensorflow 0.8)
+* tensorflow >= 0.8 (tested on tf 0.8 and 0.9)
 
 ============
 Installation
@@ -63,6 +63,20 @@ This command trains a Convolutional Network using the provided training, validat
 * Softmax layer
 
 For the default training parameters please see command_line/run_conv_net.py. The TensorFlow trained model will be saved in config.models_dir/convnet-models/my.Awesome.CONVNET.
+
+===============================
+Recurrent Neural Network (LSTM)
+===============================
+
+Cmd example usage:::
+
+  python command_line/run_lstm.py --ptb_dir /path/to/ptb/dataset
+
+Instructions to download the ptb dataset:
+
+* download the dataset from here: http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz
+* extract it
+* provide the path to the data/ directory
 
 ============================
 Restricted Boltzmann Machine
@@ -166,7 +180,5 @@ TODO list
 =========
 
 * Add Performace file with the performance of various algorithms on benchmark datasets
-* Recurrent Networks (LSTMs)
 * Variational Autoencoders
 * Reinforcement Learning implementation (Deep Q-Learning)
-
