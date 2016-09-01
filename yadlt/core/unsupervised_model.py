@@ -6,16 +6,16 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-import model
+from yadlt.core.model import Model
 
 
-class UnsupervisedModel(model.Model):
+class UnsupervisedModel(Model):
     """Unsupervised Model scheleton class."""
 
     def __init__(self, model_name, main_dir, models_dir,
                  data_dir, summary_dir):
         """Constructor."""
-        model.Model.__init__(
+        Model.__init__(
             self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self.encode = None
