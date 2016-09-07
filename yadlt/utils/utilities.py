@@ -250,18 +250,17 @@ def gen_image(img, width, height, outfile, img_type='grey'):
         misc.imsave(outfile, img.reshape(3, width, height))
 
 
-def get_weights_as_images(self, weights, width, height, outdir='img/',
+def get_weights_as_images(weights_npy, width, height, outdir='img/',
                           n_images=10, img_type='grey'):
     """Create and save the weights of the hidden units as images.
-
-    :param weights:
-    :param width:
-    :param height:
-    :param outdir:
-    :param n_images:
-    :param img_type:
-    :return: self
+    :param weights_npy: path to the weights .npy file
+    :param width: width of the images
+    :param height: height of the images
+    :param outdir: output directory
+    :param n_images: number of images to generate
+    :param img_type: 'grey' or 'color' (RGB)
     """
+    weights = np.load(weights_npy)
     perm = np.random.permutation(weights.shape[1])[:n_images]
 
     for p in perm:
