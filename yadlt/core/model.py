@@ -306,3 +306,23 @@ class Model(object):
 
             else:
                 self.train_step = None
+
+    def get_model_parameters(self, params, graph=None):
+        """Get the parameters of the model.
+
+        :param params: dictionary of keys (str names) and values (tensors).
+        :return: evaluated tensors in params
+        """
+        g = graph if graph is not None else self.tf_graph
+
+        with g.as_default():
+            with tf.Session() as self.tf_session:
+                self.tf_saver.restore(self.tf_session, self.model_path)
+                out = {}
+                for par in params:
+                    if type(params[par]) == list:
+                        for i, p in enumerate(params[par]):
+                            out[par + '-' + str(i+1)] = p.eval()
+                    else:
+                        out[par] = params[par].eval()
+                return out

@@ -27,6 +27,7 @@ flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pre
 flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the reconstructions of the model.')
 flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
 flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
+flags.DEFINE_string('save_model_parameters', '', 'Path to a directory to save the parameters of the model. One .npy file per layer.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_string('model_name', 'un_sdae', 'Name for the model.')
 flags.DEFINE_string('main_dir', 'un_sdae/', 'Directory to store data relative to the algorithm.')
@@ -205,6 +206,7 @@ if __name__ == '__main__':
             for i, o in enumerate(teout):
                 np.save(FLAGS.save_layers_output_test + '-layer-' + str(i + 1) + '-test', o)
 
+
     # Save output from each layer of the model
     if FLAGS.save_layers_output_test:
         print('Saving the output of each layer for the test set')
@@ -215,3 +217,16 @@ if __name__ == '__main__':
         print('Saving the output of each layer for the train set')
         save_layers_output('train')
 
+    # Save parameters of the model
+    if FLAGS.save_model_parameters:
+        print('Saving the parameters of the model')
+        param_dir = FLAGS.save_model_parameters
+        model_params = sdae.get_model_parameters(
+            {
+                'enc-weights-layer': sdae.encoding_w_,
+                'enc-biases-layer': sdae.encoding_b_,
+                'dec-weights-layer': sdae.decoding_w,
+                'dec-biases-layer': sdae.decoding_b
+            })
+        for p in model_params:
+            np.save(os.path.join(param_dir, p), model_params[p])
