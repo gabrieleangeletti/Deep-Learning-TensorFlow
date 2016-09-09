@@ -134,7 +134,7 @@ Stack of Denoising Autoencoders used to build a Deep Network for supervised lear
 
 Cmd example usage:::
 
-  python command_line/run_stacked_autoencoder_supervised.py --dae_layers 1024,784,512,256 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_learning_rate 0.002 --finetune_num_epochs 25 --finetune_opt momentum --momentum 0.9 --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_act_func relu --finetune_loss_func softmax_cross_entropy --dropout 0.7
+  python command_line/run_stacked_autoencoder_supervised.py --dae_layers 1024,784,512,256 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_num_epochs 25 --finetune_opt momentum --momentum 0.9 --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_act_func relu --finetune_loss_func softmax_cross_entropy --dropout 0.7
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 1024, 1024 <-> 784, 784 <-> 512, 512 <-> 256, and then performs supervised finetuning with ReLU units.
 This basic command trains the model on the training set (MNIST in this case), and print the accuracy on the test set. If in addition to the accuracy
@@ -150,7 +150,7 @@ Stack of Denoising Autoencoders used to build a Deep Network for unsupervised le
 
 Cmd example usage:::
 
-  python command_line/run_stacked_autoencoder_unsupervised.py --dae_layers 512,256,128 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_learning_rate 0.0001 --finetune_num_epochs 25 --finetune_opt gradient_descent --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_enc_act_func tanh --finetune_dec_act_func sigmoid --finetune_loss_func cross_entropy --dropout 0.7
+  python command_line/run_stacked_autoencoder_unsupervised.py --dae_layers 512,256,128 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_num_epochs 25 --finetune_opt gradient_descent --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_enc_act_func tanh --finetune_dec_act_func sigmoid --finetune_loss_func cross_entropy --dropout 0.7
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 512, 512 <-> 256, 256 <-> 128, and from there it constructs the Deep Autoencoder model.
 The final architecture of the model is 784 <-> 512, 512 <-> 256, 256 <-> 128, 128 <-> 256, 256 <-> 512, 512 <-> 784.
