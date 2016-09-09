@@ -87,7 +87,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
         """
         x_corrupted = self._corrupt_input(train_set)
 
-        shuff = zip(train_set, x_corrupted)
+        shuff = list(zip(train_set, x_corrupted))
         np.random.shuffle(shuff)
 
         batches = [_ for _ in utilities.gen_batches(shuff, self.batch_size)]
