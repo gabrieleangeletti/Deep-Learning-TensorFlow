@@ -72,7 +72,7 @@ class ConvolutionalNetwork(SupervisedModel):
 
         for i in range(self.num_epochs):
 
-            np.random.shuffle(shuff)
+            np.random.shuffle(list(shuff))
             batches = [_ for _ in utilities.gen_batches(
                 shuff, self.batch_size)]
 

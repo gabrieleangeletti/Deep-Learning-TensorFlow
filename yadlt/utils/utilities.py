@@ -192,7 +192,12 @@ def expand_args(**args_to_expand):
     IE the user can just specify one parameter and this function will expand it
     """
     layers = args_to_expand['layers']
-    for key, val in args_to_expand.iteritems():
+    try:
+        items = args_to_expand.iteritems()
+    except AttributeError:
+        items = args_to_expand.items()
+
+    for key, val in items:
         if isinstance(val, list) and len(val) != len(layers):
             args_to_expand[key] = [val[0] for _ in layers]
 
