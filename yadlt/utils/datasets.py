@@ -7,7 +7,11 @@ from __future__ import print_function
 from tensorflow.examples.tutorials.mnist import input_data
 from tensorflow.models.rnn.ptb import reader
 
-import cPickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
 import numpy as np
 import os
 
@@ -65,7 +69,7 @@ def load_cifar10_dataset(cifar_dir, mode='supervised'):
 
         if not fn.startswith('batches') and not fn.startswith('readme'):
             fo = open(os.path.join(cifar_dir, fn), 'rb')
-            data_batch = cPickle.load(fo)
+            data_batch = pickle.load(fo)
             fo.close()
 
             if fn.startswith('data'):
