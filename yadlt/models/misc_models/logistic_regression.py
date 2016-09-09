@@ -99,11 +99,10 @@ class LogisticRegression(SupervisedModel):
         """
         for i in range(self.num_epochs):
 
-            shuff = zip(train_set, train_labels)
+            shuff = list(zip(train_set, train_labels))
             np.random.shuffle(shuff)
 
-            batches = [_ for _ in utilities.gen_batches(
-                zip(train_set, train_labels), self.batch_size)]
+            batches = [_ for _ in utilities.gen_batches(shuff, self.batch_size)]
 
             for batch in batches:
                 x_batch, y_batch = zip(*batch)
