@@ -264,10 +264,7 @@ class Model(object):
                     (1 - ref_input) * tf.log(clip_sup))
 
             elif self.loss_func == 'softmax_cross_entropy':
-                softmax = tf.nn.softmax(model_output)
-                cost = - tf.reduce_mean(
-                    ref_input * tf.log(softmax) +
-                    (1 - ref_input) * tf.log(1 - softmax))
+                cost =  tf.softmax_cross_entropy_with_logits(model_output,ref_input)
 
             elif self.loss_func == 'mean_squared':
                 cost = tf.sqrt(tf.reduce_mean(
