@@ -1,7 +1,12 @@
+"""Utitilies module."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import numpy as np
 from scipy import misc
 import tensorflow as tf
-import numpy as np
-
 
 # ################### #
 #   Network helpers   #
@@ -9,19 +14,18 @@ import numpy as np
 
 
 def sample_prob(probs, rand):
-    """ Takes a tensor of probabilities (as from a sigmoidal activation)
-    and samples from all the distributions
+    """Get samples from a tensor of probabilities.
 
     :param probs: tensor of probabilities
     :param rand: tensor (of the same shape as probs) of random values
-
-    :return : binary sample of probabilities
+    :return: binary sample of probabilities
     """
     return tf.nn.relu(tf.sign(probs - rand))
 
 
 def xavier_init(fan_in, fan_out, const=1):
-    """ Xavier initialization of network weights.
+    """Xavier initialization of network weights.
+
     https://stackoverflow.com/questions/33640581/how-to-do-xavier-initialization-on-tensorflow
 
     :param fan_in: fan in of the network (n_features)
@@ -33,17 +37,40 @@ def xavier_init(fan_in, fan_out, const=1):
     return tf.random_uniform((fan_in, fan_out), minval=low, maxval=high)
 
 
+def seq_data_iterator(raw_data, batch_size, num_steps):
+    """Sequence data iterator.
+
+    Taken from tensorflow/models/rnn/ptb/reader.py
+    """
+    raw_data = np.array(raw_data, dtype=np.int32)
+
+    data_len = len(raw_data)
+    batch_len = data_len // batch_size
+    data = np.zeros([batch_size, batch_len], dtype=np.int32)
+    for i in range(batch_size):
+        data[i] = raw_data[batch_len * i:batch_len * (i + 1)]
+
+    epoch_size = (batch_len - 1) // num_steps
+
+    if epoch_size == 0:
+        raise ValueError("epoch_size == 0, decrease batch_size or num_steps")
+
+    for i in range(epoch_size):
+        x = data[:, i * num_steps: (i+1) * num_steps]
+        y = data[:, i * num_steps + 1: (i+1) * num_steps + 1]
+    yield (x, y)
+
+
 # ################ #
 #   Data helpers   #
 # ################ #
 
 
 def gen_batches(data, batch_size):
-    """ Divide input data into batches.
+    """Divide input data into batches.
 
     :param data: input data
     :param batch_size: size of each batch
-
     :return: data divided into batches
     """
     data = np.array(data)
@@ -52,14 +79,27 @@ def gen_batches(data, batch_size):
         yield data[i:i + batch_size]
 
 
+def to_one_hot(dataY):
+    """Convert the vector of labels dataY into one-hot encoding.
+
+    :param dataY: vector of labels
+    :return: one-hot encoded labels
+    """
+    nc = 1 + np.max(dataY)
+    onehot = [np.zeros(nc, dtype=np.int8) for _ in dataY]
+    for i, j in enumerate(dataY):
+        onehot[i][j] = 1
+    return onehot
+
+
 def conv2bin(data):
-    """ Convert a matrix of probabilities into
-    binary values. If the matrix has values <= 0 or >= 1, the values are
+    """Convert a matrix of probabilities into binary values.
+
+    If the matrix has values <= 0 or >= 1, the values are
     normalized to be in [0, 1].
 
     :type data: numpy array
     :param data: input matrix
-
     :return: converted binary matrix
     """
     if data.min() < 0 or data.max() > 1:
@@ -80,10 +120,9 @@ def conv2bin(data):
 
 
 def normalize(data):
-    """ Normalize the data to be in the [0, 1] range.
+    """Normalize the data to be in the [0, 1] range.
 
     :param data:
-
     :return: normalized data
     """
     out_data = data.copy()
@@ -94,43 +133,16 @@ def normalize(data):
     return out_data
 
 
-def bins2sets(bin_data):
-    """ Convert a binary matrix into a collection of sets.
-    This function is used to convert binary matrix of feature activations into sets
-    representing which feature detector was activated for which input sample.
-    For example the matrix [ [1, 0, 1, 0], [0, 0, 1, 0] ] will be converted in:
-    [ ['f0', 'f2'], ['f2'] ]
-
-    :type bin_data: numpy array
-    :param bin_data: binary matrix
-
-    :return: list of sets representing the binary matrix
-    """
-
-    feat = 'f'  # feature id
-    out_data = {}
-
-    for i, sample in enumerate(bin_data):
-        sample_set = set()
-
-        for j, activation in enumerate(sample):
-            if activation == 1.:
-                sample_set.add(feat + str(j))
-
-        out_data[i] = sample_set
-
-    return out_data
-
-
 def masking_noise(data, sess, v):
-    """ Apply masking noise to data in X, in other words a fraction v of elements of X
+    """Apply masking noise to data in X.
+
+    In other words a fraction v of elements of X
     (chosen at random) is forced to zero.
     :param data: array_like, Input data
     :param sess: TensorFlow session
     :param v: fraction of elements to distort, float
     :return: transformed data
     """
-
     data_noise = data.copy()
     rand = tf.random_uniform(data.shape)
     data_noise[sess.run(tf.nn.relu(tf.sign(v - rand))).astype(np.bool)] = 0
@@ -139,8 +151,11 @@ def masking_noise(data, sess, v):
 
 
 def salt_and_pepper_noise(X, v):
-    """ Apply salt and pepper noise to data in X, in other words a fraction v of elements of X
-    (chosen at random) is set to its maximum or minimum value according to a fair coin flip.
+    """Apply salt and pepper noise to data in X.
+
+    In other words a fraction v of elements of X
+    (chosen at random) is set to its maximum or minimum value according to a
+    fair coin flip.
     If minimum or maximum are not given, the min (max) value in X is taken.
     :param X: array_like, Input data
     :param v: int, fraction of elements to distort
@@ -170,13 +185,19 @@ def salt_and_pepper_noise(X, v):
 
 
 def expand_args(**args_to_expand):
-    """Expands all the lists in args_to_expand into the length of layers.
+    """Expand the given lists into the length of the layers.
+
     This is used as a convenience so that the user does not need to specify the
     complete list of parameters for model initialization.
-    IE: the user can just specify one parameter and this function will expand it
+    IE the user can just specify one parameter and this function will expand it
     """
     layers = args_to_expand['layers']
-    for key, val in args_to_expand.iteritems():
+    try:
+        items = args_to_expand.iteritems()
+    except AttributeError:
+        items = args_to_expand.items()
+
+    for key, val in items:
         if isinstance(val, list) and len(val) != len(layers):
             args_to_expand[key] = [val[0] for _ in layers]
 
@@ -184,7 +205,7 @@ def expand_args(**args_to_expand):
 
 
 def flag_to_list(flagval, flagtype):
-
+    """Convert a string of comma-separated tf flags to a list of values."""
     if flagtype == 'int':
         return [int(_) for _ in flagval.split(',') if _]
 
@@ -199,6 +220,7 @@ def flag_to_list(flagval, flagtype):
 
 
 def str2actfunc(act_func):
+    """Convert activation function name to tf function."""
     if act_func == 'sigmoid':
         return tf.nn.sigmoid
 
@@ -210,7 +232,8 @@ def str2actfunc(act_func):
 
 
 def random_seed_np_tf(seed):
-    """ seed numpy and tensorflow random number generators.
+    """Seed numpy and tensorflow random number generators.
+
     :param seed: seed parameter
     """
     if seed >= 0:
@@ -222,6 +245,7 @@ def random_seed_np_tf(seed):
 
 
 def gen_image(img, width, height, outfile, img_type='grey'):
+    """Save an image with the given parameters."""
     assert len(img) == width * height or len(img) == width * height * 3
 
     if img_type == 'grey':
@@ -231,18 +255,17 @@ def gen_image(img, width, height, outfile, img_type='grey'):
         misc.imsave(outfile, img.reshape(3, width, height))
 
 
-def get_weights_as_images(self, weights, width, height, outdir='img/', n_images=10, img_type='grey'):
-    """ Create and save the weights of the hidden units with respect to the
-    visible units as images.
-    :param weights:
-    :param width:
-    :param height:
-    :param outdir:
-    :param n_images:
-    :param img_type:
-    :return: self
+def get_weights_as_images(weights_npy, width, height, outdir='img/',
+                          n_images=10, img_type='grey'):
+    """Create and save the weights of the hidden units as images.
+    :param weights_npy: path to the weights .npy file
+    :param width: width of the images
+    :param height: height of the images
+    :param outdir: output directory
+    :param n_images: number of images to generate
+    :param img_type: 'grey' or 'color' (RGB)
     """
-
+    weights = np.load(weights_npy)
     perm = np.random.permutation(weights.shape[1])[:n_images]
 
     for p in perm:

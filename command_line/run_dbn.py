@@ -43,7 +43,7 @@ flags.DEFINE_string('rbm_batch_size', '10,', 'Size of each mini-batch.')
 flags.DEFINE_string('rbm_gibbs_k', '1,', 'Gibbs sampling steps.')
 
 # Supervised fine tuning parameters
-flags.DEFINE_string('finetune_act_func', 'relu', 'Activation function.')
+flags.DEFINE_string('finetune_act_func', 'sigmoid', 'Activation function.')
 flags.DEFINE_float('finetune_learning_rate', 0.01, 'Learning rate.')
 flags.DEFINE_float('finetune_momentum', 0.7, 'Momentum parameter.')
 flags.DEFINE_integer('finetune_num_epochs', 10, 'Number of epochs.')

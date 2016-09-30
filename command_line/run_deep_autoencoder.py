@@ -36,7 +36,7 @@ flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the
 # RBMs layers specific parameters
 flags.DEFINE_string('rbm_names', 'rbm', 'Name for the rbm stored_models.')
 flags.DEFINE_string('rbm_layers', '256,', 'Comma-separated values for the layers in the srbm.')
-flags.DEFINE_boolean('rbm_noise', 'gauss', 'Type of noise. Default: "gauss".')
+flags.DEFINE_string('rbm_noise', 'gauss', 'Type of noise. Default: "gauss".')
 flags.DEFINE_float('rbm_stddev', 0.1, 'Standard deviation for Gaussian visible units.')
 flags.DEFINE_string('rbm_learning_rate', '0.01,', 'Initial learning rate.')
 flags.DEFINE_string('rbm_num_epochs', '10,', 'Number of epochs.')
@@ -55,6 +55,7 @@ flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
 # Conversion of Autoencoder layers parameters from string to their specific type
 rbm_names = utilities.flag_to_list(FLAGS.rbm_names, 'str')
 rbm_layers = utilities.flag_to_list(FLAGS.rbm_layers, 'int')
+rbm_noise = utilities.flag_to_list(FLAGS.rbm_noise, 'str')
 rbm_learning_rate = utilities.flag_to_list(FLAGS.rbm_learning_rate, 'float')
 rbm_num_epochs = utilities.flag_to_list(FLAGS.rbm_num_epochs, 'int')
 rbm_batch_size = utilities.flag_to_list(FLAGS.rbm_batch_size, 'int')
@@ -146,7 +147,7 @@ if __name__ == '__main__':
         finetune_enc_act_func=finetune_enc_act_func, finetune_dec_act_func=finetune_dec_act_func,
         finetune_num_epochs=FLAGS.finetune_num_epochs, finetune_batch_size=FLAGS.finetune_batch_size,
         finetune_opt=FLAGS.finetune_opt, finetune_loss_func=FLAGS.finetune_loss_func, finetune_dropout=FLAGS.finetune_dropout,
-        noise=FLAGS.rbm_noise, stddev=FLAGS.rbm_stddev)
+        noise=rbm_noise, stddev=FLAGS.rbm_stddev)
 
 
     def load_params_npz(npzfilepath):

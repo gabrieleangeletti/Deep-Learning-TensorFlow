@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='yadlt',
-    version='0.0.2rc3',
+    version='0.0.4',
     url='https://github.com/blackecho/Deep-Learning-Tensorflow',
     download_url='https://github.com/blackecho/Deep-Learning-TensorFlow/tarball/0.0.2rc3',
     author='Gabriele Angeletti',

@@ -11,7 +11,7 @@ Requirements
 ============
 
 * python 2.7
-* tensorflow >= 0.8 (tested on tensorflow 0.8)
+* tensorflow >= 0.8 (tested on tf 0.8 and 0.9)
 
 ============
 Installation
@@ -63,6 +63,20 @@ This command trains a Convolutional Network using the provided training, validat
 * Softmax layer
 
 For the default training parameters please see command_line/run_conv_net.py. The TensorFlow trained model will be saved in config.models_dir/convnet-models/my.Awesome.CONVNET.
+
+===============================
+Recurrent Neural Network (LSTM)
+===============================
+
+Cmd example usage:::
+
+  python command_line/run_lstm.py --ptb_dir /path/to/ptb/dataset
+
+Instructions to download the ptb dataset:
+
+* download the dataset from here: http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz
+* extract it
+* provide the path to the data/ directory
 
 ============================
 Restricted Boltzmann Machine
@@ -120,7 +134,7 @@ Stack of Denoising Autoencoders used to build a Deep Network for supervised lear
 
 Cmd example usage:::
 
-  python command_line/run_stacked_autoencoder_supervised.py --dae_layers 1024,784,512,256 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_learning_rate 0.002 --finetune_num_epochs 25 --finetune_opt momentum --momentum 0.9 --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_act_func relu --finetune_loss_func softmax_cross_entropy --dropout 0.7
+  python command_line/run_stacked_autoencoder_supervised.py --dae_layers 1024,784,512,256 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_num_epochs 25 --finetune_opt momentum --momentum 0.9 --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_act_func relu --finetune_loss_func softmax_cross_entropy --dropout 0.7
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 1024, 1024 <-> 784, 784 <-> 512, 512 <-> 256, and then performs supervised finetuning with ReLU units.
 This basic command trains the model on the training set (MNIST in this case), and print the accuracy on the test set. If in addition to the accuracy
@@ -136,7 +150,7 @@ Stack of Denoising Autoencoders used to build a Deep Network for unsupervised le
 
 Cmd example usage:::
 
-  python command_line/run_stacked_autoencoder_unsupervised.py --dae_layers 512,256,128 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_learning_rate 0.0001 --finetune_num_epochs 25 --finetune_opt gradient_descent --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_enc_act_func tanh --finetune_dec_act_func sigmoid --finetune_loss_func cross_entropy --dropout 0.7
+  python command_line/run_stacked_autoencoder_unsupervised.py --dae_layers 512,256,128 --dae_batch_size 25 --dae_num_epochs 5 --verbose 1 --dae_corr_type masking --dae_corr_frac 0.0 --finetune_num_epochs 25 --finetune_opt gradient_descent --finetune_learning_rate 0.05 --dae_enc_act_func sigmoid --dae_dec_act_func sigmoid --dae_loss_func cross_entropy --finetune_enc_act_func tanh --finetune_dec_act_func sigmoid --finetune_loss_func cross_entropy --dropout 0.7
 
 This command trains a Stack of Denoising Autoencoders 784 <-> 512, 512 <-> 256, 256 <-> 128, and from there it constructs the Deep Autoencoder model.
 The final architecture of the model is 784 <-> 512, 512 <-> 256, 256 <-> 128, 128 <-> 256, 256 <-> 512, 512 <-> 784.
@@ -166,7 +180,5 @@ TODO list
 =========
 
 * Add Performace file with the performance of various algorithms on benchmark datasets
-* Recurrent Networks (LSTMs)
 * Variational Autoencoders
 * Reinforcement Learning implementation (Deep Q-Learning)
-

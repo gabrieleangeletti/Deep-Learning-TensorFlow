@@ -1,35 +1,49 @@
-import tensorflow as tf
+"""Implementation of Denoising Autoencoder using TensorFlow."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
+import tensorflow as tf
 
 from yadlt.core.unsupervised_model import UnsupervisedModel
 from yadlt.utils import utilities
 
 
 class DenoisingAutoencoder(UnsupervisedModel):
+    """Implementation of Denoising Autoencoders using TensorFlow.
 
-    """ Implementation of Denoising Autoencoders using TensorFlow.
     The interface of the class is sklearn-like.
     """
 
-    def __init__(self, n_components, model_name='dae', main_dir='dae/', models_dir='models/',
-                 data_dir='data/', summary_dir='logs/',
-                 enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared', num_epochs=10, batch_size=10, dataset='mnist',
-                 opt='gradient_descent', learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0., verbose=1,
-                 regtype='none', l2reg=5e-4):
-        """
+    def __init__(
+        self, n_components, model_name='dae', main_dir='dae/',
+        models_dir='models/', data_dir='data/', summary_dir='logs/',
+        enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared',
+        num_epochs=10, batch_size=10, dataset='mnist', opt='gradient_descent',
+        learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0.,
+            verbose=1, regtype='none', l2reg=5e-4):
+        """Constructor.
+
         :param n_components: number of hidden units
-        :param enc_act_func: Activation function for the encoder. [tf.nn.tanh, tf.nn.sigmoid]
-        :param dec_act_func: Activation function for the decoder. [[tf.nn.tanh, tf.nn.sigmoid, None]
-        :param corr_type: Type of input corruption. ["none", "masking", "salt_and_pepper"]
+        :param enc_act_func: Activation function for the encoder.
+            [tf.nn.tanh, tf.nn.sigmoid]
+        :param dec_act_func: Activation function for the decoder.
+            [tf.nn.tanh, tf.nn.sigmoid, None]
+        :param corr_type: Type of input corruption.
+            ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt.
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         :param l2reg: Regularization parameter. If 0, no regularization.
         """
-        UnsupervisedModel.__init__(self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        UnsupervisedModel.__init__(
+            self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
-        self._initialize_training_parameters(loss_func=loss_func, learning_rate=learning_rate, num_epochs=num_epochs,
-                                             batch_size=batch_size, dataset=dataset, opt=opt, momentum=momentum,
-                                             regtype=regtype, l2reg=l2reg)
+        self._initialize_training_parameters(
+            loss_func=loss_func, learning_rate=learning_rate, opt=opt,
+            num_epochs=num_epochs, batch_size=batch_size, dataset=dataset,
+            momentum=momentum, regtype=regtype, l2reg=l2reg)
 
         self.n_components = n_components
         self.enc_act_func = enc_act_func
@@ -45,57 +59,60 @@ class DenoisingAutoencoder(UnsupervisedModel):
         self.bh_ = None
         self.bv_ = None
 
-    def _train_model(self, train_set, validation_set, train_ref=None, Validation_ref=None):
-
+    def _train_model(self, train_set, validation_set,
+                     train_ref=None, Validation_ref=None):
         """Train the model.
+
         :param train_set: training set
         :param validation_set: validation set. optional, default None
-
         :return: self
         """
-
         for i in range(self.num_epochs):
 
             self._run_train_step(train_set)
 
             if validation_set is not None:
-                feed = {self.input_data_orig: validation_set, self.input_data: validation_set}
+                feed = {self.input_data_orig: validation_set,
+                        self.input_data: validation_set}
                 self._run_validation_error_and_summaries(i, feed)
 
     def _run_train_step(self, train_set):
+        """Run a training step.
 
-        """ Run a training step. A training step is made by randomly corrupting the training set,
-        randomly shuffling it,  divide it into batches and run the optimizer for each batch.
+        A training step is made by randomly corrupting the training set,
+        randomly shuffling it,  divide it into batches and run the optimizer
+        for each batch.
         :param train_set: training set
         :return: self
         """
         x_corrupted = self._corrupt_input(train_set)
 
-        shuff = zip(train_set, x_corrupted)
+        shuff = list(zip(train_set, x_corrupted))
         np.random.shuffle(shuff)
 
         batches = [_ for _ in utilities.gen_batches(shuff, self.batch_size)]
 
         for batch in batches:
             x_batch, x_corr_batch = zip(*batch)
-            tr_feed = {self.input_data_orig: x_batch, self.input_data: x_corr_batch}
+            tr_feed = {self.input_data_orig: x_batch,
+                       self.input_data: x_corr_batch}
             self.tf_session.run(self.train_step, feed_dict=tr_feed)
 
     def _corrupt_input(self, data):
+        """Corrupt a fraction of data according to the chosen noise method.
 
-        """ Corrupt a fraction of 'data' according to the
-        noise method of this autoencoder.
         :return: corrupted data
         """
-
-        corruption_ratio = np.round(self.corr_frac * data.shape[1]).astype(np.int)
+        corruption_ratio = np.round(
+            self.corr_frac * data.shape[1]).astype(np.int)
 
         if self.corr_type == 'none':
             return np.copy(data)
 
         if self.corr_frac > 0.0:
             if self.corr_type == 'masking':
-                return utilities.masking_noise(data, self.tf_session, self.corr_frac)
+                return utilities.masking_noise(
+                    data, self.tf_session, self.corr_frac)
 
             elif self.corr_type == 'salt_and_pepper':
                 return utilities.salt_and_pepper_noise(data, corruption_ratio)
@@ -103,8 +120,8 @@ class DenoisingAutoencoder(UnsupervisedModel):
             return np.copy(data)
 
     def build_model(self, n_features, W_=None, bh_=None, bv_=None):
+        """Create the computational graph.
 
-        """ Creates the computational graph.
         :param n_features: Number of features.
         :param regtype: regularization type
         :param W_: weight matrix np array
@@ -112,7 +129,6 @@ class DenoisingAutoencoder(UnsupervisedModel):
         :param bv_: visible bias np array
         :return: self
         """
-
         self._create_placeholders(n_features)
         self._create_variables(n_features, W_, bh_, bv_)
 
@@ -122,48 +138,54 @@ class DenoisingAutoencoder(UnsupervisedModel):
         vars = [self.W_, self.bh_, self.bv_]
         regterm = self.compute_regularization(vars)
 
-        self._create_cost_function_node(self.reconstruction, self.input_data_orig, regterm=regterm)
+        self._create_cost_function_node(
+            self.reconstruction, self.input_data_orig, regterm=regterm)
         self._create_train_step_node()
 
     def _create_placeholders(self, n_features):
+        """Create the TensorFlow placeholders for the model.
 
-        """ Create the TensorFlow placeholders for the model.
         :return: self
         """
-
-        self.input_data_orig = tf.placeholder('float', [None, n_features], name='x-input')
-        self.input_data = tf.placeholder('float', [None, n_features], name='x-corr-input')
-        # not used in this model, created just to comply with unsupervised_model.py
-        self.input_labels = tf.placeholder('float')
-        self.keep_prob = tf.placeholder('float', name='keep-probs')
+        self.input_data_orig = tf.placeholder(
+            tf.float32, [None, n_features], name='x-input')
+        self.input_data = tf.placeholder(
+            tf.float32, [None, n_features], name='x-corr-input')
+        # not used in this model, created just to comply
+        # with unsupervised_model.py
+        self.input_labels = tf.placeholder(tf.float32)
+        self.keep_prob = tf.placeholder(tf.float32, name='keep-probs')
 
     def _create_variables(self, n_features, W_=None, bh_=None, bv_=None):
+        """Create the TensorFlow variables for the model.
 
-        """ Create the TensorFlow variables for the model.
         :return: self
         """
-
         if W_:
             self.W_ = tf.Variable(W_, name='enc-w')
         else:
-            self.W_ = tf.Variable(tf.truncated_normal(shape=[n_features, self.n_components], stddev=0.1), name='enc-w')
+            self.W_ = tf.Variable(
+                tf.truncated_normal(
+                    shape=[n_features, self.n_components], stddev=0.1),
+                name='enc-w')
 
         if bh_:
             self.bh_ = tf.Variable(bh_, name='hidden-bias')
         else:
-            self.bh_ = tf.Variable(tf.constant(0.1, shape=[self.n_components]), name='hidden-bias')
+            self.bh_ = tf.Variable(tf.constant(
+                0.1, shape=[self.n_components]), name='hidden-bias')
 
         if bv_:
             self.bv_ = tf.Variable(bv_, name='visible-bias')
         else:
-            self.bv_ = tf.Variable(tf.constant(0.1, shape=[n_features]), name='visible-bias')
+            self.bv_ = tf.Variable(tf.constant(
+                0.1, shape=[n_features]), name='visible-bias')
 
     def _create_encode_layer(self):
+        """Create the encoding layer of the network.
 
-        """ Create the encoding layer of the network.
         :return: self
         """
-
         with tf.name_scope("encoder"):
 
             activation = tf.matmul(self.input_data, self.W_) + self.bh_
@@ -174,14 +196,14 @@ class DenoisingAutoencoder(UnsupervisedModel):
                 self.encode = activation
 
     def _create_decode_layer(self):
+        """Create the decoding layer of the network.
 
-        """ Create the decoding layer of the network.
         :return: self
         """
-
         with tf.name_scope("decoder"):
 
-            activation = tf.matmul(self.encode, tf.transpose(self.W_)) + self.bv_
+            activation = tf.matmul(self.encode, tf.transpose(self.W_)) +\
+                self.bv_
 
             if self.dec_act_func:
                 self.reconstruction = self.dec_act_func(activation)
@@ -189,12 +211,11 @@ class DenoisingAutoencoder(UnsupervisedModel):
                 self.reconstruction = activation
 
     def get_model_parameters(self, graph=None):
+        """Return the model parameters in the form of numpy arrays.
 
-        """ Return the model parameters in the form of numpy arrays.
         :param graph: tf graph object
         :return: model parameters
         """
-
         g = graph if graph is not None else self.tf_graph
 
         with g.as_default():
