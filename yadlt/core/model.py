@@ -193,7 +193,8 @@ class Model(object):
         :param graph: tf object for the rbm
         :return: encoded train data, encoded validation data
         """
-        layer_obj.fit(train_set, validation_set, graph=graph)
+        layer_obj.fit(train_set, train_set,
+                      validation_set, validation_set, graph=graph)
 
         with graph.as_default():
             set_params_func(layer_obj, graph)
@@ -263,11 +264,11 @@ class Model(object):
                 cost = - tf.reduce_mean(
                     tf.add(
                         tf.mul(ref_input, tf.log(clip_inf)),
-                        tf.mul(tf.sub(1, ref_input), tf.log(clip_sup))
+                        tf.mul(tf.sub(1.0, ref_input), tf.log(clip_sup))
                     ))
 
             elif self.loss_func == 'softmax_cross_entropy':
-                cost = tf.contrib.losses.softmax_cross_entropy(model_output,ref_input)
+                cost = tf.contrib.losses.softmax_cross_entropy(model_output, ref_input)
 
             elif self.loss_func == 'mean_squared':
                 cost = tf.sqrt(tf.reduce_mean(

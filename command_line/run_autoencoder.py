@@ -128,7 +128,7 @@ if __name__ == '__main__':
     if FLAGS.v_bias:
         bv = np.load(FLAGS.v_bias)
 
-    dae.fit(trX, teX, restore_previous_model=FLAGS.restore_previous_model)
+    dae.fit(trX, trX, vlX, vlX, restore_previous_model=FLAGS.restore_previous_model)
 
     # Save the model paramenters
     if FLAGS.save_parameters:
