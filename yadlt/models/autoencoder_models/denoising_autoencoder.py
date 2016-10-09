@@ -59,12 +59,14 @@ class DenoisingAutoencoder(UnsupervisedModel):
         self.bh_ = None
         self.bv_ = None
 
-    def _train_model(self, train_set, validation_set,
-                     train_ref=None, Validation_ref=None):
+    def _train_model(self, train_set, train_ref=None,
+                     validation_set=None, validation_ref=None):
         """Train the model.
 
         :param train_set: training set
+        :param train_ref: reference training data
         :param validation_set: validation set. optional, default None
+        :param validation_ref: reference validation data
         :return: self
         """
         for i in range(self.num_epochs):
