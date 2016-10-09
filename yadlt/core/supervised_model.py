@@ -118,4 +118,4 @@ class SupervisedModel(Model):
                 self.model_predictions, tf.argmax(self.input_labels, 1))
             self.accuracy = tf.reduce_mean(
                 tf.cast(correct_prediction, "float"))
-            _ = tf.scalar_summary('accuracy', self.accuracy)
+            tf.scalar_summary('accuracy', self.accuracy)

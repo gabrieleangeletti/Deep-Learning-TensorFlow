@@ -136,11 +136,11 @@ class RBM(UnsupervisedModel):
         self.w_upd8 = self.W.assign_add(
             self.learning_rate * (positive - negative) / self.batch_size)
 
-        self.bh_upd8 = self.bh_.assign_add(self.learning_rate * tf.reduce_mean(
-            hprob0 - hprob1, 0))
+        self.bh_upd8 = self.bh_.assign_add(tf.mul(self.learning_rate, tf.reduce_mean(
+            tf.sub(hprob0, hprob1), 0)))
 
-        self.bv_upd8 = self.bv_.assign_add(self.learning_rate * tf.reduce_mean(
-            self.input_data - vprob, 0))
+        self.bv_upd8 = self.bv_.assign_add(tf.mul(self.learning_rate, tf.reduce_mean(
+            tf.sub(self.input_data, vprob), 0)))
 
         vars = [self.W, self.bh_, self.bv_]
         regterm = self.compute_regularization(vars)
@@ -200,7 +200,7 @@ class RBM(UnsupervisedModel):
         :param visible: activations of the visible units
         :return: tuple(hidden probabilities, hidden binary states)
         """
-        hprobs = tf.nn.sigmoid(tf.matmul(visible, self.W) + self.bh_)
+        hprobs = tf.nn.sigmoid(tf.add(tf.matmul(visible, self.W), self.bh_))
         hstates = utilities.sample_prob(hprobs, self.hrand)
 
         return hprobs, hstates
@@ -213,7 +213,10 @@ class RBM(UnsupervisedModel):
         :param n_features: number of features
         :return: visible probabilities
         """
-        visible_activation = tf.matmul(hidden, tf.transpose(self.W)) + self.bv_
+        visible_activation = tf.add(
+            tf.matmul(hidden, tf.transpose(self.W)),
+            self.bv_
+        )
 
         if self.visible_unit_type == 'bin':
             vprobs = tf.nn.sigmoid(visible_activation)

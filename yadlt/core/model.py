@@ -240,7 +240,7 @@ class Model(object):
                 name='sm-weigths')
             self.last_b = tf.Variable(tf.constant(
                 0.1, shape=[n_classes]), name='sm-biases')
-            last_out = tf.matmul(last_layer, self.last_W) + self.last_b
+            last_out = tf.add(tf.matmul(last_layer, self.last_W), self.last_b)
             self.layer_nodes.append(last_out)
             self.last_out = last_out
             return last_out
@@ -259,26 +259,31 @@ class Model(object):
                 clip_inf = tf.clip_by_value(model_output, 1e-10, float('inf'))
                 clip_sup = tf.clip_by_value(
                     1 - model_output, 1e-10, float('inf'))
+
                 cost = - tf.reduce_mean(
-                    ref_input * tf.log(clip_inf) +
-                    (1 - ref_input) * tf.log(clip_sup))
+                    tf.add(
+                        tf.mul(ref_input, tf.log(clip_inf)),
+                        tf.mul(tf.sub(1, ref_input), tf.log(clip_sup))
+                    ))
 
             elif self.loss_func == 'softmax_cross_entropy':
                 softmax = tf.nn.softmax(model_output)
                 cost = - tf.reduce_mean(
-                    ref_input * tf.log(softmax) +
-                    (1 - ref_input) * tf.log(1 - softmax))
+                    tf.add(
+                        tf.mul(ref_input, tf.log(softmax)),
+                        tf.mul(tf.sub(1, ref_input), tf.log(tf.sub(1, softmax)))
+                    ))
 
             elif self.loss_func == 'mean_squared':
                 cost = tf.sqrt(tf.reduce_mean(
-                    tf.square(ref_input - model_output)))
+                    tf.square(tf.sub(ref_input, model_output))))
 
             else:
                 cost = None
 
         if cost is not None:
             self.cost = cost + regterm if regterm is not None else cost
-            _ = tf.scalar_summary(self.loss_func, self.cost)
+            tf.scalar_summary(self.loss_func, self.cost)
         else:
             self.cost = None
 

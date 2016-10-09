@@ -190,7 +190,10 @@ class DenoisingAutoencoder(UnsupervisedModel):
         """
         with tf.name_scope("encoder"):
 
-            activation = tf.matmul(self.input_data, self.W_) + self.bh_
+            activation = tf.add(
+                tf.matmul(self.input_data, self.W_),
+                self.bh_
+            )
 
             if self.enc_act_func:
                 self.encode = self.enc_act_func(activation)
@@ -204,8 +207,10 @@ class DenoisingAutoencoder(UnsupervisedModel):
         """
         with tf.name_scope("decoder"):
 
-            activation = tf.matmul(self.encode, tf.transpose(self.W_)) +\
+            activation = tf.add(
+                tf.matmul(self.encode, tf.transpose(self.W_)),
                 self.bv_
+            )
 
             if self.dec_act_func:
                 self.reconstruction = self.dec_act_func(activation)

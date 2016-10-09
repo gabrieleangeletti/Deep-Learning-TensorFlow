@@ -54,7 +54,7 @@ class LogisticRegression(SupervisedModel):
         self._create_variables(n_features, n_classes)
 
         self.last_out = tf.nn.softmax(
-            tf.matmul(self.input_data, self.W_) + self.b_)
+            tf.add(tf.matmul(self.input_data, self.W_), self.b_))
 
         self._create_cost_function_node(self.last_out, self.input_labels)
         self.train_step = tf.train.GradientDescentOptimizer(

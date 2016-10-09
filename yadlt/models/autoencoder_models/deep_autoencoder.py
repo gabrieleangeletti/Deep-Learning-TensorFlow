@@ -273,8 +273,10 @@ class DeepAutoencoder(UnsupervisedModel):
 
             with tf.name_scope("encode-{}".format(l)):
 
-                y_act = tf.matmul(next_train, self.encoding_w_[l]) +\
+                y_act = tf.add(
+                    tf.matmul(next_train, self.encoding_w_[l]),
                     self.encoding_b_[l]
+                )
 
                 if self.finetune_enc_act_func[l] is not None:
                     layer_y = self.finetune_enc_act_func[l](y_act)
@@ -311,7 +313,10 @@ class DeepAutoencoder(UnsupervisedModel):
                 self.decoding_w.append(dec_w)
                 self.decoding_b.append(dec_b)
 
-                y_act = tf.matmul(next_decode, dec_w) + dec_b
+                y_act = tf.add(
+                    tf.matmul(next_decode, dec_w),
+                    dec_b
+                )
 
                 if self.finetune_dec_act_func[l] is not None:
                     layer_y = self.finetune_dec_act_func[l](y_act)

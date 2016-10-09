@@ -207,7 +207,9 @@ class ConvolutionalNetwork(SupervisedModel):
                     self.B_vars.append(b_fc)
 
                     h_pool_flat = tf.reshape(next_layer_feed, [-1, fanin])
-                    h_fc = tf.nn.relu(tf.matmul(h_pool_flat, W_fc) + b_fc)
+                    h_fc = tf.nn.relu(tf.add(
+                        tf.matmul(h_pool_flat, W_fc),
+                        b_fc))
                     h_fc_drop = tf.nn.dropout(h_fc, self.keep_prob)
 
                     prev_output_dim = dim
@@ -223,7 +225,8 @@ class ConvolutionalNetwork(SupervisedModel):
                     self.W_vars.append(W_fc)
                     self.B_vars.append(b_fc)
 
-                    h_fc = tf.nn.relu(tf.matmul(next_layer_feed, W_fc) + b_fc)
+                    h_fc = tf.nn.relu(tf.add(
+                        tf.matmul(next_layer_feed, W_fc), b_fc))
                     h_fc_drop = tf.nn.dropout(h_fc, self.keep_prob)
 
                     prev_output_dim = dim
@@ -243,7 +246,7 @@ class ConvolutionalNetwork(SupervisedModel):
                 self.W_vars.append(W_sm)
                 self.B_vars.append(b_sm)
 
-                self.last_out = tf.matmul(next_layer_feed, W_sm) + b_sm
+                self.last_out = tf.add(tf.matmul(next_layer_feed, W_sm), b_sm)
 
     @staticmethod
     def weight_variable(shape):

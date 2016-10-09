@@ -7,10 +7,11 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
+import yadlt.core.model as model
 from yadlt.utils import utilities
 
 
-class LSTM(object):
+class LSTM(model.Model):
     """Long Short-Term Memory Network tensorflow implementation.
 
     The interface of the class is sklearn-like.
@@ -65,7 +66,7 @@ class LSTM(object):
             for i in range(self.num_epochs):
                 lr_decay = self.lr_decay ** max(i - third, 0.0)
                 self.tf_session.run(
-                    tf.assign(self.lr_var, self.learning_rate * lr_decay))
+                    tf.assign(self.lr_var, tf.mul(self.learning_rate, lr_decay)))
 
                 train_perplexity = self._run_train_step(train_set, 'train')
                 print("Epoch: %d Train Perplexity: %.3f"
@@ -83,6 +84,7 @@ class LSTM(object):
         epoch_size = ((len(data) // self.batch_size) - 1) // self.num_steps
         costs = 0.0
         iters = 0
+        step = 0
         state = self._init_state.eval()
         op = self._train_op if mode == 'train' else tf.no_op()
 
@@ -148,13 +150,13 @@ class LSTM(object):
         softmax_w = tf.get_variable(
             "softmax_w", [self.num_hidden, self.vocab_size])
         softmax_b = tf.get_variable("softmax_b", [self.vocab_size])
-        logits = tf.matmul(output, softmax_w) + softmax_b
+        logits = tf.add(tf.matmul(output, softmax_w), softmax_b)
         loss = tf.nn.seq2seq.sequence_loss_by_example(
             [logits],
             [tf.reshape(self.input_labels, [-1])],
             [tf.ones([self.batch_size * self.num_steps])])
 
-        self.cost = tf.reduce_sum(loss) / self.batch_size
+        self.cost = tf.div(tf.reduce_sum(loss), self.batch_size)
         self.final_state = state
 
     def _create_optimizer_node(self):

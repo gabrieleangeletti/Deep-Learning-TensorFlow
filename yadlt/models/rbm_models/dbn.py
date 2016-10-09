@@ -251,8 +251,10 @@ class DeepBeliefNetwork(SupervisedModel):
 
             with tf.name_scope("encode-{}".format(l)):
 
-                y_act = tf.matmul(next_train, self.encoding_w_[l]) +\
+                y_act = tf.add(
+                    tf.matmul(next_train, self.encoding_w_[l]),
                     self.encoding_b_[l]
+                )
 
                 if self.finetune_act_func:
                     layer_y = self.finetune_act_func(y_act)
