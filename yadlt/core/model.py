@@ -85,8 +85,8 @@ class Model(object):
                     with the same name of this model is restored from disk
                     to continue training.
         """
-        self.tf_merged_summaries = tf.merge_all_summaries()
-        init_op = tf.initialize_all_variables()
+        self.tf_merged_summaries = tf.summary.merge_all()
+        init_op = tf.global_variables_initializer()
         self.tf_saver = tf.train.Saver()
 
         self.tf_session.run(init_op)
@@ -105,7 +105,7 @@ class Model(object):
         run_dir = os.path.join(self.tf_summary_dir, 'run' + str(run_id))
         print('Tensorboard logs dir for this run is %s' % (run_dir))
 
-        self.tf_summary_writer = tf.train.SummaryWriter(
+        self.tf_summary_writer = tf.summary.FileWriter(
             run_dir, self.tf_session.graph)
 
     def _initialize_training_parameters(
@@ -279,7 +279,7 @@ class Model(object):
 
         if cost is not None:
             self.cost = cost + regterm if regterm is not None else cost
-            tf.scalar_summary(self.loss_func, self.cost)
+            tf.summary.scalar(self.loss_func, self.cost)
         else:
             self.cost = None
 
