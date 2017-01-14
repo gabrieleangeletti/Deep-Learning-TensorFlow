@@ -1,51 +1,7 @@
-# Deep Learning algorithms with TensorFlow
+# Implementation of a Multimodal Deep Boltzmann Machine with Tensorflow. 
+This is a project realized in the course of Probabilistic Graphical Model, Object Recognition and Computer Vision. 
 
-This repository is a collection of various Deep Learning algorithms implemented using the
-[TensorFlow](http://www.tensorflow.org) library. This package is intended as a command line utility you can use to quickly train and
-evaluate popular Deep Learning models and maybe use them as benchmark/baseline in comparison to your custom models/datasets.
-If you want to use the package from ipython or maybe integrate it in your code, I published a pip package named `yadlt`: Yet Another Deep Learning Tool.
+The goal is to implement a Multi-DBM model with Tensorflow. This is inspired from the [paper]( http://jmlr.org/papers/volume15/srivastava14b/srivastava14b.pdf) of Nitish Srivastava et al appeared at NIPS2012. 
 
-### Requirements:
+The code is built on the top of the [Deep-Learning-Tensorflow](https://github.com/blackecho/Deep-Learning-TensorFlow) 
 
-* tensorflow >= 0.8
-
-### List of available models:
-
-* Convolutional Network
-* Recurrent Neural Network (LSTM)
-* Restricted Boltzmann Machine
-* Deep Belief Network
-* Deep Autoencoder as stack of RBMs
-* Denoising Autoencoder
-* Stacked Denoising Autoencoder
-* Deep Autoencoder as stack of Denoising Autoencoders
-* MultiLayer Perceptron
-* Logistic Regression
-
-### Installation
-
-#### Through pip:
-
-    pip install yadlt
-
-You can learn the basic usage of the models by looking at the ``command_line/`` directory. Or you can take a look at the [documentation](http://deep-learning-tensorflow.readthedocs.io/en/latest/).
-
-**Note**: the documentation is still a work in progress for the pip package, but the package usage is very simple. The classes have a sklearn-like interface, so basically you just have to create the object
-(e.g. `sdae = StackedDenoisingAutoencoder()`) and call the fit/predict methods, and the pretrain() method if the model supports it
-(e.g. `sdae.pretrain(X_train, y_train)`, `sdae.fit(X_train, y_train)` and `predictions = sdae.predict(X_test)`)
-
-#### Through github:
-
-* cd in a directory where you want to store the project, e.g. ``/home/me``
-* clone the repository: ``git clone https://github.com/blackecho/Deep-Learning-TensorFlow.git``
-* ``cd Deep-Learning-TensorFlow``
-* now you can configure the software and run the models (see the [documentation](http://deep-learning-tensorflow.readthedocs.io/en/latest/))!
-
-### Documentation:
-
-You can find the documentation for this project at this [link](http://deep-learning-tensorflow.readthedocs.io/en/latest/).
-
-### Models TODO list
-
-* Variational Autoencoders
-* Deep Q Reinforcement Learning
