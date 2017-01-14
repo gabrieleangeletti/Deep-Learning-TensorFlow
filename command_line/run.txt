@@ -1,0 +1,21 @@
+#Run an RBM 
+python command_line/run_rbm.py --dataset custom --main_dir rbm-models 
+--model_name my.Awesome.RBM 
+--train_dataset path/to/train_set.npy --valid_dataset path/to/valid_set.npy 
+--num_hidden 250 --num_epochs 10 --batch_size 128 --learning_rate 0.0001 
+--gibbs_sampling_steps 3 --verbose 1
+
+This command trains a RBM with 250 hidden units using the provided training and validation sets, and the specified training parameters.
+For the default training parameters please see command_line/run_rbm.py. The TensorFlow trained model 
+will be saved in config.models_dir/rbm-models/my.Awesome.RBM.
+
+
+
+# Run DBN 
+
+python command_line/run_dbn.py --dataset custom --main_dir dbn-models 
+--model_name my-deeper-dbn  --verbose 1 
+--rbm_layers 512,256 --rbm_learning_rate 0.005 --rbm_num_epochs 15 
+--rbm_batch_size 25 --finetune_batch_size 25 --finetune_learning_rate 0.001
+--finetune_num_epochs 10 --finetune_loss_func softmax_cross_entropy 
+--finetune_dropout 0.7 --finetune_act_func relu
