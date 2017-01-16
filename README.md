@@ -46,6 +46,6 @@ You can learn the basic usage of the models by looking at the ``command_line/`` 
 You can find the documentation for this project at this [link](http://deep-learning-tensorflow.readthedocs.io/en/latest/).
 
 ### Models TODO list
-
+* Multimodal Deep Boltzmann Machine
 * Variational Autoencoders
 * Deep Q Reinforcement Learning
