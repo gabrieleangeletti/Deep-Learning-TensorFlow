@@ -1,15 +1,11 @@
-# Deep Learning algorithms with TensorFlow
+# Implementation of a Multimodal Deep Boltzmann Machine with Tensorflow.
+This is a project realized in the course of Probabilistic Graphical Model, Object Recognition and Computer Vision. 
 
-This repository is a collection of various Deep Learning algorithms implemented using the
-[TensorFlow](http://www.tensorflow.org) library. This package is intended as a command line utility you can use to quickly train and
-evaluate popular Deep Learning models and maybe use them as benchmark/baseline in comparison to your custom models/datasets.
-If you want to use the package from ipython or maybe integrate it in your code, I published a pip package named `yadlt`: Yet Another Deep Learning Tool.
+The goal is to implement a Multi-DBM model with Tensorflow. This is inspired from the [paper]( http://jmlr.org/papers/volume15/srivastava14b/srivastava14b.pdf) of Nitish Srivastava et al appeared at NIPS2012. 
 
-### Requirements:
 
-* tensorflow >= 0.8
 
-### List of available models:
+The code is built on the top of the [Deep-Learning-Tensorflow](https://github.com/blackecho/Deep-Learning-TensorFlow) 
 
 * Convolutional Network
 * Recurrent Neural Network (LSTM)
