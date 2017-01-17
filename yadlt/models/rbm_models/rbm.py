@@ -27,7 +27,7 @@ class RBM(UnsupervisedModel):
 
         :param num_hidden: number of hidden units
         :param loss_function: type of loss function
-        :param visible_unit_type: type of the visible units (bin or gauss)
+        :param visible_unit_type: type of the visible units (bin, gauss or rsm)
         :param gibbs_sampling_steps: optional, default 1
         :param stddev: default 0.1. Ignored if visible_unit_type is not 'gauss'
         :param verbose: level of verbosity. optional, default 0
@@ -117,18 +117,18 @@ class RBM(UnsupervisedModel):
         self._create_variables(n_features)
         self.encode = self.sample_hidden_from_visible(self.input_data)[0]
         self.reconstruction = self.sample_visible_from_hidden(
-            self.encode, n_features)
+            self.encode, n_features)[0]
 
-        hprob0, hstate0, vprob, hprob1, hstate1 = self.gibbs_sampling_step(
-            self.input_data, n_features)
+        hprob0, hstate0, vprob, vstate, hprob1, hstate1 =\
+            self.gibbs_sampling_step(self.input_data, n_features)
         positive = self.compute_positive_association(self.input_data,
                                                      hprob0, hstate0)
 
         nn_input = vprob
 
         for step in range(self.gibbs_sampling_steps - 1):
-            hprob, hstate, vprob, hprob1, hstate1 = self.gibbs_sampling_step(
-                nn_input, n_features)
+            hprob, hstate, vprob, vstate, hprob1, hstate1 =\
+                self.gibbs_sampling_step(nn_input, n_features)
             nn_input = vprob
 
         negative = tf.matmul(tf.transpose(vprob), hprob1)
@@ -136,11 +136,12 @@ class RBM(UnsupervisedModel):
         self.w_upd8 = self.W.assign_add(
             self.learning_rate * (positive - negative) / self.batch_size)
 
-        self.bh_upd8 = self.bh_.assign_add(tf.mul(self.learning_rate, tf.reduce_mean(
-            tf.sub(hprob0, hprob1), 0)))
+        self.bh_upd8 = self.bh_.assign_add(tf.mul(
+            self.learning_rate, tf.reduce_mean(tf.sub(hprob0, hprob1), 0)))
 
-        self.bv_upd8 = self.bv_.assign_add(tf.mul(self.learning_rate, tf.reduce_mean(
-            tf.sub(self.input_data, vprob), 0)))
+        self.bv_upd8 = self.bv_.assign_add(tf.mul(
+            self.learning_rate, tf.reduce_mean(
+                tf.sub(self.input_data, vprob), 0)))
 
         vars = [self.W, self.bh_, self.bv_]
         regterm = self.compute_regularization(vars)
@@ -187,10 +188,10 @@ class RBM(UnsupervisedModel):
                        new hidden probs, new hidden states)
         """
         hprobs, hstates = self.sample_hidden_from_visible(visible)
-        vprobs = self.sample_visible_from_hidden(hprobs, n_features)
+        vprobs, vstates = self.sample_visible_from_hidden(hprobs, n_features)
         hprobs1, hstates1 = self.sample_hidden_from_visible(vprobs)
 
-        return hprobs, hstates, vprobs, hprobs1, hstates1
+        return hprobs, hstates, vprobs, vstates, hprobs1, hstates1
 
     def sample_hidden_from_visible(self, visible):
         """Sample the hidden units from the visible units.
@@ -220,15 +221,23 @@ class RBM(UnsupervisedModel):
 
         if self.visible_unit_type == 'bin':
             vprobs = tf.nn.sigmoid(visible_activation)
+            vstates = None
 
         elif self.visible_unit_type == 'gauss':
             vprobs = tf.truncated_normal(
                 (1, n_features), mean=visible_activation, stddev=self.stddev)
+            vstates = None
+
+        elif self.visible_unit_type == 'rsm':
+            vprobs = tf.nn.softmax(visible_activation)
+            # self.D = input.sum(axis=1)
+            vstates = tf.multinomial(vprobs, 1)  # self.D)  # document size
 
         else:
             vprobs = None
+            vstates = None
 
-        return vprobs
+        return vprobs, vstates
 
     def compute_positive_association(self, visible,
                                      hidden_probs, hidden_states):
@@ -244,6 +253,9 @@ class RBM(UnsupervisedModel):
 
         elif self.visible_unit_type == 'gauss':
             positive = tf.matmul(tf.transpose(visible), hidden_probs)
+
+        elif self.visible_unit_type == 'rsm':
+            positive = tf.matmul(tf.transpose(visible), hidden_states)
 
         else:
             positive = None
