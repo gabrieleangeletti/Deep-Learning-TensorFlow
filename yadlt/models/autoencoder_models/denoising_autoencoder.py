@@ -7,7 +7,7 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
-from yadlt.core.unsupervised_model import UnsupervisedModel
+from yadlt.core import UnsupervisedModel
 from yadlt.utils import utilities
 
 

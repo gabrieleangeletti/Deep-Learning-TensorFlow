@@ -8,7 +8,7 @@ import numpy as np
 import os
 import tensorflow as tf
 
-from yadlt.core.unsupervised_model import UnsupervisedModel
+from yadlt.core import UnsupervisedModel
 from yadlt.models.autoencoder_models import denoising_autoencoder
 from yadlt.utils import utilities
 

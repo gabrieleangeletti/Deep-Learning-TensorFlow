@@ -8,7 +8,7 @@ import numpy as np
 import os
 import tensorflow as tf
 
-from yadlt.core.unsupervised_model import UnsupervisedModel
+from yadlt.core import UnsupervisedModel
 from yadlt.models.rbm_models import rbm
 from yadlt.utils import utilities
 

@@ -7,11 +7,11 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
-import yadlt.core.model as model
+from yadlt.core import Model
 from yadlt.utils import utilities
 
 
-class LSTM(model.Model):
+class LSTM(Model):
     """Long Short-Term Memory Network tensorflow implementation.
 
     The interface of the class is sklearn-like.
