@@ -35,10 +35,13 @@ class RBM(UnsupervisedModel):
         UnsupervisedModel.__init__(self, model_name, main_dir, models_dir,
                                    data_dir, summary_dir)
 
-        self._initialize_training_parameters(
-            loss_func=loss_func, learning_rate=learning_rate,
-            num_epochs=num_epochs, batch_size=batch_size, dataset=dataset,
-            regtype=regtype, l2reg=l2reg)
+        self.loss_func = loss_func
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.dataset = dataset
+        self.regtype = regtype
+        self.l2reg = l2reg
 
         self.num_hidden = num_hidden
         self.visible_unit_type = visible_unit_type

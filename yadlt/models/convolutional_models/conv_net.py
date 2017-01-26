@@ -44,9 +44,14 @@ class ConvolutionalNetwork(SupervisedModel):
         SupervisedModel.__init__(
             self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
-        self._initialize_training_parameters(
-            loss_func, learning_rate, num_epochs, batch_size,
-            dataset, opt, momentum)
+        self.loss_func = loss_func
+        self.learning_rate = learning_rate
+        self.dropout = dropout
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.dataset = dataset
+        self.opt = opt
+        self.momentum = momentum
 
         self.layers = layers
         self.original_shape = original_shape

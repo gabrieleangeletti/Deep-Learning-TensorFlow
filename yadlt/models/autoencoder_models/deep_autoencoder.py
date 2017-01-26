@@ -75,11 +75,15 @@ class DeepAutoencoder(UnsupervisedModel):
         UnsupervisedModel.__init__(
             self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
-        self._initialize_training_parameters(
-            loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
-            num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
-            l2reg=l2reg, regtype=finetune_regtype, dropout=finetune_dropout,
-            dataset=dataset, opt=finetune_opt, momentum=momentum)
+        self.loss_func = loss_func
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.dataset = dataset
+        self.opt = opt
+        self.momentum = momentum
+        self.regtype = regtype
+        self.l2reg = l2reg
 
         self.do_pretrain = do_pretrain
         self.layers = layers

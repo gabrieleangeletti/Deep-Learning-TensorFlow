@@ -51,11 +51,8 @@ class DeepBeliefNetwork(SupervisedModel):
         SupervisedModel.__init__(
             self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
-        self._initialize_training_parameters(
-            loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
-            dropout=finetune_dropout, num_epochs=finetune_num_epochs,
-            batch_size=finetune_batch_size, dataset=dataset, opt=finetune_opt,
-            momentum=momentum)
+        self.dataset = dataset
+        self.momentum = momentum
 
         self.do_pretrain = do_pretrain
         self.layers = rbm_layers

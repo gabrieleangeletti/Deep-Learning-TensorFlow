@@ -10,6 +10,7 @@ import os
 import six
 import tensorflow as tf
 
+import layers.BaseLayer as BaseLayer
 from os.path import expanduser
 
 
@@ -43,9 +44,30 @@ class BaseModel(object):
         pass
 
     @abc.abstractmethod
-    def getParameters(self):
+    def get_parameters(self):
         """Get the model parameters."""
         pass
+
+
+class Sequential(BaseModel):
+    """Linear stack of layers model."""
+
+    def __init__(self, layers=None):
+        """Create a Sequential model."""
+        self.layers = []
+
+    def add(self, layer):
+        """Add a layer to the stack."""
+        if not isinstance(layer, BaseLayer):
+            raise TypeError('Should be an instance of BaseLayer.')
+        self.layers.append(layer)
+
+    def forward(self, X):
+        """Forward propagate X through the model."""
+        out = X
+        for l in self.layers:
+            out = l.forward(out)
+        return out
 
 
 class Model(object):
@@ -144,35 +166,6 @@ class Model(object):
 
         self.tf_summary_writer = tf.summary.FileWriter(
             run_dir, self.tf_session.graph)
-
-    def _initialize_training_parameters(
-        self, loss_func, learning_rate, num_epochs, batch_size, dataset,
-        opt='gradient_descent', dropout=1, momentum=None, regtype='none',
-            l2reg=None):
-        """Initialize training parameters common to all models.
-
-        :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
-        :param learning_rate: Initial learning rate
-        :param num_epochs: Number of epochs
-        :param batch_size: Size of each mini-batch
-        :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom'].
-        :param opt: Which tensorflow optimizer to use.
-            ['gradient_descent', 'momentum', 'ada_grad']
-        :param dropout: Dropout parameter
-        :param momentum: Momentum parameter
-        :param l2reg: regularization parameter
-        :return: self
-        """
-        self.loss_func = loss_func
-        self.learning_rate = learning_rate
-        self.dropout = dropout
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
-        self.dataset = dataset
-        self.opt = opt
-        self.momentum = momentum
-        self.regtype = regtype
-        self.l2reg = l2reg
 
     def compute_regularization(self, vars):
         """Compute the regularization tensor.

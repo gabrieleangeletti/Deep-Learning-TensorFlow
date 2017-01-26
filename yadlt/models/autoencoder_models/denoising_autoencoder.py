@@ -40,10 +40,16 @@ class DenoisingAutoencoder(UnsupervisedModel):
         UnsupervisedModel.__init__(
             self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
-        self._initialize_training_parameters(
-            loss_func=loss_func, learning_rate=learning_rate, opt=opt,
-            num_epochs=num_epochs, batch_size=batch_size, dataset=dataset,
-            momentum=momentum, regtype=regtype, l2reg=l2reg)
+        self.loss_func = loss_func
+        self.learning_rate = learning_rate
+        self.dropout = dropout
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.dataset = dataset
+        self.opt = opt
+        self.momentum = momentum
+        self.regtype = regtype
+        self.l2reg = l2reg
 
         self.n_components = n_components
         self.enc_act_func = enc_act_func
