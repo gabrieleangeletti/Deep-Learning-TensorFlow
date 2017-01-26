@@ -1,30 +1,28 @@
+"""Tests for the yadlt.utils.utilities package."""
+
 import numpy as np
 import unittest
 
-import utils
+import yadlt.utils.utilities as utils
 
 
 class TestUtilsMethods(unittest.TestCase):
-    """ Test the utils method in the utils module.
-    """
+    """Test the utils method in the utils module."""
 
     def setUp(self):
-        """ Setup values for testing.
-        """
+        """Setup values for testing."""
         self.v = 13
         self.x = np.random.rand(39, 58)
 
     def test_masking_noise(self):
-        """ test masking noise function.
-        """
+        """Test masking noise function."""
         x_noise = utils.masking_noise(self.x, self.v)
 
         for sample in x_noise:
             self.assertEqual(sum([i == 0 for i in sample]), self.v)
 
     def test_salt_and_pepper_noise_with_min_max(self):
-        """ test the salt and pepper function with specified min and max values.
-        """
+        """Test the salt and pepper function with given min and max."""
         x_sp = utils.salt_and_pepper_noise(self.x, self.v, 0, 1)
 
         for sample in x_sp:
@@ -32,8 +30,7 @@ class TestUtilsMethods(unittest.TestCase):
             self.assertEqual(salted_elems, self.v)
 
     def test_salt_and_pepper_noise_without_min_max(self):
-        """ test the salt and pepper function without specified min and max values.
-        """
+        """Test the salt and pepper function without given min and max."""
         x_sp = utils.salt_and_pepper_noise(self.x, self.v)
 
         mn = self.x.min()
