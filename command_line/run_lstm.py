@@ -1,9 +1,6 @@
 """Command line script to run LSTM model."""
 
-import os
 import tensorflow as tf
-
-import config
 
 from yadlt.models.rnn_models.lstm import LSTM
 from yadlt.utils import datasets
@@ -18,8 +15,7 @@ FLAGS = flags.FLAGS
 # Global configuration
 flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["ptb"]')
 flags.DEFINE_string('ptb_dir', '', 'Path to the ptb dataset directory.')
-flags.DEFINE_string('main_dir', '', 'Directory to store data relative to the algorithm.')
-flags.DEFINE_string('model_name', 'lstm', 'Model name.')
+flags.DEFINE_string('name', 'lstm', 'Model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0).\
     Useful for testing hyperparameters.')
 
@@ -54,16 +50,11 @@ if __name__ == '__main__':
     else:
         trX, vlX, teX = None, None, None
 
-    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
-    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
-    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
-
     l = LSTM(
         FLAGS.num_layers, FLAGS.num_hidden, FLAGS.vocab_size,
         FLAGS.batch_size, FLAGS.num_steps, FLAGS.num_epochs,
         FLAGS.learning_rate, FLAGS.dropout, FLAGS.init_scale,
         FLAGS.max_grad_norm, FLAGS.lr_decay, FLAGS.verbose,
-        main_dir=FLAGS.main_dir
     )
 
     l.fit(trX, teX)

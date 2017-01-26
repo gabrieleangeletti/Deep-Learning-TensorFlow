@@ -18,8 +18,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
     """
 
     def __init__(
-        self, n_components, model_name='dae', main_dir='dae/',
-        models_dir='models/', data_dir='data/', summary_dir='logs/',
+        self, n_components, name='dae',
         enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared',
         num_epochs=10, batch_size=10, dataset='mnist', opt='gradient_descent',
         learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0.,
@@ -37,12 +36,10 @@ class DenoisingAutoencoder(UnsupervisedModel):
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         :param l2reg: Regularization parameter. If 0, no regularization.
         """
-        UnsupervisedModel.__init__(
-            self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        UnsupervisedModel.__init__(self, name)
 
         self.loss_func = loss_func
         self.learning_rate = learning_rate
-        self.dropout = dropout
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.dataset = dataset
@@ -223,7 +220,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
             else:
                 self.reconstruction = activation
 
-    def get_model_parameters(self, graph=None):
+    def get_parameters(self, graph=None):
         """Return the model parameters in the form of numpy arrays.
 
         :param graph: tf graph object

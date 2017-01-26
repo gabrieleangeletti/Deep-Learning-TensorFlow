@@ -5,7 +5,6 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import os
 import tensorflow as tf
 
 from yadlt.core import UnsupervisedModel
@@ -20,8 +19,7 @@ class DeepAutoencoder(UnsupervisedModel):
     """
 
     def __init__(
-        self, layers, model_name='srbm', main_dir='srbm/',
-        models_dir='models/', data_dir='data/', summary_dir='logs/',
+        self, layers, name='srbm',
         num_epochs=[10], batch_size=[10], dataset='mnist',
         learning_rate=[0.01], gibbs_k=[1], loss_func=['mean_squared'],
         momentum=0.5, finetune_dropout=1, verbose=1,
@@ -59,8 +57,7 @@ class DeepAutoencoder(UnsupervisedModel):
         # of layers is more than the list of the parameter.
         expanded_args = utilities.expand_args(**locals())
 
-        UnsupervisedModel.__init__(
-            self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        UnsupervisedModel.__init__(self, name)
 
         self.loss_func = loss_func
         self.learning_rate = learning_rate
@@ -95,13 +92,10 @@ class DeepAutoencoder(UnsupervisedModel):
         for l, layer in enumerate(layers):
             rbm_str = 'rbm-' + str(l + 1)
             new_rbm = rbm.RBM(
-                model_name=self.model_name + '-' + rbm_str,
+                name=self.name + '-' + rbm_str,
                 loss_func=expanded_args['loss_func'][l],
-                models_dir=os.path.join(self.models_dir, rbm_str),
-                data_dir=os.path.join(self.data_dir, rbm_str),
-                summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
                 visible_unit_type=expanded_args['noise'][l], stddev=stddev,
-                num_hidden=expanded_args['layers'][l], main_dir=self.main_dir,
+                num_hidden=expanded_args['layers'][l],
                 learning_rate=expanded_args['learning_rate'][l],
                 gibbs_sampling_steps=expanded_args['gibbs_k'][l],
                 num_epochs=expanded_args['num_epochs'][l],
@@ -115,7 +109,7 @@ class DeepAutoencoder(UnsupervisedModel):
         self.do_pretrain = True
 
         def set_params_func(rbmmachine, rbmgraph):
-            params = rbmmachine.get_model_parameters(graph=rbmgraph)
+            params = rbmmachine.get_parameters(graph=rbmgraph)
             self.encoding_w_.append(params['W'])
             self.encoding_b_.append(params['bh_'])
 

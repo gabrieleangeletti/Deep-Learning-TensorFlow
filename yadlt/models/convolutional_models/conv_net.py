@@ -18,8 +18,7 @@ class ConvolutionalNetwork(SupervisedModel):
     """
 
     def __init__(
-        self, layers, original_shape, model_name='convnet', main_dir='convnet',
-        models_dir='models/', data_dir='data/', summary_dir='logs/',
+        self, layers, original_shape, name='convnet',
         loss_func='softmax_cross_entropy', num_epochs=10, batch_size=10,
         dataset='mnist', opt='gradient_descent', learning_rate=0.01,
             momentum=0.5, dropout=0.5, verbose=1):
@@ -41,8 +40,7 @@ class ConvolutionalNetwork(SupervisedModel):
         :param dropout: Dropout parameter
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         """
-        SupervisedModel.__init__(
-            self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        SupervisedModel.__init__(self, name)
 
         self.loss_func = loss_func
         self.learning_rate = learning_rate

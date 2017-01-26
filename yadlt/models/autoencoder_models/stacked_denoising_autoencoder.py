@@ -5,7 +5,6 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import os
 import tensorflow as tf
 
 from yadlt.core import SupervisedModel
@@ -20,8 +19,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
     """
 
     def __init__(
-        self, layers, model_name='sdae', main_dir='sdae/',
-        models_dir='models/', data_dir='data/', summary_dir='logs/',
+        self, layers, name='sdae',
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
         dataset='mnist', opt=['gradient_descent'], l2reg=[5e-4],
@@ -64,8 +62,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         # of layers is more than the list of the parameter.
         expanded_args = utilities.expand_args(**locals())
 
-        SupervisedModel.__init__(
-            self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        SupervisedModel.__init__(self, name)
 
         self.loss_func = loss_func
         self.learning_rate = learning_rate
@@ -96,11 +93,8 @@ class StackedDenoisingAutoencoder(SupervisedModel):
 
             self.autoencoders.append(
                 denoising_autoencoder.DenoisingAutoencoder(
-                    n_components=layer, main_dir=self.main_dir,
-                    model_name=self.model_name + '-' + dae_str,
-                    models_dir=os.path.join(self.models_dir, dae_str),
-                    data_dir=os.path.join(self.data_dir, dae_str),
-                    summary_dir=os.path.join(self.tf_summary_dir, dae_str),
+                    n_components=layer,
+                    name=self.name + '-' + dae_str,
                     enc_act_func=expanded_args['enc_act_func'][l],
                     dec_act_func=expanded_args['dec_act_func'][l],
                     loss_func=expanded_args['loss_func'][l],
@@ -120,7 +114,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         self.do_pretrain = True
 
         def set_params_func(autoenc, autoencgraph):
-            params = autoenc.get_model_parameters(graph=autoencgraph)
+            params = autoenc.get_parameters(graph=autoencgraph)
             self.encoding_w_.append(params['enc_w'])
             self.encoding_b_.append(params['enc_b'])
 

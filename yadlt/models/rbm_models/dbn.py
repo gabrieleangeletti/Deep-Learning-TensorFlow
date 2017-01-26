@@ -5,7 +5,6 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import os
 import tensorflow as tf
 
 from yadlt.core import SupervisedModel
@@ -20,9 +19,8 @@ class DeepBeliefNetwork(SupervisedModel):
     """
 
     def __init__(
-        self, rbm_layers, model_name='dbn', do_pretrain=False,
-        main_dir='dbn/', models_dir='models/', data_dir='data/',
-        summary_dir='logs/', rbm_num_epochs=[10], rbm_gibbs_k=[1],
+        self, rbm_layers, name='dbn', do_pretrain=False,
+        rbm_num_epochs=[10], rbm_gibbs_k=[1],
         rbm_gauss_visible=False, rbm_stddev=0.1, rbm_batch_size=[10],
         dataset='mnist', rbm_learning_rate=[0.01], finetune_dropout=1,
         finetune_loss_func='softmax_cross_entropy',
@@ -48,8 +46,7 @@ class DeepBeliefNetwork(SupervisedModel):
         :param do_pretrain: True: uses variables from pretraining,
             False: initialize new variables.
         """
-        SupervisedModel.__init__(
-            self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        SupervisedModel.__init__(self, name)
 
         self.dataset = dataset
         self.momentum = momentum
@@ -85,11 +82,8 @@ class DeepBeliefNetwork(SupervisedModel):
             if l == 0 and rbm_gauss_visible:
                 self.rbms.append(
                     rbm.RBM(
-                        model_name=self.model_name + '-' + rbm_str,
-                        models_dir=os.path.join(self.models_dir, rbm_str),
-                        data_dir=os.path.join(self.data_dir, rbm_str),
-                        summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
-                        num_hidden=layer, main_dir=self.main_dir,
+                        name=self.name + '-' + rbm_str,
+                        num_hidden=layer,
                         learning_rate=rbm_params['learning_rate'][l],
                         dataset=self.dataset, verbose=self.verbose,
                         num_epochs=rbm_params['num_epochs'][l],
@@ -100,11 +94,8 @@ class DeepBeliefNetwork(SupervisedModel):
             else:
                 self.rbms.append(
                     rbm.RBM(
-                        model_name=self.model_name + '-' + rbm_str,
-                        models_dir=os.path.join(self.models_dir, rbm_str),
-                        data_dir=os.path.join(self.data_dir, rbm_str),
-                        summary_dir=os.path.join(self.tf_summary_dir, rbm_str),
-                        num_hidden=layer, main_dir=self.main_dir,
+                        name=self.name + '-' + rbm_str,
+                        num_hidden=layer,
                         learning_rate=rbm_params['learning_rate'][l],
                         dataset=self.dataset, verbose=self.verbose,
                         num_epochs=rbm_params['num_epochs'][l],
@@ -118,7 +109,7 @@ class DeepBeliefNetwork(SupervisedModel):
         self.do_pretrain = True
 
         def set_params_func(rbmmachine, rbmgraph):
-            params = rbmmachine.get_model_parameters(graph=rbmgraph)
+            params = rbmmachine.get_parameters(graph=rbmgraph)
             self.encoding_w_.append(params['W'])
             self.encoding_b_.append(params['bh_'])
 

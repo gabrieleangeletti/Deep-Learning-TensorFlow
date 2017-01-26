@@ -1,8 +1,5 @@
 import numpy as np
 import tensorflow as tf
-import os
-
-import config
 
 from yadlt.models.rbm_models import dbn
 from yadlt.utils import datasets, utilities
@@ -22,7 +19,7 @@ flags.DEFINE_string('valid_labels', '', 'Path to valid labels .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
-flags.DEFINE_string('model_name', 'dbn', 'Name of the model.')
+flags.DEFINE_string('name', 'dbn', 'Name of the model.')
 flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
 flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
 flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
@@ -30,7 +27,6 @@ flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.'
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
-flags.DEFINE_string('main_dir', 'dbn/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 
 # RBMs layers specific parameters
@@ -106,17 +102,12 @@ if __name__ == '__main__':
     else:
         trX, trY, vlX, vlY, teX, teY = None, None, None, None, None, None
 
-    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
-    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
-    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
-
     # Create the object
     finetune_act_func = utilities.str2actfunc(FLAGS.finetune_act_func)
 
     srbm = dbn.DeepBeliefNetwork(
-        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
-        model_name=FLAGS.model_name, do_pretrain=FLAGS.do_pretrain,
-        rbm_layers=rbm_layers, dataset=FLAGS.dataset, main_dir=FLAGS.main_dir,
+        name=FLAGS.name, do_pretrain=FLAGS.do_pretrain,
+        rbm_layers=rbm_layers, dataset=FLAGS.dataset,
         finetune_act_func=finetune_act_func, rbm_learning_rate=rbm_learning_rate,
         verbose=FLAGS.verbose, rbm_num_epochs=rbm_num_epochs, rbm_gibbs_k = rbm_gibbs_k,
         rbm_gauss_visible=FLAGS.rbm_gauss_visible, rbm_stddev=FLAGS.rbm_stddev,
