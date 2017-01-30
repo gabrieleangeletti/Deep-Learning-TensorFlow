@@ -21,7 +21,7 @@ class ConvolutionalNetwork(SupervisedModel):
     def __init__(
         self, layers, original_shape, name='convnet',
         loss_func='softmax_cross_entropy', num_epochs=10, batch_size=10,
-        dataset='mnist', opt='gradient_descent', learning_rate=0.01,
+        opt='gradient_descent', learning_rate=0.01,
             momentum=0.5, dropout=0.5, verbose=1):
         """Constructor.
 
@@ -48,7 +48,6 @@ class ConvolutionalNetwork(SupervisedModel):
         self.dropout = dropout
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.dataset = dataset
         self.opt = opt
         self.momentum = momentum
 

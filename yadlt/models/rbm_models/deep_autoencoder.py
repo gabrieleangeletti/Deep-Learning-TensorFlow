@@ -21,7 +21,7 @@ class DeepAutoencoder(UnsupervisedModel):
 
     def __init__(
         self, layers, name='srbm',
-        num_epochs=[10], batch_size=[10], dataset='mnist',
+        num_epochs=[10], batch_size=[10],
         learning_rate=[0.01], gibbs_k=[1], loss_func=['mean_squared'],
         momentum=0.5, finetune_dropout=1, verbose=1,
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
@@ -64,7 +64,6 @@ class DeepAutoencoder(UnsupervisedModel):
         self.learning_rate = finetune_learning_rate
         self.num_epochs = finetune_num_epochs
         self.batch_size = finetune_batch_size
-        self.dataset = dataset
         self.momentum = momentum
         self.regtype = finetune_regtype
         self.l2reg = l2reg

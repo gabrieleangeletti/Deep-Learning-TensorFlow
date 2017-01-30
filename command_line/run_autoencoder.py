@@ -99,7 +99,7 @@ if __name__ == '__main__':
         name=FLAGS.name, n_components=FLAGS.n_components,
         enc_act_func=enc_act_func, dec_act_func=dec_act_func,
         corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
-        dataset=FLAGS.dataset, loss_func=FLAGS.loss_func, opt=FLAGS.opt,
+        loss_func=FLAGS.loss_func, opt=FLAGS.opt,
         learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum,
         l2reg=FLAGS.l2reg, verbose=FLAGS.verbose, num_epochs=FLAGS.num_epochs,
         batch_size=FLAGS.batch_size)

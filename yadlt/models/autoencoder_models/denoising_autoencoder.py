@@ -21,7 +21,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
     def __init__(
         self, n_components, name='dae',
         enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared',
-        num_epochs=10, batch_size=10, dataset='mnist', opt='sgd',
+        num_epochs=10, batch_size=10, opt='sgd',
         learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0.,
             verbose=1, regtype='none', l2reg=5e-4):
         """Constructor.
@@ -43,7 +43,6 @@ class DenoisingAutoencoder(UnsupervisedModel):
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.dataset = dataset
         self.opt = opt
         self.momentum = momentum
         self.regtype = regtype

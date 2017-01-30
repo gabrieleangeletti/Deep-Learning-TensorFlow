@@ -23,7 +23,7 @@ class DeepAutoencoder(UnsupervisedModel):
         self, layers, name='sdae',
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
-        dataset='mnist', opt=['gradient_descent'], regtype=['none'],
+        opt=['gradient_descent'], regtype=['none'],
         learning_rate=[0.01], momentum=0.5, finetune_dropout=1,
         corr_type=['none'], finetune_regtype='none', corr_frac=[0.], verbose=1,
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
@@ -77,7 +77,6 @@ class DeepAutoencoder(UnsupervisedModel):
         self.learning_rate = finetune_learning_rate
         self.num_epochs = finetune_num_epochs
         self.batch_size = finetune_batch_size
-        self.dataset = dataset
         self.opt = finetune_opt
         self.momentum = momentum
         self.regtype = finetune_regtype
@@ -117,7 +116,7 @@ class DeepAutoencoder(UnsupervisedModel):
                     regtype=expanded_args['regtype'][l],
                     opt=expanded_args['opt'][l],
                     learning_rate=expanded_args['learning_rate'][l],
-                    l2reg=expanded_args['l2reg'], dataset=self.dataset,
+                    l2reg=expanded_args['l2reg'],
                     momentum=self.momentum, verbose=self.verbose,
                     corr_type=expanded_args['corr_type'][l],
                     corr_frac=expanded_args['corr_frac'][l],

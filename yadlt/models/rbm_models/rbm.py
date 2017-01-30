@@ -19,7 +19,7 @@ class RBM(UnsupervisedModel):
 
     def __init__(
         self, num_hidden, visible_unit_type='bin',
-        name='rbm', dataset='mnist', loss_func='mean_squared',
+        name='rbm', loss_func='mean_squared',
         l2reg=5e-4, regtype='none', gibbs_sampling_steps=1, learning_rate=0.01,
             batch_size=10, num_epochs=10, stddev=0.1, verbose=0):
         """Constructor.
@@ -37,7 +37,6 @@ class RBM(UnsupervisedModel):
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.dataset = dataset
         self.regtype = regtype
         self.l2reg = l2reg
 

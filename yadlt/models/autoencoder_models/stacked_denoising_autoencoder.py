@@ -23,7 +23,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         self, layers, name='sdae',
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
-        dataset='mnist', opt=['gradient_descent'], l2reg=[5e-4],
+        opt=['gradient_descent'], l2reg=[5e-4],
         learning_rate=[0.01], momentum=0.5, finetune_dropout=1,
         corr_type=['none'], corr_frac=[0.], verbose=1,
         finetune_loss_func='softmax_cross_entropy',
@@ -69,7 +69,6 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         self.learning_rate = finetune_learning_rate
         self.num_epochs = finetune_num_epochs
         self.batch_size = finetune_batch_size
-        self.dataset = dataset
         self.opt = finetune_opt
         self.momentum = momentum
         self.l2reg = l2reg
@@ -105,8 +104,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
                     corr_type=expanded_args['corr_type'][l],
                     corr_frac=expanded_args['corr_frac'][l],
                     num_epochs=expanded_args['num_epochs'][l],
-                    batch_size=expanded_args['batch_size'][l],
-                    dataset=self.dataset))
+                    batch_size=expanded_args['batch_size'][l]))
 
             self.autoencoder_graphs.append(tf.Graph())
 

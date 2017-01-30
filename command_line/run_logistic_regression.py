@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     # Create the object
     l = logistic_regression.LogisticRegression(
-        name=FLAGS.name, dataset=FLAGS.dataset, loss_func=FLAGS.loss_func,
+        name=FLAGS.name, loss_func=FLAGS.loss_func,
         verbose=FLAGS.verbose, learning_rate=FLAGS.learning_rate,
         num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size)
 

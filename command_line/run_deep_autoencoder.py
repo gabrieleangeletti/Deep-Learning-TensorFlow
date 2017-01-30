@@ -129,7 +129,7 @@ if __name__ == '__main__':
     # Create the object
     srbm = deep_autoencoder.DeepAutoencoder(
         name=FLAGS.name, do_pretrain=FLAGS.do_pretrain,
-        layers=rbm_layers, dataset=FLAGS.dataset,
+        layers=rbm_layers,
         learning_rate=rbm_learning_rate, gibbs_k=rbm_gibbs_k,
         verbose=FLAGS.verbose, num_epochs=rbm_num_epochs, momentum=FLAGS.momentum,
         batch_size=rbm_batch_size, finetune_learning_rate=FLAGS.finetune_learning_rate,

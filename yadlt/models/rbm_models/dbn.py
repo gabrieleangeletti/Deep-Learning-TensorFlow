@@ -23,7 +23,7 @@ class DeepBeliefNetwork(SupervisedModel):
         self, rbm_layers, name='dbn', do_pretrain=False,
         rbm_num_epochs=[10], rbm_gibbs_k=[1],
         rbm_gauss_visible=False, rbm_stddev=0.1, rbm_batch_size=[10],
-        dataset='mnist', rbm_learning_rate=[0.01], finetune_dropout=1,
+        rbm_learning_rate=[0.01], finetune_dropout=1,
         finetune_loss_func='softmax_cross_entropy',
         finetune_act_func=tf.nn.sigmoid, finetune_opt='gradient_descent',
         finetune_learning_rate=0.001, finetune_num_epochs=10,
@@ -49,7 +49,6 @@ class DeepBeliefNetwork(SupervisedModel):
         """
         SupervisedModel.__init__(self, name)
 
-        self.dataset = dataset
         self.momentum = momentum
 
         self.do_pretrain = do_pretrain
@@ -86,7 +85,7 @@ class DeepBeliefNetwork(SupervisedModel):
                         name=self.name + '-' + rbm_str,
                         num_hidden=layer,
                         learning_rate=rbm_params['learning_rate'][l],
-                        dataset=self.dataset, verbose=self.verbose,
+                        verbose=self.verbose,
                         num_epochs=rbm_params['num_epochs'][l],
                         batch_size=rbm_params['batch_size'][l],
                         gibbs_sampling_steps=rbm_params['gibbs_k'][l],
@@ -98,7 +97,7 @@ class DeepBeliefNetwork(SupervisedModel):
                         name=self.name + '-' + rbm_str,
                         num_hidden=layer,
                         learning_rate=rbm_params['learning_rate'][l],
-                        dataset=self.dataset, verbose=self.verbose,
+                        verbose=self.verbose,
                         num_epochs=rbm_params['num_epochs'][l],
                         batch_size=rbm_params['batch_size'][l],
                         gibbs_sampling_steps=rbm_params['gibbs_k'][l]))
