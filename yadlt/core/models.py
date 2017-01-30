@@ -11,6 +11,7 @@ import tensorflow as tf
 
 from .config import Config
 from .layers import BaseLayer
+from yadlt.utils import tfutils
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -98,61 +99,6 @@ class Model(object):
         self.tf_summary_writer = None
         self.tf_summary_writer_available = True
 
-    def _initialize_tf_utilities_and_ops(self, restore_previous_model):
-        """Initialize TensorFlow operations.
-
-        tf operations: summaries, init operations, saver, summary_writer.
-        Restore a previously trained model if the flag restore_previous_model
-            is true.
-        :param restore_previous_model:
-                    if true, a previous trained model
-                    with the same name of this model is restored from disk
-                    to continue training.
-        """
-        self.tf_merged_summaries = tf.summary.merge_all()
-        init_op = tf.global_variables_initializer()
-        self.tf_saver = tf.train.Saver()
-
-        self.tf_session.run(init_op)
-
-        if restore_previous_model:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-
-        # Retrieve run identifier
-        run_id = 0
-        for e in os.listdir(Config().logs_dir):
-            if e[:3] == 'run':
-                r = int(e[3:])
-                if r > run_id:
-                    run_id = r
-        run_id += 1
-        run_dir = os.path.join(Config().logs_dir, 'run' + str(run_id))
-        print('Tensorboard logs dir for this run is %s' % (run_dir))
-
-        self.tf_summary_writer = tf.summary.FileWriter(
-            run_dir, self.tf_session.graph)
-
-    def compute_regularization(self, vars):
-        """Compute the regularization tensor.
-
-        :param vars: list of model variables
-        :return:
-        """
-        if self.regtype != 'none':
-
-            regularizers = tf.constant(0.0)
-
-            for v in vars:
-                if self.regtype == 'l2':
-                    regularizers = tf.add(regularizers, tf.nn.l2_loss(v))
-                elif self.regtype == 'l1':
-                    regularizers = tf.add(
-                        regularizers, tf.reduce_sum(tf.abs(v)))
-
-            return tf.mul(self.l2reg, regularizers)
-        else:
-            return None
-
     def pretrain_procedure(self, layer_objs, layer_graphs, set_params_func,
                            train_set, validation_set=None):
         """Perform unsupervised pretraining of the model.
@@ -222,63 +168,6 @@ class Model(object):
         else:
             return layers_out
 
-    def _create_last_layer(self, last_layer, n_classes):
-        """Create the last layer for finetuning.
-
-        :param last_layer: last layer output node
-        :param n_classes: number of classes
-        :return: self
-        """
-        with tf.name_scope("last_layer"):
-            self.last_W = tf.Variable(
-                tf.truncated_normal(
-                    [last_layer.get_shape()[1].value, n_classes], stddev=0.1),
-                name='sm-weigths')
-            self.last_b = tf.Variable(tf.constant(
-                0.1, shape=[n_classes]), name='sm-biases')
-            last_out = tf.add(tf.matmul(last_layer, self.last_W), self.last_b)
-            self.layer_nodes.append(last_out)
-            self.last_out = last_out
-            return last_out
-
-    def _create_cost_function_node(self, model_output, ref_input,
-                                   regterm=None):
-        """Create the cost function node.
-
-        :param model_output: model output node
-        :param ref_input: reference input placeholder node
-        :param regterm: regularization term
-        :return: self
-        """
-        with tf.name_scope("cost"):
-            if self.loss_func == 'cross_entropy':
-                clip_inf = tf.clip_by_value(model_output, 1e-10, float('inf'))
-                clip_sup = tf.clip_by_value(
-                    1 - model_output, 1e-10, float('inf'))
-
-                cost = - tf.reduce_mean(
-                    tf.add(
-                        tf.mul(ref_input, tf.log(clip_inf)),
-                        tf.mul(tf.sub(1.0, ref_input), tf.log(clip_sup))
-                    ))
-
-            elif self.loss_func == 'softmax_cross_entropy':
-                cost = tf.contrib.losses.softmax_cross_entropy(
-                    model_output, ref_input)
-
-            elif self.loss_func == 'mean_squared':
-                cost = tf.sqrt(tf.reduce_mean(
-                    tf.square(tf.sub(ref_input, model_output))))
-
-            else:
-                cost = None
-
-        if cost is not None:
-            self.cost = cost + regterm if regterm is not None else cost
-            tf.summary.scalar(self.loss_func, self.cost)
-        else:
-            self.cost = None
-
     def get_parameters(self, params, graph=None):
         """Get the parameters of the model.
 
@@ -308,7 +197,7 @@ class SupervisedModel(Model):
         Model.__init__(self, name)
 
     def fit(self, train_set, train_labels, validation_set=None,
-            validation_labels=None, restore_previous_model=False, graph=None):
+            validation_labels=None, graph=None):
         """Fit the model to the data.
 
         :param train_set: Training data. shape(n_samples, n_features)
@@ -317,10 +206,6 @@ class SupervisedModel(Model):
             shape(nval_samples, n_features)
         :param validation_labels: optional, default None. Validation labels.
             shape(nval_samples, n_classes)
-        :param restore_previous_model:
-                    if true, a previous trained model
-                    with the same name of this model is restored from disk
-                    to continue training.
         :param graph: tensorflow graph object
         :return: self
         """
@@ -334,7 +219,7 @@ class SupervisedModel(Model):
         with g.as_default():
             self.build_model(train_set.shape[1], num_classes)
             with tf.Session() as self.tf_session:
-                self._initialize_tf_utilities_and_ops(restore_previous_model)
+                self.tf_merged_summaries, self.tf_summary_writer = tfutils.init_tf_ops(self.tf_session)
                 self._train_model(
                     train_set, train_labels, validation_set, validation_labels)
                 self.tf_saver.save(self.tf_session, self.model_path)
@@ -415,14 +300,13 @@ class UnsupervisedModel(Model):
 
     def __init__(self, name):
         """Constructor."""
-        Model.__init__(
-            self, name)
+        Model.__init__(self, name)
 
         self.encode = None
         self.reconstruction = None
 
     def fit(self, train_set, train_ref, validation_set=None,
-            validation_ref=None, restore_previous_model=False, graph=None):
+            validation_ref=None, graph=None):
         """Fit the model to the data.
 
         :param train_set: Training data. shape(n_samples, n_features)
@@ -431,10 +315,6 @@ class UnsupervisedModel(Model):
             shape(nval_samples, n_features)
         :param validation_ref: optional, default None.
             Reference validation data. shape(nval_samples, n_features)
-        :param restore_previous_model:
-                    if true, a previous trained model
-                    with the same name of this model is restored from disk
-                    to continue training.
         :param graph: tensorflow graph object
         :return: self
         """
@@ -443,7 +323,7 @@ class UnsupervisedModel(Model):
         with g.as_default():
             self.build_model(train_set.shape[1])
             with tf.Session() as self.tf_session:
-                self._initialize_tf_utilities_and_ops(restore_previous_model)
+                self.tf_merged_summaries, self.tf_summary_writer = tfutils.init_tf_ops(self.tf_session)
                 self._train_model(
                     train_set, train_ref, validation_set, validation_ref)
                 self.tf_saver.save(self.tf_session, self.model_path)

@@ -19,7 +19,6 @@ flags.DEFINE_string('train_dataset', '', 'Path to train set .npy file.')
 flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
-flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the reconstructions of the model.')
 flags.DEFINE_string('save_parameters', '', 'Path to save the parameters of the model.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
@@ -90,7 +89,7 @@ if __name__ == '__main__':
 
     # Fit the model
     print('Start training...')
-    r.fit(trX, teX, restore_previous_model=FLAGS.restore_previous_model)
+    r.fit(trX, teX)
 
     # Save the model paramenters
     if FLAGS.save_parameters:

@@ -23,7 +23,6 @@ flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pre
 flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
 flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
 flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
-flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_string('name', 'sdae', 'Name for the model.')
 flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
@@ -70,8 +69,6 @@ assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert len(dae_layers) > 0
 assert all([af in ['sigmoid', 'tanh'] for af in dae_enc_act_func])
 assert all([af in ['sigmoid', 'tanh', 'none'] for af in dae_dec_act_func])
-assert all([lf in ['cross_entropy', 'mean_squared'] for lf in dae_loss_func])
-assert FLAGS.finetune_loss_func in ['mean_squared', 'softmax_cross_entropy']
 
 if __name__ == '__main__':
 
@@ -145,7 +142,7 @@ if __name__ == '__main__':
         encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
 
     # Supervised finetuning
-    sdae.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
+    sdae.fit(trX, trY, vlX, vlY)
 
     # Compute the accuracy of the model
     print('Test set accuracy: {}'.format(sdae.compute_accuracy(teX, teY)))

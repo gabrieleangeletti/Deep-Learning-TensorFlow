@@ -23,7 +23,6 @@ flags.DEFINE_string('name', 'srbm', 'Name of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
 flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
 flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
-flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_float('momentum', 0.7, 'Momentum parameter.')
@@ -62,7 +61,6 @@ finetune_dec_act_func = utilities.flag_to_list(FLAGS.finetune_dec_act_func, 'str
 
 # Parameters validation
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
-assert FLAGS.finetune_loss_func in ["mean_squared", "cross_entropy"]
 assert len(rbm_layers) > 0
 
 if __name__ == '__main__':
@@ -152,7 +150,7 @@ if __name__ == '__main__':
         encoded_X, encoded_vX = srbm.pretrain(trX, vlX)
 
     # Supervised finetuning
-    srbm.fit(trX, trRef, vlX, vlRef, restore_previous_model=FLAGS.restore_previous_model)
+    srbm.fit(trX, trRef, vlX, vlRef)
 
     # Compute the reconstruction loss of the model
     print('Test set reconstruction loss: {}'.format(srbm.compute_reconstruction_loss(teX, teRef)))
