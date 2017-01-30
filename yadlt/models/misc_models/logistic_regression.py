@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from yadlt.core import SupervisedModel
+from yadlt.core import Trainer
 from yadlt.utils import utilities
 
 
@@ -58,8 +59,8 @@ class LogisticRegression(SupervisedModel):
             tf.add(tf.matmul(self.input_data, self.W_), self.b_))
 
         self._create_cost_function_node(self.last_out, self.input_labels)
-        self.train_step = tf.train.GradientDescentOptimizer(
-            self.learning_rate).minimize(self.cost)
+        self.train_step = Trainer(
+            "sgd", learning_rate=self.learning_rate).compile(self.cost)
         self._create_accuracy_test_node()
 
     def _create_placeholders(self, n_features, n_classes):

@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from yadlt.core import UnsupervisedModel
+from yadlt.core import Trainer
 from yadlt.models.autoencoder_models import denoising_autoencoder
 from yadlt.utils import utilities
 
@@ -28,7 +29,7 @@ class DeepAutoencoder(UnsupervisedModel):
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
         tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], l2reg=[5e-4],
         finetune_batch_size=20, do_pretrain=False,
-        finetune_opt='gradient_descent', finetune_learning_rate=0.001,
+        finetune_opt='sgd', finetune_learning_rate=0.001,
             finetune_num_epochs=10):
         """Constructor.
 
@@ -72,14 +73,14 @@ class DeepAutoencoder(UnsupervisedModel):
 
         UnsupervisedModel.__init__(self, name)
 
-        self.loss_func = loss_func
-        self.learning_rate = learning_rate
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
+        self.loss_func = finetune_loss_func
+        self.learning_rate = finetune_learning_rate
+        self.num_epochs = finetune_num_epochs
+        self.batch_size = finetune_batch_size
         self.dataset = dataset
-        self.opt = opt
+        self.opt = finetune_opt
         self.momentum = momentum
-        self.regtype = regtype
+        self.regtype = finetune_regtype
         self.l2reg = l2reg
 
         self.do_pretrain = do_pretrain
@@ -196,7 +197,9 @@ class DeepAutoencoder(UnsupervisedModel):
 
         self._create_cost_function_node(
             self.reconstruction, self.input_labels, regterm=regterm)
-        self._create_train_step_node()
+        self.train_step = Trainer(self.opt,
+                                  learning_rate=self.learning_rate,
+                                  momentum=self.momentum).compile(self.cost)
 
     def _create_placeholders(self, n_features, n_classes):
         """Create the TensorFlow placeholders for the model.

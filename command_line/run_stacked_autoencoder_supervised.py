@@ -26,7 +26,7 @@ flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_string('name', 'sdae', 'Name for the model.')
-flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
+flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 
 # Supervised fine tuning parameters
@@ -35,7 +35,7 @@ flags.DEFINE_integer('finetune_num_epochs', 30, 'Number of epochs for the fine-t
 flags.DEFINE_float('finetune_learning_rate', 0.001, 'Learning rate for the fine-tuning phase.')
 flags.DEFINE_string('finetune_act_func', 'relu', 'Activation function for the fine-tuning phase. ["sigmoid, "tanh", "relu"]')
 flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
-flags.DEFINE_string('finetune_opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
+flags.DEFINE_string('finetune_opt', 'sgd', '["sgd", "ada_grad", "adam", "momentum"]')
 flags.DEFINE_integer('finetune_batch_size', 20, 'Size of each mini-batch for the fine-tuning phase.')
 # Autoencoder layers specific parameters
 flags.DEFINE_string('dae_layers', '256,', 'Comma-separated values for the layers in the sdae.')
@@ -43,7 +43,7 @@ flags.DEFINE_string('dae_l2reg', '5e-4,', 'Regularization parameter for the auto
 flags.DEFINE_string('dae_enc_act_func', 'sigmoid,', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dae_dec_act_func', 'none,', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
 flags.DEFINE_string('dae_loss_func', 'mean_squared,', 'Loss function. ["mean_squared" or "cross_entropy"]')
-flags.DEFINE_string('dae_opt', 'gradient_descent,', '["gradient_descent", "ada_grad", "momentum", "adam"]')
+flags.DEFINE_string('dae_opt', 'sgd,', '["sgd", "adagrad", "adam", "momentum"]')
 flags.DEFINE_string('dae_learning_rate', '0.01,', 'Initial learning rate.')
 flags.DEFINE_string('dae_num_epochs', '10,', 'Number of epochs.')
 flags.DEFINE_string('dae_batch_size', '10,', 'Size of each mini-batch.')
@@ -71,7 +71,6 @@ assert len(dae_layers) > 0
 assert all([af in ['sigmoid', 'tanh'] for af in dae_enc_act_func])
 assert all([af in ['sigmoid', 'tanh', 'none'] for af in dae_dec_act_func])
 assert all([lf in ['cross_entropy', 'mean_squared'] for lf in dae_loss_func])
-assert FLAGS.finetune_opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
 assert FLAGS.finetune_loss_func in ['mean_squared', 'softmax_cross_entropy']
 
 if __name__ == '__main__':

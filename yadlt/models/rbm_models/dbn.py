@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from yadlt.core import SupervisedModel
+from yadlt.core import Trainer
 from yadlt.models.rbm_models import rbm
 from yadlt.utils import utilities
 
@@ -165,7 +166,8 @@ class DeepBeliefNetwork(SupervisedModel):
         last_out = self._create_last_layer(next_train, n_classes)
 
         self._create_cost_function_node(last_out, self.input_labels)
-        self._create_train_step_node()
+        self.train_step = Trainer(self.opt, learning_rate=self.learning_rate,
+                                  momentum=self.momentum).compile(self.cost)
         self._create_accuracy_test_node()
 
     def _create_placeholders(self, n_features, n_classes):

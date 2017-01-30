@@ -279,31 +279,6 @@ class Model(object):
         else:
             self.cost = None
 
-    def _create_train_step_node(self):
-        """Create the training step node of the network.
-
-        :return: self
-        """
-        with tf.name_scope("train"):
-            if self.opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(
-                    self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(
-                    self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(
-                    self.learning_rate, self.momentum).minimize(self.cost)
-
-            elif self.opt == 'adam':
-                self.train_step = tf.train.AdamOptimizer(
-                    self.learning_rate).minimize(self.cost)
-
-            else:
-                self.train_step = None
-
     def get_parameters(self, params, graph=None):
         """Get the parameters of the model.
 

@@ -7,6 +7,7 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
+from yadlt.core import Trainer
 from yadlt.core import UnsupervisedModel
 from yadlt.utils import utilities
 
@@ -20,7 +21,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
     def __init__(
         self, n_components, name='dae',
         enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared',
-        num_epochs=10, batch_size=10, dataset='mnist', opt='gradient_descent',
+        num_epochs=10, batch_size=10, dataset='mnist', opt='sgd',
         learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0.,
             verbose=1, regtype='none', l2reg=5e-4):
         """Constructor.
@@ -145,7 +146,8 @@ class DenoisingAutoencoder(UnsupervisedModel):
 
         self._create_cost_function_node(
             self.reconstruction, self.input_data_orig, regterm=regterm)
-        self._create_train_step_node()
+        self.train_step = Trainer(self.opt, learning_rate=self.learning_rate,
+                                  momentum=self.momentum).compile(self.cost)
 
     def _create_placeholders(self, n_features):
         """Create the TensorFlow placeholders for the model.

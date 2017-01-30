@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from yadlt.core import SupervisedModel
+from yadlt.core import Trainer
 from yadlt.models.autoencoder_models import denoising_autoencoder
 from yadlt.utils import utilities
 
@@ -64,12 +65,12 @@ class StackedDenoisingAutoencoder(SupervisedModel):
 
         SupervisedModel.__init__(self, name)
 
-        self.loss_func = loss_func
-        self.learning_rate = learning_rate
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
+        self.loss_func = finetune_loss_func
+        self.learning_rate = finetune_learning_rate
+        self.num_epochs = finetune_num_epochs
+        self.batch_size = finetune_batch_size
         self.dataset = dataset
-        self.opt = opt
+        self.opt = finetune_opt
         self.momentum = momentum
         self.l2reg = l2reg
 
@@ -171,7 +172,9 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         last_out = self._create_last_layer(next_train, n_classes)
 
         self._create_cost_function_node(last_out, self.input_labels)
-        self._create_train_step_node()
+        self.train_step = Trainer(self.opt,
+                                  learning_rate=self.learning_rate,
+                                  momentum=self.momentum).compile(self.cost)
         self._create_accuracy_test_node()
 
     def _create_placeholders(self, n_features, n_classes):
