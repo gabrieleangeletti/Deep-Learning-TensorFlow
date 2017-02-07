@@ -35,18 +35,20 @@ class BaseLayer(object):
 class Linear(BaseLayer):
     """Fully-Connected layer."""
 
-    def __init__(self, shape=None, names=["W", "b"]):
+    def __init__(self, shape, name="linear", vnames=["W", "b"]):
         """Create a new linear layer instance."""
-        self.names = names
-        if shape:
+        self.name = name
+        self.vnames = vnames
+        with tf.name_scope(self.name):
             self.W = tf.Variable(
-                tf.truncated_normal(shape=shape, stddev=0.1), name=names[0])
+                tf.truncated_normal(shape=shape, stddev=0.1), name=vnames[0])
             self.b = tf.Variable(
-                tf.constant(0.1, shape=shape[1]), name=names[1])
+                tf.constant(0.1, shape=[shape[1]]), name=vnames[1])
 
     def forward(self, X):
         """Forward propagate X through the fc layer."""
-        return tf.add(tf.matmul(X, self.W), self.b)
+        with tf.name_scope(self.name):
+            return tf.add(tf.matmul(X, self.W), self.b)
 
     def backward(self, H):
         """Backward propagate H through the fc layer."""
@@ -71,11 +73,14 @@ class Activation(BaseLayer):
     def __init__(self, func, name="act_func"):
         """Create a new Activation layer instance."""
         self.name = name
-        self.activation = func
+        if func is not None:
+            self.func = func
+        else:
+            self.func = tf.identity
 
     def forward(self, X):
         """Forward propagate X."""
-        return self.activation(X)
+        return self.func(X)
 
     def backward(self, H):
         """Backward propagate H through the fc layer."""
@@ -168,29 +173,31 @@ class Regularization(BaseLayer):
 class Loss(BaseLayer):
     """Loss function layer."""
 
-    def __init__(self, model_y, ref_y, loss_type, regterm=None,
+    def __init__(self, mod_y, ref_y, loss_type, regterm=None,
                  summary=True, name="loss_func"):
         """Create a new Loss layer instance."""
         assert loss_type in ["cross_entropy", "softmax_cross_entropy",
                              "mean_squared"]
 
-        self.model_y = model_y
+        self.mod_y = mod_y
         self.ref_y = ref_y
         self.loss_type = loss_type
         self.regterm = regterm
         self.name = name
         if loss_type == "cross_entropy":
-            clip_inf = tf.clip_by_value(model_y, 1e-10, float('inf'))
-            clip_sup = tf.clip_by_value(1 - model_y, 1e-10, float('inf'))
+            clip_inf = tf.clip_by_value(self.mod_y, 1e-10, float('inf'))
+            clip_sup = tf.clip_by_value(1 - self.mod_y, 1e-10, float('inf'))
             loss = - tf.reduce_mean(tf.add(
-                    tf.mul(ref_y, tf.log(clip_inf)),
-                    tf.mul(tf.sub(1.0, ref_y), tf.log(clip_sup))))
+                    tf.mul(self.ref_y, tf.log(clip_inf)),
+                    tf.mul(tf.sub(1.0, self.ref_y), tf.log(clip_sup))))
 
         elif loss_type == "softmax_cross_entropy":
-            loss = tf.contrib.losses.softmax_cross_entropy(model_y, ref_y)
+            loss = tf.contrib.losses.softmax_cross_entropy(
+                self.mod_y, self.ref_y)
 
         elif loss_type == "mean_squared":
-            loss = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(ref_y, model_y))))
+            loss = tf.sqrt(tf.reduce_mean(
+                tf.square(tf.sub(self.ref_y, self.mod_y))))
 
         self.loss = loss + regterm if regterm is not None else loss
         if summary:

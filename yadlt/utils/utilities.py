@@ -37,6 +37,26 @@ def xavier_init(fan_in, fan_out, const=1):
     return tf.random_uniform((fan_in, fan_out), minval=low, maxval=high)
 
 
+def _corrupt_input(data, corr_type="none", corr_frac=0., sess=None):
+    """Corrupt a fraction of data according to the chosen noise method.
+
+    :return: corrupted data
+    """
+    corruption_ratio = np.round(corr_frac * data.shape[1]).astype(np.int)
+
+    if corr_type == 'none':
+        return np.copy(data)
+
+    if corr_frac > 0.0:
+        if corr_type == 'masking':
+            return masking_noise(data, sess, corr_frac)
+
+        elif corr_type == 'salt_and_pepper':
+            return salt_and_pepper_noise(data, corruption_ratio)
+    else:
+        return np.copy(data)
+
+
 def seq_data_iterator(raw_data, batch_size, num_steps):
     """Sequence data iterator.
 

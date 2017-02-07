@@ -16,7 +16,11 @@ from yadlt.utils import tfutils
 
 @six.add_metaclass(abc.ABCMeta)
 class BaseModel(object):
-    """Base model interface."""
+    """Base model interface.
+
+    This is the main interface the all models
+    should implement, both dl models and non-dl models.
+    """
 
     @abc.abstractmethod
     def fit(self):
@@ -49,25 +53,153 @@ class BaseModel(object):
         pass
 
 
-class Sequential(BaseModel):
-    """Linear stack of layers model."""
+@six.add_metaclass(abc.ABCMeta)
+class NNContainer(BaseModel):
+    """Base container interface.
 
-    def __init__(self, layers=None):
+    This is the interface all dl models should implement.
+    """
+
+    @abc.abstractmethod
+    def add(self, layer):
+        """Add the given `layer` to the container."""
+        pass
+
+    @abc.abstractmethod
+    def get(self, index):
+        """Return the layer at the given `index`."""
+        pass
+
+    @abc.abstractmethod
+    def size(self):
+        """Return the number of `layers`."""
+        pass
+
+
+class Sequential(NNContainer):
+    """NN model composed by a linear stack of layers."""
+
+    def __init__(self, layers=None, placeholders=None, name="model"):
         """Create a Sequential model."""
-        self.layers = []
+        if layers is not None:
+            self.layers = layers
+            self.placeholders = placeholders
+            self.size = len(layers)
+        else:
+            self.layers = []
+            self.placeholders = {}
+            self.size = 0
+        self.name = name
+
+        # tensorflow objects
+        self.tf_graph = tf.Graph()
+        self.tf_session = None
+        self.tf_saver = None
+        self.tf_merged_summaries = None
+        self.tf_summary_writer = None
+
+    def add_placeholder(self, pkey, pobj):
+        """Add an input placeholder."""
+        self.placeholders[pkey] = pobj
 
     def add(self, layer):
         """Add a layer to the stack."""
         if not isinstance(layer, BaseLayer):
             raise TypeError('Should be an instance of BaseLayer.')
         self.layers.append(layer)
+        self.size += 1
+        return self
 
-    def forward(self, X):
-        """Forward propagate X through the model."""
-        out = X
+    def insert(self, layer, index=None):
+        """Insert `layer` at the given index.
+
+        If index is None this method is equivalent to add.
+        """
+        if not isinstance(layer, BaseLayer):
+            raise TypeError('Should be an instance of BaseLayer.')
+        if index is not None:
+            self.layers.insert(layer, index)
+        else:
+            self.layers.append(layer)
+        self.size += 1
+
+    def get(self, index):
+        """Return the layer at the given index."""
+        return self.layers[index]
+
+    def size(self):
+        """Return the number of layers of this model."""
+        return self.size
+
+    def remove(self, index=None):
+        """Remove the layer at the given `index`."""
+        if index is not None:
+            del self.layers[index]
+        else:
+            del self.layers[-1]
+        self.size -= 1
+
+    def forward(self, pkey):
+        """Forward propagate through the model.
+
+        Parameters
+        ----------
+
+        ph_index : str
+            Input placeholder key in `self.placeholders`.
+        """
+        out = self.placeholders[pkey]
         for l in self.layers:
             out = l.forward(out)
         return out
+
+    def fit(self, train_set, train_ref=None, val_set=None, val_ref=None):
+        """Train the model.
+
+        Parameters
+        ----------
+        train_set : array_like, shape (num_samples, num_features)
+            Training data.
+
+        train_ref : array_like, shape (num_samples, num_features), default None
+            Reference training data.
+
+        val_set : array_like, shape (val_samples, num_features) default None
+            Validation set.
+
+        val_ref : array_like, shape (val_samples, num_features) default None
+            Reference validation data.
+
+        Returns
+        -------
+        self : trained model instance
+        """
+        with self.tf_graph.as_default():
+            # Build the model
+            self.build_model(train_set.shape[1])
+            with tf.Session() as self.tf_session:
+                # Tensorflow initialization
+                summary_objs = tfutils.init_tf_ops(self.tf_session)
+                self.tf_merged_summaries, self.tf_summary_writer = summary_objs
+                # Train the model
+                for i in range(self.train_params["num_epochs"]):
+                    self._run_train_step(train_set)
+                    # if val_set is not None:
+                    #     feed = {self.placeholders["input_orig"]: val_set,
+                    #             self.placeholders["input_corr"]: val_set}
+                    #     self._run_validation_error_and_summaries(i, feed)
+
+    def get_parameters(self):
+        """Get model parameters."""
+        pass
+
+    def save(self, path):
+        """Save the model to disk."""
+        pass
+
+    def load(self, path):
+        """Load model from disk."""
+        pass
 
 
 class Model(object):
