@@ -4,50 +4,23 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import errno
 import os
 import tensorflow as tf
 
-from os.path import expanduser
+from .config import Config
 
 
 class Model(object):
     """Class representing an abstract Model."""
 
-    def __init__(self, model_name, main_dir, models_dir,
-                 data_dir, summary_dir):
+    def __init__(self, name):
         """Constructor.
 
-        :param model_name: name of the model, used as filename.
+        :param name: name of the model, used as filename.
             string, default 'dae'
-        :param main_dir: main directory to put the stored_models,
-            data and summary directories
-        :param models_dir: directory to store trained models
-        :param data_dir: directory to store generated data
-        :param summary_dir: directory to store tensorflow logs
         """
-        home = os.path.join(expanduser("~"), '.yadlt')
-        main_dir = os.path.join(home, main_dir)
-        models_dir = os.path.join(home, models_dir)
-        data_dir = os.path.join(home, data_dir)
-        summary_dir = os.path.join(home, summary_dir)
-
-        self.model_name = model_name
-        self.main_dir = main_dir
-        self.models_dir = models_dir
-        self.data_dir = data_dir
-        self.tf_summary_dir = summary_dir
-        self.model_path = os.path.join(self.models_dir, self.model_name)
-
-        print('Creating %s directory to save/restore models'
-              % (self.models_dir))
-        self._create_dir(self.models_dir)
-        print('Creating %s directory to save model generated data'
-              % (self.data_dir))
-        self._create_dir(self.data_dir)
-        print('Creating %s directory to save tensorboard logs'
-              % (self.tf_summary_dir))
-        self._create_dir(self.tf_summary_dir)
+        self.name = name
+        self.model_path = os.path.join(Config().models_dir, self.name)
 
         self.input_data = None
         self.input_labels = None
@@ -65,14 +38,6 @@ class Model(object):
         self.tf_merged_summaries = None
         self.tf_summary_writer = None
         self.tf_summary_writer_available = True
-
-    def _create_dir(self, dirpath):
-        """Create directory dirpath."""
-        try:
-            os.makedirs(dirpath)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
 
     def _initialize_tf_utilities_and_ops(self, restore_previous_model):
         """Initialize TensorFlow operations.
@@ -96,13 +61,13 @@ class Model(object):
 
         # Retrieve run identifier
         run_id = 0
-        for e in os.listdir(self.tf_summary_dir):
+        for e in os.listdir(Config().logs_dir):
             if e[:3] == 'run':
                 r = int(e[3:])
                 if r > run_id:
                     run_id = r
         run_id += 1
-        run_dir = os.path.join(self.tf_summary_dir, 'run' + str(run_id))
+        run_dir = os.path.join(Config().logs_dir, 'run' + str(run_id))
         print('Tensorboard logs dir for this run is %s' % (run_dir))
 
         self.tf_summary_writer = tf.summary.FileWriter(
@@ -306,7 +271,7 @@ class Model(object):
             else:
                 self.train_step = None
 
-    def get_model_parameters(self, params, graph=None):
+    def get_parameters(self, params, graph=None):
         """Get the parameters of the model.
 
         :param params: dictionary of keys (str names) and values (tensors).

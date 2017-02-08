@@ -7,7 +7,7 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
-from yadlt.core.unsupervised_model import UnsupervisedModel
+from yadlt.core import UnsupervisedModel
 from yadlt.utils import utilities
 
 
@@ -18,9 +18,8 @@ class RBM(UnsupervisedModel):
     """
 
     def __init__(
-        self, num_hidden, visible_unit_type='bin', main_dir='rbm/',
-        models_dir='models/', data_dir='data/', summary_dir='logs/',
-        model_name='rbm', loss_func='mean_squared',
+        self, num_hidden, visible_unit_type='bin',
+        name='rbm', loss_func='mean_squared',
         l2reg=5e-4, regtype='none', gibbs_sampling_steps=1, learning_rate=0.01,
             batch_size=10, num_epochs=10, stddev=0.1, verbose=0):
         """Constructor.
@@ -32,8 +31,7 @@ class RBM(UnsupervisedModel):
         :param stddev: default 0.1. Ignored if visible_unit_type is not 'gauss'
         :param verbose: level of verbosity. optional, default 0
         """
-        UnsupervisedModel.__init__(self, model_name, main_dir, models_dir,
-                                   data_dir, summary_dir)
+        UnsupervisedModel.__init__(self, name)
 
         self._initialize_training_parameters(
             loss_func=loss_func, learning_rate=learning_rate,
@@ -273,7 +271,7 @@ class RBM(UnsupervisedModel):
             self.tf_session.run(init_op)
             self.tf_saver.restore(self.tf_session, model_path)
 
-    def get_model_parameters(self, graph=None):
+    def get_parameters(self, graph=None):
         """Return the model parameters in the form of numpy arrays.
 
         :param graph: tf graph object

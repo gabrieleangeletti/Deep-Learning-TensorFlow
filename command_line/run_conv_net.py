@@ -1,8 +1,5 @@
-import tensorflow as tf
 import numpy as np
-import os
-
-import config
+import tensorflow as tf
 
 from yadlt.models.convolutional_models import conv_net
 from yadlt.utils import datasets, utilities
@@ -23,12 +20,10 @@ flags.DEFINE_string('valid_labels', '', 'Path to valid labels .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
-flags.DEFINE_string('model_name', 'convnet', 'Model name.')
-flags.DEFINE_string('main_dir', 'convnet/', 'Directory to store data relative to the algorithm.')
-flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
+flags.DEFINE_string('name', 'convnet', 'Model name.')
+flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
-
 
 # Convolutional Net parameters
 flags.DEFINE_string('layers', '', 'String representing the architecture of the network.')
@@ -86,14 +81,10 @@ if __name__ == '__main__':
     else:
         trX, trY, vlX, vlY, teX, teY = None, None, None, None, None, None
 
-    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
-    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
-    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
-
     # Create the model object
     convnet = conv_net.ConvolutionalNetwork(
-        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir, original_shape=[int(i) for i in FLAGS.original_shape.split(',')],
-        layers=FLAGS.layers, model_name=FLAGS.model_name, main_dir=FLAGS.main_dir, loss_func=FLAGS.loss_func,
+        original_shape=[int(i) for i in FLAGS.original_shape.split(',')],
+        layers=FLAGS.layers, name=FLAGS.name, loss_func=FLAGS.loss_func,
         num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, opt=FLAGS.opt,
         learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, dropout=FLAGS.dropout, verbose=FLAGS.verbose
     )

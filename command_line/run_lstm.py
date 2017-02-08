@@ -1,9 +1,6 @@
 """Command line script to run LSTM model."""
 
-import os
 import tensorflow as tf
-
-import config
 
 from yadlt.models.rnn_models.lstm import LSTM
 from yadlt.utils import datasets
@@ -18,8 +15,7 @@ FLAGS = flags.FLAGS
 # Global configuration
 flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["ptb"]')
 flags.DEFINE_string('ptb_dir', '', 'Path to the ptb dataset directory.')
-flags.DEFINE_string('main_dir', '', 'Directory to store data relative to the algorithm.')
-flags.DEFINE_string('model_name', 'lstm', 'Model name.')
+flags.DEFINE_string('name', 'lstm', 'Model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0).\
     Useful for testing hyperparameters.')
 
@@ -35,7 +31,7 @@ flags.DEFINE_float('dropout', 0.5, 'Dropout parameter.')
 flags.DEFINE_float('init_scale', 0.05, 'initial scale of the weights.')
 flags.DEFINE_integer('max_grad_norm', 5, 'Max norm of the gradient.')
 flags.DEFINE_float('lr_decay', 0.8, 'lr decay after num_epochs/3.')
-flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0:silent, 1:accuracy.')
+flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0:silent, 1:accuracy.')
 
 assert FLAGS.dataset in ['ptb']
 
@@ -54,16 +50,11 @@ if __name__ == '__main__':
     else:
         trX, vlX, teX = None, None, None
 
-    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
-    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
-    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
-
-    l = LSTM(
+    model = LSTM(
         FLAGS.num_layers, FLAGS.num_hidden, FLAGS.vocab_size,
         FLAGS.batch_size, FLAGS.num_steps, FLAGS.num_epochs,
         FLAGS.learning_rate, FLAGS.dropout, FLAGS.init_scale,
         FLAGS.max_grad_norm, FLAGS.lr_decay, FLAGS.verbose,
-        main_dir=FLAGS.main_dir
     )
 
-    l.fit(trX, teX)
+    model.fit(trX, teX)

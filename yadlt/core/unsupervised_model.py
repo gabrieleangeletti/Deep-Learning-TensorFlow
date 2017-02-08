@@ -12,11 +12,9 @@ from yadlt.core.model import Model
 class UnsupervisedModel(Model):
     """Unsupervised Model scheleton class."""
 
-    def __init__(self, model_name, main_dir, models_dir,
-                 data_dir, summary_dir):
+    def __init__(self, name):
         """Constructor."""
-        Model.__init__(
-            self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        Model.__init__(self, name)
 
         self.encode = None
         self.reconstruction = None

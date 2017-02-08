@@ -1,8 +1,6 @@
-import tensorflow as tf
 import numpy as np
 import os
-
-import config
+import tensorflow as tf
 
 from yadlt.models.autoencoder_models import deep_autoencoder
 from yadlt.utils import datasets, utilities
@@ -29,9 +27,8 @@ flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save 
 flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
 flags.DEFINE_string('save_model_parameters', '', 'Path to a directory to save the parameters of the model. One .npy file per layer.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
-flags.DEFINE_string('model_name', 'un_sdae', 'Name for the model.')
-flags.DEFINE_string('main_dir', 'un_sdae/', 'Directory to store data relative to the algorithm.')
-flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
+flags.DEFINE_string('name', 'un_sdae', 'Name for the model.')
+flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 flags.DEFINE_boolean('tied_weights', True, 'Whether to use tied weights for the decoders.')
 
@@ -146,25 +143,20 @@ if __name__ == '__main__':
     # Create the object
     sdae = None
 
-    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
-    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
-    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
-
     dae_enc_act_func = [utilities.str2actfunc(af) for af in dae_enc_act_func]
     dae_dec_act_func = [utilities.str2actfunc(af) for af in dae_dec_act_func]
     finetune_enc_act_func = [utilities.str2actfunc(af) for af in finetune_enc_act_func]
     finetune_dec_act_func = [utilities.str2actfunc(af) for af in finetune_dec_act_func]
 
     sdae = deep_autoencoder.DeepAutoencoder(
-        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
-        do_pretrain=FLAGS.do_pretrain, model_name=FLAGS.model_name,
+        do_pretrain=FLAGS.do_pretrain, name=FLAGS.name,
         layers=dae_layers, finetune_loss_func=FLAGS.finetune_loss_func,
         finetune_learning_rate=FLAGS.finetune_learning_rate, finetune_num_epochs=FLAGS.finetune_num_epochs,
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size,
         finetune_dropout=FLAGS.finetune_dropout,
         enc_act_func=dae_enc_act_func, dec_act_func=dae_dec_act_func,
         corr_type=dae_corr_type, corr_frac=dae_corr_frac, l2reg=dae_l2reg,
-        loss_func=dae_loss_func, main_dir=FLAGS.main_dir,
+        loss_func=dae_loss_func,
         opt=dae_opt, tied_weights=FLAGS.tied_weights,
         learning_rate=dae_learning_rate, momentum=FLAGS.momentum, verbose=FLAGS.verbose,
         num_epochs=dae_num_epochs, batch_size=dae_batch_size,
@@ -221,7 +213,7 @@ if __name__ == '__main__':
     if FLAGS.save_model_parameters:
         print('Saving the parameters of the model')
         param_dir = FLAGS.save_model_parameters
-        model_params = sdae.get_model_parameters(
+        model_params = sdae.get_parameters(
             {
                 'enc-weights-layer': sdae.encoding_w_,
                 'enc-biases-layer': sdae.encoding_b_,

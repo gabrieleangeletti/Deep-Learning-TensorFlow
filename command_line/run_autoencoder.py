@@ -1,8 +1,5 @@
-import tensorflow as tf
 import numpy as np
-import os
-
-import config
+import tensorflow as tf
 
 from yadlt.models.autoencoder_models import denoising_autoencoder
 from yadlt.utils import datasets, utilities
@@ -18,7 +15,7 @@ flags.DEFINE_string('dataset', 'mnist', 'Which dataset to use. ["mnist", "cifar1
 flags.DEFINE_string('train_dataset', '', 'Path to train set .npy file.')
 flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
-flags.DEFINE_string('model_name', 'dae', 'Model name.')
+flags.DEFINE_string('name', 'dae', 'Model name.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_boolean('encode_train', False, 'Whether to encode and store the training set.')
@@ -38,9 +35,8 @@ flags.DEFINE_string('corr_type', 'none', 'Type of input corruption. ["none", "ma
 flags.DEFINE_float('corr_frac', 0., 'Fraction of the input to corrupt.')
 flags.DEFINE_string('enc_act_func', 'tanh', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dec_act_func', 'none', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
-flags.DEFINE_string('main_dir', 'dae/', 'Directory to store data relative to the algorithm.')
 flags.DEFINE_string('loss_func', 'mean_squared', 'Loss function. ["mean_squared" or "cross_entropy"]')
-flags.DEFINE_integer('verbose', 0, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
+flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
@@ -98,22 +94,18 @@ if __name__ == '__main__':
         vlX = None
         teX = None
 
-    models_dir = os.path.join(config.models_dir, FLAGS.main_dir)
-    data_dir = os.path.join(config.data_dir, FLAGS.main_dir)
-    summary_dir = os.path.join(config.summary_dir, FLAGS.main_dir)
-
     # Create the object
     enc_act_func = utilities.str2actfunc(FLAGS.enc_act_func)
     dec_act_func = utilities.str2actfunc(FLAGS.dec_act_func)
 
     dae = denoising_autoencoder.DenoisingAutoencoder(
-        model_name=FLAGS.model_name, n_components=FLAGS.n_components,
-        models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
+        name=FLAGS.name, n_components=FLAGS.n_components,
         enc_act_func=enc_act_func, dec_act_func=dec_act_func,
         corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
-        loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir, opt=FLAGS.opt,
-        learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, l2reg=FLAGS.l2reg,
-        verbose=FLAGS.verbose, num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size)
+        loss_func=FLAGS.loss_func, opt=FLAGS.opt, l2reg=FLAGS.l2reg,
+        learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum,
+        verbose=FLAGS.verbose, num_epochs=FLAGS.num_epochs,
+        batch_size=FLAGS.batch_size)
 
     # Fit the model
     W = None
@@ -133,7 +125,7 @@ if __name__ == '__main__':
     # Save the model paramenters
     if FLAGS.save_parameters:
         print('Saving the parameters of the model...')
-        params = dae.get_model_parameters()
+        params = dae.get_parameters()
         for p in params:
             np.save(FLAGS.save_parameters + '-' + p, params[p])
 

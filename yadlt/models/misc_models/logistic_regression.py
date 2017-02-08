@@ -7,7 +7,7 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
-from yadlt.core.supervised_model import SupervisedModel
+from yadlt.core import SupervisedModel
 from yadlt.utils import utilities
 
 
@@ -18,16 +18,14 @@ class LogisticRegression(SupervisedModel):
     """
 
     def __init__(
-        self, model_name='lr', main_dir='lr/', models_dir='models/',
-        data_dir='data/', summary_dir='logs/', loss_func='cross_entropy',
+        self, name='lr', loss_func='cross_entropy',
         learning_rate=0.01, verbose=0, num_epochs=10,
             batch_size=10):
         """Constructor.
 
         :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         """
-        SupervisedModel.__init__(
-            self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        SupervisedModel.__init__(self, name)
 
         self._initialize_training_parameters(
             loss_func, learning_rate, num_epochs, batch_size, None)

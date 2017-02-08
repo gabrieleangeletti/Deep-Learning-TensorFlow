@@ -7,11 +7,11 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
-import yadlt.core.model as model
+from yadlt.core import Model
 from yadlt.utils import utilities
 
 
-class LSTM(model.Model):
+class LSTM(Model):
     """Long Short-Term Memory Network tensorflow implementation.
 
     The interface of the class is sklearn-like.
@@ -20,7 +20,7 @@ class LSTM(model.Model):
     def __init__(self, num_layers=2, num_hidden=200, vocab_size=10000,
                  batch_size=20, num_steps=35, num_epochs=10, learning_rate=1.0,
                  dropout=0.5, init_scale=0.05, max_grad_norm=5,
-                 lr_decay=0.8, verbose=0, main_dir='lstm-models'):
+                 lr_decay=0.8, verbose=0):
         """Constructor.
 
         :param num_layers: number of LSTM layers
@@ -48,7 +48,6 @@ class LSTM(model.Model):
         self.max_grad_norm = max_grad_norm
         self.lr_decay = lr_decay
         self.verbose = verbose
-        self.main_dir = main_dir
 
         self.initializer = tf.random_uniform_initializer(
             -self.init_scale, self.init_scale)

@@ -12,11 +12,9 @@ from yadlt.core.model import Model
 class SupervisedModel(Model):
     """Supervised Model scheleton."""
 
-    def __init__(self, model_name, main_dir, models_dir,
-                 data_dir, summary_dir):
+    def __init__(self, name):
         """Constructor."""
-        Model.__init__(
-            self, model_name, main_dir, models_dir, data_dir, summary_dir)
+        Model.__init__(self, name)
 
     def fit(self, train_set, train_labels, validation_set=None,
             validation_labels=None, restore_previous_model=False, graph=None):
