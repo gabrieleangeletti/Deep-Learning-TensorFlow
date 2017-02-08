@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from yadlt.models.rbm_models import rbm
+from yadlt.models.boltzmann import rbm
 from yadlt.utils import datasets, utilities
 
 # #################### #

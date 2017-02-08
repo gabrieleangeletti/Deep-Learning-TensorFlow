@@ -2,7 +2,7 @@
 
 import tensorflow as tf
 
-from yadlt.models.rnn_models.lstm import LSTM
+from yadlt.models.recurrent.lstm import LSTM
 from yadlt.utils import datasets
 from yadlt.utils import utilities
 

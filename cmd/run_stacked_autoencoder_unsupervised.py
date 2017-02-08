@@ -2,7 +2,7 @@ import numpy as np
 import os
 import tensorflow as tf
 
-from yadlt.models.autoencoder_models import deep_autoencoder
+from yadlt.models.autoencoders import deep_autoencoder
 from yadlt.utils import datasets, utilities
 
 # #################### #

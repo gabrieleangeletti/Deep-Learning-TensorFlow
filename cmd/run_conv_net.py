@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from yadlt.models.convolutional_models import conv_net
+from yadlt.models.convolutional import conv_net
 from yadlt.utils import datasets, utilities
 
 # #################### #

@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from yadlt.models.misc_models import logistic_regression
+from yadlt.models.linear import logistic_regression
 from yadlt.utils import datasets, utilities
 
 # #################### #

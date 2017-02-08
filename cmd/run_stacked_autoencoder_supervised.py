@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from yadlt.models.autoencoder_models import stacked_denoising_autoencoder
+from yadlt.models.autoencoders import stacked_denoising_autoencoder
 from yadlt.utils import datasets, utilities
 
 # #################### #
