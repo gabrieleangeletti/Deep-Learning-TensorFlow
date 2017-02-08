@@ -12,7 +12,6 @@ If you want to use the package from ipython or maybe integrate it in your code, 
 ### List of available models:
 
 * Convolutional Network
-* Recurrent Neural Network (LSTM)
 * Restricted Boltzmann Machine
 * Deep Belief Network
 * Deep Autoencoder as stack of RBMs
@@ -47,5 +46,6 @@ You can find the documentation for this project at this [link](http://deep-learn
 
 ### Models TODO list
 
+* Recurrent Networks (LSTMs)
 * Variational Autoencoders
 * Deep Q Reinforcement Learning
