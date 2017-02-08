@@ -140,7 +140,7 @@ if __name__ == '__main__':
     srbm = deep_autoencoder.DeepAutoencoder(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         model_name=FLAGS.model_name, do_pretrain=FLAGS.do_pretrain,
-        layers=rbm_layers, dataset=FLAGS.dataset, main_dir=FLAGS.main_dir,
+        layers=rbm_layers, main_dir=FLAGS.main_dir,
         learning_rate=rbm_learning_rate, gibbs_k=rbm_gibbs_k,
         verbose=FLAGS.verbose, num_epochs=rbm_num_epochs, momentum=FLAGS.momentum,
         batch_size=rbm_batch_size, finetune_learning_rate=FLAGS.finetune_learning_rate,

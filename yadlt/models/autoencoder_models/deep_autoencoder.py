@@ -24,7 +24,7 @@ class DeepAutoencoder(UnsupervisedModel):
         models_dir='models/', data_dir='data/', summary_dir='logs/',
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
-        dataset='mnist', opt=['gradient_descent'], regtype=['none'],
+        opt=['gradient_descent'], regtype=['none'],
         learning_rate=[0.01], momentum=0.5, finetune_dropout=1,
         corr_type=['none'], finetune_regtype='none', corr_frac=[0.], verbose=1,
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
@@ -79,7 +79,7 @@ class DeepAutoencoder(UnsupervisedModel):
             loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
             num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
             l2reg=l2reg, regtype=finetune_regtype, dropout=finetune_dropout,
-            dataset=dataset, opt=finetune_opt, momentum=momentum)
+            opt=finetune_opt, momentum=momentum)
 
         self.do_pretrain = do_pretrain
         self.layers = layers
@@ -118,7 +118,7 @@ class DeepAutoencoder(UnsupervisedModel):
                     regtype=expanded_args['regtype'][l],
                     opt=expanded_args['opt'][l],
                     learning_rate=expanded_args['learning_rate'][l],
-                    l2reg=expanded_args['l2reg'], dataset=self.dataset,
+                    l2reg=expanded_args['l2reg'],
                     momentum=self.momentum, verbose=self.verbose,
                     corr_type=expanded_args['corr_type'][l],
                     corr_frac=expanded_args['corr_frac'][l],

@@ -110,7 +110,7 @@ if __name__ == '__main__':
         model_name=FLAGS.model_name, n_components=FLAGS.n_components,
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir,
         enc_act_func=enc_act_func, dec_act_func=dec_act_func,
-        corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac, dataset=FLAGS.dataset,
+        corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
         loss_func=FLAGS.loss_func, main_dir=FLAGS.main_dir, opt=FLAGS.opt,
         learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, l2reg=FLAGS.l2reg,
         verbose=FLAGS.verbose, num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size)

@@ -109,7 +109,7 @@ class Model(object):
             run_dir, self.tf_session.graph)
 
     def _initialize_training_parameters(
-        self, loss_func, learning_rate, num_epochs, batch_size, dataset,
+        self, loss_func, learning_rate, num_epochs, batch_size,
         opt='gradient_descent', dropout=1, momentum=None, regtype='none',
             l2reg=None):
         """Initialize training parameters common to all models.
@@ -118,7 +118,6 @@ class Model(object):
         :param learning_rate: Initial learning rate
         :param num_epochs: Number of epochs
         :param batch_size: Size of each mini-batch
-        :param dataset: Which dataset to use. ['mnist', 'cifar10', 'custom'].
         :param opt: Which tensorflow optimizer to use.
             ['gradient_descent', 'momentum', 'ada_grad']
         :param dropout: Dropout parameter
@@ -131,7 +130,6 @@ class Model(object):
         self.dropout = dropout
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.dataset = dataset
         self.opt = opt
         self.momentum = momentum
         self.regtype = regtype

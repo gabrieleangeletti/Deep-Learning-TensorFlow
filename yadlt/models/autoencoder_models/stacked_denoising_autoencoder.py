@@ -24,7 +24,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         models_dir='models/', data_dir='data/', summary_dir='logs/',
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
-        dataset='mnist', opt=['gradient_descent'], l2reg=[5e-4],
+        opt=['gradient_descent'], l2reg=[5e-4],
         learning_rate=[0.01], momentum=0.5, finetune_dropout=1,
         corr_type=['none'], corr_frac=[0.], verbose=1,
         finetune_loss_func='softmax_cross_entropy',
@@ -70,7 +70,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         self._initialize_training_parameters(
             loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
             dropout=finetune_dropout, num_epochs=finetune_num_epochs,
-            batch_size=finetune_batch_size, dataset=dataset, opt=finetune_opt,
+            batch_size=finetune_batch_size, opt=finetune_opt,
             momentum=momentum)
 
         self.do_pretrain = do_pretrain
@@ -107,8 +107,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
                     corr_type=expanded_args['corr_type'][l],
                     corr_frac=expanded_args['corr_frac'][l],
                     num_epochs=expanded_args['num_epochs'][l],
-                    batch_size=expanded_args['batch_size'][l],
-                    dataset=self.dataset))
+                    batch_size=expanded_args['batch_size'][l]))
 
             self.autoencoder_graphs.append(tf.Graph())
 

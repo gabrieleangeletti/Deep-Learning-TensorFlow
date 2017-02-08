@@ -21,7 +21,7 @@ class ConvolutionalNetwork(SupervisedModel):
         self, layers, original_shape, model_name='convnet', main_dir='convnet',
         models_dir='models/', data_dir='data/', summary_dir='logs/',
         loss_func='softmax_cross_entropy', num_epochs=10, batch_size=10,
-        dataset='mnist', opt='gradient_descent', learning_rate=0.01,
+        opt='gradient_descent', learning_rate=0.01,
             momentum=0.5, dropout=0.5, verbose=1):
         """Constructor.
 
@@ -45,8 +45,8 @@ class ConvolutionalNetwork(SupervisedModel):
             self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(
-            loss_func, learning_rate, num_epochs, batch_size,
-            dataset, opt, momentum)
+            loss_func, learning_rate, num_epochs, batch_size, opt,
+            momentum)
 
         self.layers = layers
         self.original_shape = original_shape

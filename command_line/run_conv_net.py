@@ -94,7 +94,7 @@ if __name__ == '__main__':
     convnet = conv_net.ConvolutionalNetwork(
         models_dir=models_dir, data_dir=data_dir, summary_dir=summary_dir, original_shape=[int(i) for i in FLAGS.original_shape.split(',')],
         layers=FLAGS.layers, model_name=FLAGS.model_name, main_dir=FLAGS.main_dir, loss_func=FLAGS.loss_func,
-        num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, dataset=FLAGS.dataset, opt=FLAGS.opt,
+        num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, opt=FLAGS.opt,
         learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, dropout=FLAGS.dropout, verbose=FLAGS.verbose
     )
 

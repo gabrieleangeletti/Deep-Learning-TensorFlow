@@ -20,7 +20,7 @@ class LogisticRegression(SupervisedModel):
     def __init__(
         self, model_name='lr', main_dir='lr/', models_dir='models/',
         data_dir='data/', summary_dir='logs/', loss_func='cross_entropy',
-        dataset='mnist', learning_rate=0.01, verbose=0, num_epochs=10,
+        learning_rate=0.01, verbose=0, num_epochs=10,
             batch_size=10):
         """Constructor.
 
@@ -30,7 +30,7 @@ class LogisticRegression(SupervisedModel):
             self, model_name, main_dir, models_dir, data_dir, summary_dir)
 
         self._initialize_training_parameters(
-            loss_func, learning_rate, num_epochs, batch_size, dataset, None)
+            loss_func, learning_rate, num_epochs, batch_size, None)
 
         self.verbose = verbose
 

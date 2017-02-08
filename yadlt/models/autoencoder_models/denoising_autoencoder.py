@@ -21,7 +21,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
         self, n_components, model_name='dae', main_dir='dae/',
         models_dir='models/', data_dir='data/', summary_dir='logs/',
         enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared',
-        num_epochs=10, batch_size=10, dataset='mnist', opt='gradient_descent',
+        num_epochs=10, batch_size=10, opt='gradient_descent',
         learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0.,
             verbose=1, regtype='none', l2reg=5e-4):
         """Constructor.
@@ -42,7 +42,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
 
         self._initialize_training_parameters(
             loss_func=loss_func, learning_rate=learning_rate, opt=opt,
-            num_epochs=num_epochs, batch_size=batch_size, dataset=dataset,
+            num_epochs=num_epochs, batch_size=batch_size,
             momentum=momentum, regtype=regtype, l2reg=l2reg)
 
         self.n_components = n_components

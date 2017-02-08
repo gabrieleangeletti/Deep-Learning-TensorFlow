@@ -145,7 +145,7 @@ if __name__ == '__main__':
         finetune_dropout=FLAGS.finetune_dropout,
         enc_act_func=dae_enc_act_func, dec_act_func=dae_dec_act_func,
         corr_type=dae_corr_type, corr_frac=dae_corr_frac, l2reg=dae_l2reg,
-        dataset=FLAGS.dataset, loss_func=dae_loss_func, main_dir=FLAGS.main_dir, opt=dae_opt,
+        loss_func=dae_loss_func, main_dir=FLAGS.main_dir, opt=dae_opt,
         learning_rate=dae_learning_rate, momentum=FLAGS.momentum, verbose=FLAGS.verbose,
         num_epochs=dae_num_epochs, batch_size=dae_batch_size,
         finetune_act_func=finetune_act_func)
