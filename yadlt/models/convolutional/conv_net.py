@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 from yadlt.core import SupervisedModel
 from yadlt.core import Trainer
@@ -22,7 +23,7 @@ class ConvolutionalNetwork(SupervisedModel):
         self, layers, original_shape, name='convnet',
         loss_func='softmax_cross_entropy', num_epochs=10, batch_size=10,
         opt='sgd', learning_rate=0.01,
-            momentum=0.5, dropout=0.5, verbose=1):
+            momentum=0.5, dropout=0.5):
         """Constructor.
 
         :param layers: string used to build the model.
@@ -39,7 +40,6 @@ class ConvolutionalNetwork(SupervisedModel):
 
         :param original_shape: original shape of the images in the dataset
         :param dropout: Dropout parameter
-        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         """
         SupervisedModel.__init__(self, name)
 
@@ -54,7 +54,6 @@ class ConvolutionalNetwork(SupervisedModel):
         self.layers = layers
         self.original_shape = original_shape
         self.dropout = dropout
-        self.verbose = verbose
 
         self.W_vars = None
         self.B_vars = None
@@ -73,7 +72,8 @@ class ConvolutionalNetwork(SupervisedModel):
         """
         shuff = list(zip(train_set, train_labels))
 
-        for i in range(self.num_epochs):
+        pbar = tqdm(range(self.num_epochs))
+        for i in pbar:
 
             np.random.shuffle(list(shuff))
             batches = [_ for _ in utilities.gen_batches(
@@ -91,7 +91,8 @@ class ConvolutionalNetwork(SupervisedModel):
                 feed = {self.input_data: validation_set,
                         self.input_labels: validation_labels,
                         self.keep_prob: 1}
-                self._run_validation_error_and_summaries(i, feed)
+                acc = self._run_validation_error_and_summaries(i, feed)
+                pbar.set_description("Accuracy: %s" % (acc))
 
     def build_model(self, n_features, n_classes):
         """Create the computational graph of the model.

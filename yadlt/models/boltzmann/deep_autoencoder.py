@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 from yadlt.core import Trainer
 from yadlt.core import UnsupervisedModel
@@ -23,7 +24,7 @@ class DeepAutoencoder(UnsupervisedModel):
         self, layers, name='srbm',
         num_epochs=[10], batch_size=[10],
         learning_rate=[0.01], gibbs_k=[1], loss_func=['mean_squared'],
-        momentum=0.5, finetune_dropout=1, verbose=1,
+        momentum=0.5, finetune_dropout=1,
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
         finetune_dec_act_func=[tf.nn.sigmoid], finetune_opt='sgd',
         finetune_learning_rate=0.001, l2reg=5e-4, finetune_num_epochs=10,
@@ -46,8 +47,6 @@ class DeepAutoencoder(UnsupervisedModel):
             int, default 20
         :param finetune_batch_size: Size of each mini-batch for the finetuning.
             int, default 20
-        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
-            int, default 0
         :param do_pretrain: True: uses variables from pretraining,
             False: initialize new variables.
         """
@@ -74,7 +73,6 @@ class DeepAutoencoder(UnsupervisedModel):
         self.do_pretrain = do_pretrain
         self.layers = layers
         self.tied_weights = tied_weights
-        self.verbose = verbose
 
         self.finetune_enc_act_func = expanded_args['finetune_enc_act_func']
         self.finetune_dec_act_func = expanded_args['finetune_dec_act_func']
@@ -103,7 +101,7 @@ class DeepAutoencoder(UnsupervisedModel):
                 gibbs_sampling_steps=expanded_args['gibbs_k'][l],
                 num_epochs=expanded_args['num_epochs'][l],
                 batch_size=expanded_args['batch_size'][l],
-                verbose=self.verbose, regtype=expanded_args['regtype'][l])
+                regtype=expanded_args['regtype'][l])
             self.rbms.append(new_rbm)
             self.rbm_graphs.append(tf.Graph())
 
@@ -132,7 +130,8 @@ class DeepAutoencoder(UnsupervisedModel):
         """
         shuff = list(zip(train_set, train_ref))
 
-        for i in range(self.num_epochs):
+        pbar = tqdm(range(self.num_epochs))
+        for i in pbar:
 
             np.random.shuffle(shuff)
             batches = [_ for _ in utilities.gen_batches(
@@ -150,7 +149,8 @@ class DeepAutoencoder(UnsupervisedModel):
                 feed = {self.input_data: validation_set,
                         self.input_labels: validation_ref,
                         self.keep_prob: 1}
-                self._run_validation_error_and_summaries(i, feed)
+                err = self._run_validation_error_and_summaries(i, feed)
+                pbar.set_description("Reconstruction loss: %s" % (err))
 
     def build_model(self, n_features, regtype='none',
                     encoding_w=None, encoding_b=None):

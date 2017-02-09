@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 from yadlt.core import Trainer
 from yadlt.core import UnsupervisedModel
@@ -25,7 +26,7 @@ class DeepAutoencoder(UnsupervisedModel):
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
         opt=['sgd'], regtype=['none'],
         learning_rate=[0.01], momentum=0.5, finetune_dropout=1,
-        corr_type=['none'], finetune_regtype='none', corr_frac=[0.], verbose=1,
+        corr_type=['none'], finetune_regtype='none', corr_frac=[0.],
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
         tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], l2reg=[5e-4],
         finetune_batch_size=20, do_pretrain=False,
@@ -59,8 +60,6 @@ class DeepAutoencoder(UnsupervisedModel):
         :param corr_type: Type of input corruption. string, default 'none'.
             ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt. float, default 0.0
-        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
-            int, default 0
         :param do_pretrain: True: uses variables from pretraining,
             False: initialize new variables.
         """
@@ -86,7 +85,6 @@ class DeepAutoencoder(UnsupervisedModel):
         self.do_pretrain = do_pretrain
         self.layers = layers
         self.tied_weights = tied_weights
-        self.verbose = verbose
 
         self.finetune_enc_act_func = expanded_args['finetune_enc_act_func']
         self.finetune_dec_act_func = expanded_args['finetune_dec_act_func']
@@ -118,7 +116,7 @@ class DeepAutoencoder(UnsupervisedModel):
                     opt=expanded_args['opt'][l],
                     learning_rate=expanded_args['learning_rate'][l],
                     l2reg=expanded_args['l2reg'],
-                    momentum=self.momentum, verbose=self.verbose,
+                    momentum=self.momentum,
                     corr_type=expanded_args['corr_type'][l],
                     corr_frac=expanded_args['corr_frac'][l],
                     num_epochs=expanded_args['num_epochs'][l],
@@ -152,7 +150,8 @@ class DeepAutoencoder(UnsupervisedModel):
         """
         shuff = list(zip(train_set, train_ref))
 
-        for i in range(self.num_epochs):
+        pbar = tqdm(range(self.num_epochs))
+        for i in pbar:
 
             np.random.shuffle(shuff)
             batches = [_ for _ in utilities.gen_batches(
@@ -169,7 +168,8 @@ class DeepAutoencoder(UnsupervisedModel):
             if validation_set is not None:
                 feed = {self.input_data: validation_set,
                         self.input_labels: validation_ref, self.keep_prob: 1}
-                self._run_validation_error_and_summaries(i, feed)
+                err = self._run_validation_error_and_summaries(i, feed)
+                pbar.set_description("Reconstruction loss: %s" % (err))
 
     def build_model(self, n_features, encoding_w=None, encoding_b=None):
         """Create the computational graph for the reconstruction task.

@@ -28,7 +28,6 @@ flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful 
 flags.DEFINE_integer('num_hidden', 250, 'Number of hidden units.')
 flags.DEFINE_string('visible_unit_type', 'bin', 'Type of visible units. ["bin", "gauss"]')
 flags.DEFINE_string('name', 'rbm_model', 'Name for the model.')
-flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_integer('gibbs_sampling_steps', 1, 'Number of gibbs sampling steps in Contrastive Divergence.')
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_float('stddev', 0.1, 'Standard deviation for the Gaussian visible units.')
@@ -85,7 +84,7 @@ if __name__ == '__main__':
     # Create the object
     r = rbm.RBM(num_hidden=FLAGS.num_hidden,
                 visible_unit_type=FLAGS.visible_unit_type, learning_rate=FLAGS.learning_rate,
-                num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, stddev=FLAGS.stddev, verbose=FLAGS.verbose,
+                num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, stddev=FLAGS.stddev,
                 gibbs_sampling_steps=FLAGS.gibbs_sampling_steps, name=FLAGS.name)
 
     # Fit the model

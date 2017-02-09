@@ -21,7 +21,6 @@ flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('name', 'convnet', 'Model name.')
-flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
@@ -86,7 +85,7 @@ if __name__ == '__main__':
         original_shape=[int(i) for i in FLAGS.original_shape.split(',')],
         layers=FLAGS.layers, name=FLAGS.name, loss_func=FLAGS.loss_func,
         num_epochs=FLAGS.num_epochs, batch_size=FLAGS.batch_size, opt=FLAGS.opt,
-        learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, dropout=FLAGS.dropout, verbose=FLAGS.verbose
+        learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum, dropout=FLAGS.dropout
     )
 
     # Model training

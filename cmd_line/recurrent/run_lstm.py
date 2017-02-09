@@ -31,7 +31,6 @@ flags.DEFINE_float('dropout', 0.5, 'Dropout parameter.')
 flags.DEFINE_float('init_scale', 0.05, 'initial scale of the weights.')
 flags.DEFINE_integer('max_grad_norm', 5, 'Max norm of the gradient.')
 flags.DEFINE_float('lr_decay', 0.8, 'lr decay after num_epochs/3.')
-flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0:silent, 1:accuracy.')
 
 assert FLAGS.dataset in ['ptb']
 
@@ -54,7 +53,7 @@ if __name__ == '__main__':
         FLAGS.num_layers, FLAGS.num_hidden, FLAGS.vocab_size,
         FLAGS.batch_size, FLAGS.num_steps, FLAGS.num_epochs,
         FLAGS.learning_rate, FLAGS.dropout, FLAGS.init_scale,
-        FLAGS.max_grad_norm, FLAGS.lr_decay, FLAGS.verbose,
+        FLAGS.max_grad_norm, FLAGS.lr_decay
     )
 
     model.fit(trX, teX)

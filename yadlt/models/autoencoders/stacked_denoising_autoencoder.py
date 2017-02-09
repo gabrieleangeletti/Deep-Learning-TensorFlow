@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 from yadlt.core import SupervisedModel
 from yadlt.core import Trainer
@@ -24,7 +25,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
         opt=['sgd'], l2reg=[5e-4], learning_rate=[0.01], momentum=0.5,
-        finetune_dropout=1, corr_type=['none'], corr_frac=[0.], verbose=1,
+        finetune_dropout=1, corr_type=['none'], corr_frac=[0.],
         finetune_loss_func='softmax_cross_entropy',
         finetune_act_func=tf.nn.relu, finetune_opt='sgd',
         finetune_learning_rate=0.001, finetune_num_epochs=10,
@@ -50,8 +51,6 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         :param corr_type: Type of input corruption. string, default 'none'.
             ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt. float, default 0.0
-        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
-            int, default 0
         :param do_pretrain: True: uses variables from pretraining,
             False: initialize new variables.
         """
@@ -77,7 +76,6 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         self.do_pretrain = do_pretrain
         self.layers = layers
         self.finetune_act_func = finetune_act_func
-        self.verbose = verbose
 
         # Model parameters
         self.encoding_w_ = []  # list of matrices of encoding weights per layer
@@ -101,7 +99,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
                     loss_func=expanded_args['loss_func'][l],
                     opt=expanded_args['opt'][l], l2reg=expanded_args['l2reg'],
                     learning_rate=expanded_args['learning_rate'][l],
-                    momentum=self.momentum, verbose=self.verbose,
+                    momentum=self.momentum,
                     corr_type=expanded_args['corr_type'][l],
                     corr_frac=expanded_args['corr_frac'][l],
                     num_epochs=expanded_args['num_epochs'][l],
@@ -135,7 +133,8 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         """
         shuff = list(zip(train_set, train_labels))
 
-        for i in range(self.num_epochs):
+        pbar = tqdm(range(self.num_epochs))
+        for i in pbar:
 
             np.random.shuffle(shuff)
 
@@ -154,7 +153,8 @@ class StackedDenoisingAutoencoder(SupervisedModel):
                 feed = {self.input_data: validation_set,
                         self.input_labels: validation_labels,
                         self.keep_prob: 1}
-                self._run_validation_error_and_summaries(i, feed)
+                acc = self._run_validation_error_and_summaries(i, feed)
+                pbar.set_description("Accuracy: %s" % (acc))
 
     def build_model(self, n_features, n_classes):
         """Create the computational graph.

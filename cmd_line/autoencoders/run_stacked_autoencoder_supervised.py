@@ -26,7 +26,6 @@ flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_string('name', 'sdae', 'Name for the model.')
-flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 
 # Supervised fine tuning parameters
@@ -136,7 +135,7 @@ if __name__ == '__main__':
         enc_act_func=dae_enc_act_func, dec_act_func=dae_dec_act_func,
         corr_type=dae_corr_type, corr_frac=dae_corr_frac, l2reg=dae_l2reg,
         loss_func=dae_loss_func, opt=dae_opt,
-        learning_rate=dae_learning_rate, momentum=FLAGS.momentum, verbose=FLAGS.verbose,
+        learning_rate=dae_learning_rate, momentum=FLAGS.momentum,
         num_epochs=dae_num_epochs, batch_size=dae_batch_size,
         finetune_act_func=finetune_act_func)
 

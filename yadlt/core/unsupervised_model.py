@@ -73,8 +73,7 @@ class UnsupervisedModel(Model):
             self.tf_summary_writer_available = False
             err = self.tf_session.run(self.cost, feed_dict=feed)
 
-        if self.verbose == 1:
-            print("Reconstruction loss at step %s: %s" % (epoch, err))
+        return err
 
     def transform(self, data, graph=None):
         """Transform data according to the model.

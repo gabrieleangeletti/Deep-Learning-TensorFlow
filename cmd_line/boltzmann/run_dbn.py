@@ -26,7 +26,6 @@ flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
 flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
-flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 
 # RBMs layers specific parameters
@@ -109,7 +108,7 @@ if __name__ == '__main__':
         name=FLAGS.name, do_pretrain=FLAGS.do_pretrain,
         rbm_layers=rbm_layers,
         finetune_act_func=finetune_act_func, rbm_learning_rate=rbm_learning_rate,
-        verbose=FLAGS.verbose, rbm_num_epochs=rbm_num_epochs, rbm_gibbs_k = rbm_gibbs_k,
+        rbm_num_epochs=rbm_num_epochs, rbm_gibbs_k = rbm_gibbs_k,
         rbm_gauss_visible=FLAGS.rbm_gauss_visible, rbm_stddev=FLAGS.rbm_stddev,
         momentum=FLAGS.momentum, rbm_batch_size=rbm_batch_size, finetune_learning_rate=FLAGS.finetune_learning_rate,
         finetune_num_epochs=FLAGS.finetune_num_epochs, finetune_batch_size=FLAGS.finetune_batch_size,

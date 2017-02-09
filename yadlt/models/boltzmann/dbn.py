@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 from yadlt.core import SupervisedModel
 from yadlt.core import Trainer
@@ -27,7 +28,7 @@ class DeepBeliefNetwork(SupervisedModel):
         finetune_loss_func='softmax_cross_entropy',
         finetune_act_func=tf.nn.sigmoid, finetune_opt='sgd',
         finetune_learning_rate=0.001, finetune_num_epochs=10,
-            finetune_batch_size=20, verbose=1, momentum=0.5):
+            finetune_batch_size=20, momentum=0.5):
         """Constructor.
 
         :param rbm_layers: list containing the hidden units for each layer
@@ -42,8 +43,6 @@ class DeepBeliefNetwork(SupervisedModel):
             int, default 20
         :param finetune_batch_size: Size of each mini-batch for the finetuning.
             int, default 20
-        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
-            int, default 0
         :param do_pretrain: True: uses variables from pretraining,
             False: initialize new variables.
         """
@@ -62,7 +61,6 @@ class DeepBeliefNetwork(SupervisedModel):
         self.do_pretrain = do_pretrain
         self.layers = rbm_layers
         self.finetune_act_func = finetune_act_func
-        self.verbose = verbose
 
         # Model parameters
         self.encoding_w_ = []  # list of matrices of encoding weights per layer
@@ -93,7 +91,6 @@ class DeepBeliefNetwork(SupervisedModel):
                         name=self.name + '-' + rbm_str,
                         num_hidden=layer,
                         learning_rate=rbm_params['learning_rate'][l],
-                        verbose=self.verbose,
                         num_epochs=rbm_params['num_epochs'][l],
                         batch_size=rbm_params['batch_size'][l],
                         gibbs_sampling_steps=rbm_params['gibbs_k'][l],
@@ -105,7 +102,6 @@ class DeepBeliefNetwork(SupervisedModel):
                         name=self.name + '-' + rbm_str,
                         num_hidden=layer,
                         learning_rate=rbm_params['learning_rate'][l],
-                        verbose=self.verbose,
                         num_epochs=rbm_params['num_epochs'][l],
                         batch_size=rbm_params['batch_size'][l],
                         gibbs_sampling_steps=rbm_params['gibbs_k'][l]))
@@ -137,7 +133,8 @@ class DeepBeliefNetwork(SupervisedModel):
         """
         shuff = list(zip(train_set, train_labels))
 
-        for i in range(self.num_epochs):
+        pbar = tqdm(range(self.num_epochs))
+        for i in pbar:
 
             np.random.shuffle(shuff)
             batches = [_ for _ in utilities.gen_batches(
@@ -155,7 +152,8 @@ class DeepBeliefNetwork(SupervisedModel):
                 feed = {self.input_data: validation_set,
                         self.input_labels: validation_labels,
                         self.keep_prob: 1}
-                self._run_validation_error_and_summaries(i, feed)
+                acc = self._run_validation_error_and_summaries(i, feed)
+                pbar.set_description("Accuracy: %s" % (acc))
 
     def build_model(self, n_features, n_classes):
         """Create the computational graph.

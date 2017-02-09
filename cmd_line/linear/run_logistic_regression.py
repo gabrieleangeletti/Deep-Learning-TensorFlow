@@ -21,7 +21,6 @@ flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('name', 'logreg', 'Name for the model.')
 flags.DEFINE_string('loss_func', 'cross_entropy', 'Loss function. ["mean_squared" or "cross_entropy"]')
-flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
@@ -81,7 +80,7 @@ if __name__ == '__main__':
     # Create the object
     l = logistic_regression.LogisticRegression(
         name=FLAGS.name, loss_func=FLAGS.loss_func,
-        verbose=FLAGS.verbose, learning_rate=FLAGS.learning_rate, num_epochs=FLAGS.num_epochs,
+        learning_rate=FLAGS.learning_rate, num_epochs=FLAGS.num_epochs,
         batch_size=FLAGS.batch_size)
 
     # Fit the model

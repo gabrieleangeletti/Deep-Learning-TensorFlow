@@ -75,8 +75,7 @@ class SupervisedModel(Model):
             self.tf_summary_writer_available = False
             acc = self.tf_session.run(self.accuracy, feed_dict=feed)
 
-        if self.verbose == 1:
-            print("Accuracy at step %s: %s" % (epoch, acc))
+        return acc
 
     def predict(self, test_set):
         """Predict the labels for the test set.

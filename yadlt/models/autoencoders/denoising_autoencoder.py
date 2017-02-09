@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 from yadlt.core import Trainer
 from yadlt.core import UnsupervisedModel
@@ -23,7 +24,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
         enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared',
         num_epochs=10, batch_size=10, opt='sgd',
         learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0.,
-            verbose=1, regtype='none', l2reg=5e-4):
+            regtype='none', l2reg=5e-4):
         """Constructor.
 
         :param n_components: number of hidden units
@@ -34,7 +35,6 @@ class DenoisingAutoencoder(UnsupervisedModel):
         :param corr_type: Type of input corruption.
             ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt.
-        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
         :param l2reg: Regularization parameter. If 0, no regularization.
         """
         UnsupervisedModel.__init__(self, name)
@@ -52,7 +52,6 @@ class DenoisingAutoencoder(UnsupervisedModel):
         self.dec_act_func = dec_act_func
         self.corr_type = corr_type
         self.corr_frac = corr_frac
-        self.verbose = verbose
 
         self.input_data_orig = None
         self.input_data = None
@@ -71,14 +70,14 @@ class DenoisingAutoencoder(UnsupervisedModel):
         :param validation_ref: reference validation data
         :return: self
         """
-        for i in range(self.num_epochs):
-
+        pbar = tqdm(range(self.num_epochs))
+        for i in pbar:
             self._run_train_step(train_set)
-
             if validation_set is not None:
                 feed = {self.input_data_orig: validation_set,
                         self.input_data: validation_set}
-                self._run_validation_error_and_summaries(i, feed)
+                err = self._run_validation_error_and_summaries(i, feed)
+                pbar.set_description("Reconstruction loss: %s" % (err))
 
     def _run_train_step(self, train_set):
         """Run a training step.

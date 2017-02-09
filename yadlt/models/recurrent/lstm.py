@@ -20,7 +20,7 @@ class LSTM(Model):
     def __init__(self, num_layers=2, num_hidden=200, vocab_size=10000,
                  batch_size=20, num_steps=35, num_epochs=10, learning_rate=1.0,
                  dropout=0.5, init_scale=0.05, max_grad_norm=5,
-                 lr_decay=0.8, verbose=0):
+                 lr_decay=0.8):
         """Constructor.
 
         :param num_layers: number of LSTM layers
@@ -34,7 +34,6 @@ class LSTM(Model):
         :param init_scale: initial scale of the weights
         :param max_grad_norm: maximum permissible norm of the gradient
         :param lr_decay: learning rate decay for each epoch after num_epochs/3
-        :param verbose: level of verbosity
         """
         self.num_layers = num_layers
         self.num_hidden = num_hidden
@@ -47,7 +46,6 @@ class LSTM(Model):
         self.init_scale = init_scale
         self.max_grad_norm = max_grad_norm
         self.lr_decay = lr_decay
-        self.verbose = verbose
 
         self.initializer = tf.random_uniform_initializer(
             -self.init_scale, self.init_scale)
@@ -100,7 +98,7 @@ class LSTM(Model):
             costs += cost
             iters += self.num_steps
 
-        if self.verbose and step % (epoch_size // 10) == 10:
+        if step % (epoch_size // 10) == 10:
             print("%.3f perplexity" % (step * 1.0 / epoch_size))
 
         return np.exp(costs / iters)

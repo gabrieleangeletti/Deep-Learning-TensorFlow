@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 from yadlt.core import SupervisedModel
 from yadlt.utils import utilities
@@ -19,18 +20,13 @@ class LogisticRegression(SupervisedModel):
 
     def __init__(
         self, name='lr', loss_func='cross_entropy',
-        learning_rate=0.01, verbose=0, num_epochs=10,
+        learning_rate=0.01, num_epochs=10,
             batch_size=10):
-        """Constructor.
-
-        :param verbose: Level of verbosity. 0 - silent, 1 - print accuracy.
-        """
+        """Constructor."""
         SupervisedModel.__init__(self, name)
 
         self._initialize_training_parameters(
             loss_func, learning_rate, num_epochs, batch_size, None)
-
-        self.verbose = verbose
 
         # Computational graph nodes
         self.input_data = None
@@ -95,7 +91,8 @@ class LogisticRegression(SupervisedModel):
         :param validation_labels: validation labels
         :return: self
         """
-        for i in range(self.num_epochs):
+        pbar = tqdm(range(self.num_epochs))
+        for i in pbar:
 
             shuff = list(zip(train_set, train_labels))
             np.random.shuffle(shuff)
@@ -112,4 +109,5 @@ class LogisticRegression(SupervisedModel):
             if validation_set is not None:
                 feed = {self.input_data: validation_set,
                         self.input_labels: validation_labels}
-                self._run_validation_error_and_summaries(i, feed)
+                acc = self._run_validation_error_and_summaries(i, feed)
+                pbar.set_description("Accuracy: %s" % (acc))

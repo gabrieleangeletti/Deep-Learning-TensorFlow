@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+from tqdm import tqdm
 
 from yadlt.core import UnsupervisedModel
 from yadlt.utils import utilities
@@ -21,7 +22,7 @@ class RBM(UnsupervisedModel):
         self, num_hidden, visible_unit_type='bin',
         name='rbm', loss_func='mean_squared',
         l2reg=5e-4, regtype='none', gibbs_sampling_steps=1, learning_rate=0.01,
-            batch_size=10, num_epochs=10, stddev=0.1, verbose=0):
+            batch_size=10, num_epochs=10, stddev=0.1):
         """Constructor.
 
         :param num_hidden: number of hidden units
@@ -29,7 +30,6 @@ class RBM(UnsupervisedModel):
         :param visible_unit_type: type of the visible units (bin or gauss)
         :param gibbs_sampling_steps: optional, default 1
         :param stddev: default 0.1. Ignored if visible_unit_type is not 'gauss'
-        :param verbose: level of verbosity. optional, default 0
         """
         UnsupervisedModel.__init__(self, name)
 
@@ -42,7 +42,6 @@ class RBM(UnsupervisedModel):
         self.visible_unit_type = visible_unit_type
         self.gibbs_sampling_steps = gibbs_sampling_steps
         self.stddev = stddev
-        self.verbose = verbose
 
         self.W = None
         self.bh_ = None
@@ -66,12 +65,14 @@ class RBM(UnsupervisedModel):
         :param validation_set: validation set. optional, default None
         :return: self
         """
-        for i in range(self.num_epochs):
+        pbar = tqdm(range(self.num_epochs))
+        for i in pbar:
             self._run_train_step(train_set)
 
             if validation_set is not None:
-                self._run_validation_error_and_summaries(
+                err = self._run_validation_error_and_summaries(
                     i, self._create_feed_dict(validation_set))
+                pbar.set_description("Reconstruction loss: %s" % (err))
 
     def _run_train_step(self, train_set):
         """Run a training step.
