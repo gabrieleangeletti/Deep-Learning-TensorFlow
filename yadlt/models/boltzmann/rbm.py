@@ -74,7 +74,7 @@ class RBM(UnsupervisedModel):
                     i, self._create_feed_dict(validation_set))
 
     def _run_train_step(self, train_set):
-        """Run a training step.     
+        """Run a training step.
 
         A training step is made by randomly shuffling the training set,
         divide into batches and run the variable update nodes for each batch.

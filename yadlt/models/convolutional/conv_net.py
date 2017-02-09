@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from yadlt.core import SupervisedModel
+from yadlt.core import Trainer
 from yadlt.utils import utilities
 
 
@@ -20,7 +21,7 @@ class ConvolutionalNetwork(SupervisedModel):
     def __init__(
         self, layers, original_shape, name='convnet',
         loss_func='softmax_cross_entropy', num_epochs=10, batch_size=10,
-        opt='gradient_descent', learning_rate=0.01,
+        opt='sgd', learning_rate=0.01,
             momentum=0.5, dropout=0.5, verbose=1):
         """Constructor.
 
@@ -46,6 +47,10 @@ class ConvolutionalNetwork(SupervisedModel):
             loss_func, learning_rate, num_epochs, batch_size, opt,
             momentum)
 
+        self.trainer = Trainer(
+            opt, learning_rate=learning_rate,
+            momentum=momentum)
+
         self.layers = layers
         self.original_shape = original_shape
         self.dropout = dropout
@@ -66,7 +71,7 @@ class ConvolutionalNetwork(SupervisedModel):
         :param validation_labels: validation labels
         :return: self
         """
-        shuff = zip(train_set, train_labels)
+        shuff = list(zip(train_set, train_labels))
 
         for i in range(self.num_epochs):
 
@@ -99,7 +104,7 @@ class ConvolutionalNetwork(SupervisedModel):
         self._create_layers(n_classes)
 
         self._create_cost_function_node(self.last_out, self.input_labels)
-        self._create_train_step_node()
+        self.train_step = self.trainer.compile(self.cost)
 
         self._create_accuracy_test_node()
 

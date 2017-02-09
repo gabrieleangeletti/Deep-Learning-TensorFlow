@@ -5,11 +5,11 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import os
 import tensorflow as tf
 
+from yadlt.core import Trainer
 from yadlt.core import UnsupervisedModel
-from yadlt.models.autoencoder_models import denoising_autoencoder
+from yadlt.models.autoencoders import denoising_autoencoder
 from yadlt.utils import utilities
 
 
@@ -23,13 +23,13 @@ class DeepAutoencoder(UnsupervisedModel):
         self, layers, name='sdae',
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
-        opt=['gradient_descent'], regtype=['none'],
+        opt=['sgd'], regtype=['none'],
         learning_rate=[0.01], momentum=0.5, finetune_dropout=1,
         corr_type=['none'], finetune_regtype='none', corr_frac=[0.], verbose=1,
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
         tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], l2reg=[5e-4],
         finetune_batch_size=20, do_pretrain=False,
-        finetune_opt='gradient_descent', finetune_learning_rate=0.001,
+        finetune_opt='sgd', finetune_learning_rate=0.001,
             finetune_num_epochs=10):
         """Constructor.
 
@@ -78,6 +78,10 @@ class DeepAutoencoder(UnsupervisedModel):
             num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
             l2reg=l2reg, regtype=finetune_regtype, dropout=finetune_dropout,
             opt=finetune_opt, momentum=momentum)
+
+        self.trainer = Trainer(
+            finetune_opt, learning_rate=finetune_learning_rate,
+            momentum=momentum)
 
         self.do_pretrain = do_pretrain
         self.layers = layers
@@ -146,7 +150,7 @@ class DeepAutoencoder(UnsupervisedModel):
         :param validation_ref: validation reference data
         :return: self
         """
-        shuff = zip(train_set, train_ref)
+        shuff = list(zip(train_set, train_ref))
 
         for i in range(self.num_epochs):
 
@@ -193,7 +197,7 @@ class DeepAutoencoder(UnsupervisedModel):
 
         self._create_cost_function_node(
             self.reconstruction, self.input_labels, regterm=regterm)
-        self._create_train_step_node()
+        self.train_step = self.trainer.compile(self.cost)
 
     def _create_placeholders(self, n_features, n_classes):
         """Create the TensorFlow placeholders for the model.

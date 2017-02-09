@@ -5,11 +5,11 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import os
 import tensorflow as tf
 
+from yadlt.core import Trainer
 from yadlt.core import UnsupervisedModel
-from yadlt.models.rbm_models import rbm
+from yadlt.models.boltzmann import rbm
 from yadlt.utils import utilities
 
 
@@ -25,7 +25,7 @@ class DeepAutoencoder(UnsupervisedModel):
         learning_rate=[0.01], gibbs_k=[1], loss_func=['mean_squared'],
         momentum=0.5, finetune_dropout=1, verbose=1,
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
-        finetune_dec_act_func=[tf.nn.sigmoid], finetune_opt='gradient_descent',
+        finetune_dec_act_func=[tf.nn.sigmoid], finetune_opt='sgd',
         finetune_learning_rate=0.001, l2reg=5e-4, finetune_num_epochs=10,
         noise=['gauss'], stddev=0.1, finetune_batch_size=20, do_pretrain=False,
             tied_weights=False, regtype=['none'], finetune_reg_type='none'):
@@ -65,6 +65,10 @@ class DeepAutoencoder(UnsupervisedModel):
             regtype=finetune_reg_type, num_epochs=finetune_num_epochs,
             batch_size=finetune_batch_size, l2reg=l2reg,
             dropout=finetune_dropout, opt=finetune_opt,
+            momentum=momentum)
+
+        self.trainer = Trainer(
+            finetune_opt, learning_rate=finetune_learning_rate,
             momentum=momentum)
 
         self.do_pretrain = do_pretrain
@@ -126,7 +130,7 @@ class DeepAutoencoder(UnsupervisedModel):
         :param validation_ref: validation reference data
         :return: self
         """
-        shuff = zip(train_set, train_ref)
+        shuff = list(zip(train_set, train_ref))
 
         for i in range(self.num_epochs):
 
@@ -176,7 +180,7 @@ class DeepAutoencoder(UnsupervisedModel):
 
         self._create_cost_function_node(
             self.reconstruction, self.input_labels, regterm=regterm)
-        self._create_train_step_node()
+        self.train_step = self.trainer.compile(self.cost)
 
     def _create_placeholders(self, n_features, n_classes):
         """Create the TensorFlow placeholders for the model.

@@ -75,7 +75,7 @@ class Model(object):
 
     def _initialize_training_parameters(
         self, loss_func, learning_rate, num_epochs, batch_size,
-        opt='gradient_descent', dropout=1, momentum=None, regtype='none',
+        opt='sgd', dropout=1, momentum=None, regtype='none',
             l2reg=None):
         """Initialize training parameters common to all models.
 
@@ -84,7 +84,7 @@ class Model(object):
         :param num_epochs: Number of epochs
         :param batch_size: Size of each mini-batch
         :param opt: Which tensorflow optimizer to use.
-            ['gradient_descent', 'momentum', 'ada_grad']
+            ['sgd', 'momentum', 'ada_grad']
         :param dropout: Dropout parameter
         :param momentum: Momentum parameter
         :param l2reg: regularization parameter
@@ -245,31 +245,6 @@ class Model(object):
             tf.summary.scalar(self.loss_func, self.cost)
         else:
             self.cost = None
-
-    def _create_train_step_node(self):
-        """Create the training step node of the network.
-
-        :return: self
-        """
-        with tf.name_scope("train"):
-            if self.opt == 'gradient_descent':
-                self.train_step = tf.train.GradientDescentOptimizer(
-                    self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'ada_grad':
-                self.train_step = tf.train.AdagradOptimizer(
-                    self.learning_rate).minimize(self.cost)
-
-            elif self.opt == 'momentum':
-                self.train_step = tf.train.MomentumOptimizer(
-                    self.learning_rate, self.momentum).minimize(self.cost)
-
-            elif self.opt == 'adam':
-                self.train_step = tf.train.AdamOptimizer(
-                    self.learning_rate).minimize(self.cost)
-
-            else:
-                self.train_step = None
 
     def get_parameters(self, params, graph=None):
         """Get the parameters of the model.

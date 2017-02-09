@@ -5,11 +5,11 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import os
 import tensorflow as tf
 
 from yadlt.core import SupervisedModel
-from yadlt.models.autoencoder_models import denoising_autoencoder
+from yadlt.core import Trainer
+from yadlt.models.autoencoders import denoising_autoencoder
 from yadlt.utils import utilities
 
 
@@ -23,11 +23,10 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         self, layers, name='sdae',
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
-        opt=['gradient_descent'], l2reg=[5e-4],
-        learning_rate=[0.01], momentum=0.5, finetune_dropout=1,
-        corr_type=['none'], corr_frac=[0.], verbose=1,
+        opt=['sgd'], l2reg=[5e-4], learning_rate=[0.01], momentum=0.5,
+        finetune_dropout=1, corr_type=['none'], corr_frac=[0.], verbose=1,
         finetune_loss_func='softmax_cross_entropy',
-        finetune_act_func=tf.nn.relu, finetune_opt='gradient_descent',
+        finetune_act_func=tf.nn.relu, finetune_opt='sgd',
         finetune_learning_rate=0.001, finetune_num_epochs=10,
             finetune_batch_size=20, do_pretrain=False):
         """Constructor.
@@ -69,6 +68,10 @@ class StackedDenoisingAutoencoder(SupervisedModel):
             loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
             dropout=finetune_dropout, num_epochs=finetune_num_epochs,
             batch_size=finetune_batch_size, opt=finetune_opt,
+            momentum=momentum)
+
+        self.trainer = Trainer(
+            finetune_opt, learning_rate=finetune_learning_rate,
             momentum=momentum)
 
         self.do_pretrain = do_pretrain
@@ -130,11 +133,12 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         :param validation_labels: validation labels
         :return: self
         """
-        shuff = zip(train_set, train_labels)
+        shuff = list(zip(train_set, train_labels))
 
         for i in range(self.num_epochs):
 
             np.random.shuffle(shuff)
+
             batches = [_ for _ in utilities.gen_batches(
                 shuff, self.batch_size)]
 
@@ -168,7 +172,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         last_out = self._create_last_layer(next_train, n_classes)
 
         self._create_cost_function_node(last_out, self.input_labels)
-        self._create_train_step_node()
+        self.train_step = self.trainer.compile(self.cost)
         self._create_accuracy_test_node()
 
     def _create_placeholders(self, n_features, n_classes):

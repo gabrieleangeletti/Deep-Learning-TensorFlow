@@ -5,11 +5,11 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import os
 import tensorflow as tf
 
 from yadlt.core import SupervisedModel
-from yadlt.models.rbm_models import rbm
+from yadlt.core import Trainer
+from yadlt.models.boltzmann import rbm
 from yadlt.utils import utilities
 
 
@@ -25,9 +25,9 @@ class DeepBeliefNetwork(SupervisedModel):
         rbm_gauss_visible=False, rbm_stddev=0.1, rbm_batch_size=[10],
         rbm_learning_rate=[0.01], finetune_dropout=1,
         finetune_loss_func='softmax_cross_entropy',
-        finetune_act_func=tf.nn.sigmoid, finetune_opt='gradient_descent',
+        finetune_act_func=tf.nn.sigmoid, finetune_opt='sgd',
         finetune_learning_rate=0.001, finetune_num_epochs=10,
-            finetune_batch_size=20, verbose=1, momentum=0.5,):
+            finetune_batch_size=20, verbose=1, momentum=0.5):
         """Constructor.
 
         :param rbm_layers: list containing the hidden units for each layer
@@ -53,6 +53,10 @@ class DeepBeliefNetwork(SupervisedModel):
             loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
             dropout=finetune_dropout, num_epochs=finetune_num_epochs,
             batch_size=finetune_batch_size, opt=finetune_opt,
+            momentum=momentum)
+
+        self.trainer = Trainer(
+            finetune_opt, learning_rate=finetune_learning_rate,
             momentum=momentum)
 
         self.do_pretrain = do_pretrain
@@ -131,7 +135,7 @@ class DeepBeliefNetwork(SupervisedModel):
         :param validation_labels: validation labels
         :return: self
         """
-        shuff = zip(train_set, train_labels)
+        shuff = list(zip(train_set, train_labels))
 
         for i in range(self.num_epochs):
 
@@ -169,7 +173,7 @@ class DeepBeliefNetwork(SupervisedModel):
         last_out = self._create_last_layer(next_train, n_classes)
 
         self._create_cost_function_node(last_out, self.input_labels)
-        self._create_train_step_node()
+        self.train_step = self.trainer.compile(self.cost)
         self._create_accuracy_test_node()
 
     def _create_placeholders(self, n_features, n_classes):

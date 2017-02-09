@@ -37,7 +37,7 @@ flags.DEFINE_string('enc_act_func', 'tanh', 'Activation function for the encoder
 flags.DEFINE_string('dec_act_func', 'none', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
 flags.DEFINE_string('loss_func', 'mean_squared', 'Loss function. ["mean_squared" or "cross_entropy"]')
 flags.DEFINE_integer('verbose', 1, 'Level of verbosity. 0 - silent, 1 - print accuracy.')
-flags.DEFINE_string('opt', 'gradient_descent', '["gradient_descent", "ada_grad", "momentum", "adam"]')
+flags.DEFINE_string('opt', 'sgd', '["sgd", "adagrad", "momentum", "adam"]')
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
@@ -50,7 +50,6 @@ assert FLAGS.dec_act_func in ['sigmoid', 'tanh', 'none']
 assert FLAGS.corr_type in ['masking', 'salt_and_pepper', 'none']
 assert 0. <= FLAGS.corr_frac <= 1.
 assert FLAGS.loss_func in ['cross_entropy', 'mean_squared']
-assert FLAGS.opt in ['gradient_descent', 'ada_grad', 'momentum', 'adam']
 
 if __name__ == '__main__':
 
