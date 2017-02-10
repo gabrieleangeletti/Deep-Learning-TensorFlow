@@ -21,7 +21,6 @@ flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('test_labels', '', 'Path to test labels .npy file.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
 flags.DEFINE_string('name', 'convnet', 'Model name.')
-flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 # Convolutional Net parameters
@@ -88,7 +87,7 @@ if __name__ == '__main__':
 
     # Model training
     print('Start Convolutional Network training...')
-    convnet.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
+    convnet.fit(trX, trY, vlX, vlY)
 
     # Test the model
     print('Test set accuracy: {}'.format(convnet.score(teX, teY)))

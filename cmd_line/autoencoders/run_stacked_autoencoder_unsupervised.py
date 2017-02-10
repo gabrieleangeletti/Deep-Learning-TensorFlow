@@ -26,7 +26,6 @@ flags.DEFINE_string('save_reconstructions', '', 'Path to a .npy file to save the
 flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
 flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
 flags.DEFINE_string('save_model_parameters', '', 'Path to a directory to save the parameters of the model. One .npy file per layer.')
-flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_string('name', 'un_sdae', 'Name for the model.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 flags.DEFINE_boolean('tied_weights', True, 'Whether to use tied weights for the decoders.')
@@ -174,7 +173,7 @@ if __name__ == '__main__':
         encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
 
     # Supervised finetuning
-    sdae.fit(trX, trRef, vlX, vlRef, restore_previous_model=FLAGS.restore_previous_model)
+    sdae.fit(trX, trRef, vlX, vlRef)
 
     # Compute the reconstruction loss of the model
     print('Test set reconstruction loss: {}'.format(sdae.compute_reconstruction_loss(teX, teRef)))

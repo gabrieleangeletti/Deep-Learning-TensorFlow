@@ -23,7 +23,6 @@ flags.DEFINE_boolean('do_pretrain', True, 'Whether or not doing unsupervised pre
 flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predictions of the model.')
 flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
 flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
-flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_string('name', 'sdae', 'Name for the model.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
@@ -142,7 +141,7 @@ if __name__ == '__main__':
         encoded_X, encoded_vX = sdae.pretrain(trX, vlX)
 
     # Supervised finetuning
-    sdae.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
+    sdae.fit(trX, trY, vlX, vlY)
 
     # Compute the accuracy of the model
     print('Test set accuracy: {}'.format(sdae.score(teX, teY)))

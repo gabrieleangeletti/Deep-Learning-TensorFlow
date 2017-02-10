@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from yadlt.core import Layers, Loss, Trainer
 from yadlt.core import UnsupervisedModel
-from yadlt.utils import utilities
+from yadlt.utils import tf_utils, utilities
 
 
 class DenoisingAutoencoder(UnsupervisedModel):
@@ -76,7 +76,9 @@ class DenoisingAutoencoder(UnsupervisedModel):
             if validation_set is not None:
                 feed = {self.input_data_orig: validation_set,
                         self.input_data: validation_set}
-                err = self._run_validation_error_and_summaries(i, feed)
+                err = tf_utils.run_summaries(
+                    self.tf_session, self.tf_merged_summaries,
+                    self.tf_summary_writer, i, feed, self.cost)
                 pbar.set_description("Reconstruction loss: %s" % (err))
 
     def _run_train_step(self, train_set):

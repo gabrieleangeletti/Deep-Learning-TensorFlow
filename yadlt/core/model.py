@@ -34,41 +34,6 @@ class Model(object):
         self.tf_saver = None
         self.tf_merged_summaries = None
         self.tf_summary_writer = None
-        self.tf_summary_writer_available = True
-
-    def _initialize_tf_utilities_and_ops(self, restore_previous_model):
-        """Initialize TensorFlow operations.
-
-        tf operations: summaries, init operations, saver, summary_writer.
-        Restore a previously trained model if the flag restore_previous_model
-            is true.
-        :param restore_previous_model:
-                    if true, a previous trained model
-                    with the same name of this model is restored from disk
-                    to continue training.
-        """
-        self.tf_merged_summaries = tf.summary.merge_all()
-        init_op = tf.global_variables_initializer()
-        self.tf_saver = tf.train.Saver()
-
-        self.tf_session.run(init_op)
-
-        if restore_previous_model:
-            self.tf_saver.restore(self.tf_session, self.model_path)
-
-        # Retrieve run identifier
-        run_id = 0
-        for e in os.listdir(Config().logs_dir):
-            if e[:3] == 'run':
-                r = int(e[3:])
-                if r > run_id:
-                    run_id = r
-        run_id += 1
-        run_dir = os.path.join(Config().logs_dir, 'run' + str(run_id))
-        print('Tensorboard logs dir for this run is %s' % (run_dir))
-
-        self.tf_summary_writer = tf.summary.FileWriter(
-            run_dir, self.tf_session.graph)
 
     def _initialize_training_parameters(
         self, loss_func, learning_rate, num_epochs, batch_size,

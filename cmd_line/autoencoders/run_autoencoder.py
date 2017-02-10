@@ -17,7 +17,6 @@ flags.DEFINE_string('valid_dataset', '', 'Path to valid set .npy file.')
 flags.DEFINE_string('test_dataset', '', 'Path to test set .npy file.')
 flags.DEFINE_string('name', 'dae', 'Model name.')
 flags.DEFINE_string('cifar_dir', '', 'Path to the cifar 10 dataset directory.')
-flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_boolean('encode_train', False, 'Whether to encode and store the training set.')
 flags.DEFINE_boolean('encode_valid', False, 'Whether to encode and store the validation set.')
 flags.DEFINE_boolean('encode_test', False, 'Whether to encode and store the test set.')
@@ -117,7 +116,7 @@ if __name__ == '__main__':
     if FLAGS.v_bias:
         bv = np.load(FLAGS.v_bias)
 
-    dae.fit(trX, trX, vlX, vlX, restore_previous_model=FLAGS.restore_previous_model)
+    dae.fit(trX, trX, vlX, vlX)
 
     # Save the model paramenters
     if FLAGS.save_parameters:

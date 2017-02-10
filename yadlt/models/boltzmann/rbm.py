@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from yadlt.core import Layers, Loss
 from yadlt.core import UnsupervisedModel
-from yadlt.utils import utilities
+from yadlt.utils import tf_utils, utilities
 
 
 class RBM(UnsupervisedModel):
@@ -20,8 +20,8 @@ class RBM(UnsupervisedModel):
 
     def __init__(
         self, num_hidden, visible_unit_type='bin',
-        name='rbm', loss_func='mean_squared',
-        regcoef=5e-4, regtype='none', gibbs_sampling_steps=1, learning_rate=0.01,
+        name='rbm', loss_func='mean_squared', learning_rate=0.01,
+        regcoef=5e-4, regtype='none', gibbs_sampling_steps=1,
             batch_size=10, num_epochs=10, stddev=0.1):
         """Constructor.
 
@@ -72,8 +72,10 @@ class RBM(UnsupervisedModel):
             self._run_train_step(train_set)
 
             if validation_set is not None:
-                err = self._run_validation_error_and_summaries(
-                    i, self._create_feed_dict(validation_set))
+                feed = self._create_feed_dict(validation_set)
+                err = tf_utils.run_summaries(
+                    self.tf_session, self.tf_merged_summaries,
+                    self.tf_summary_writer, i, feed, self.cost)
                 pbar.set_description("Reconstruction loss: %s" % (err))
 
     def _run_train_step(self, train_set):

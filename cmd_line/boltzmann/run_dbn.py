@@ -24,7 +24,6 @@ flags.DEFINE_string('save_predictions', '', 'Path to a .npy file to save predict
 flags.DEFINE_string('save_layers_output_test', '', 'Path to a .npy file to save test set output from all the layers of the model.')
 flags.DEFINE_string('save_layers_output_train', '', 'Path to a .npy file to save train set output from all the layers of the model.')
 flags.DEFINE_boolean('do_pretrain', True, 'Whether or not pretrain the network.')
-flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 
@@ -120,7 +119,7 @@ if __name__ == '__main__':
 
     # finetuning
     print('Start deep belief net finetuning...')
-    srbm.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
+    srbm.fit(trX, trY, vlX, vlY)
 
     # Test the model
     print('Test set accuracy: {}'.format(srbm.score(teX, teY)))

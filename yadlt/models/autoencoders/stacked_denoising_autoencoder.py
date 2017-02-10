@@ -10,7 +10,7 @@ from tqdm import tqdm
 from yadlt.core import SupervisedModel
 from yadlt.core import Evaluation, Layers, Loss, Trainer
 from yadlt.models.autoencoders import denoising_autoencoder
-from yadlt.utils import utilities
+from yadlt.utils import tf_utils, utilities
 
 
 class StackedDenoisingAutoencoder(SupervisedModel):
@@ -153,7 +153,9 @@ class StackedDenoisingAutoencoder(SupervisedModel):
                 feed = {self.input_data: validation_set,
                         self.input_labels: validation_labels,
                         self.keep_prob: 1}
-                acc = self._run_validation_error_and_summaries(i, feed)
+                acc = tf_utils.run_summaries(
+                    self.tf_session, self.tf_merged_summaries,
+                    self.tf_summary_writer, i, feed, self.accuracy)
                 pbar.set_description("Accuracy: %s" % (acc))
 
     def build_model(self, n_features, n_classes):

@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from yadlt.core import Evaluation, Loss
 from yadlt.core import SupervisedModel
-from yadlt.utils import utilities
+from yadlt.utils import tf_utils, utilities
 
 
 class LogisticRegression(SupervisedModel):
@@ -49,7 +49,7 @@ class LogisticRegression(SupervisedModel):
         self._create_placeholders(n_features, n_classes)
         self._create_variables(n_features, n_classes)
 
-        self.mod_y = tf.nn.linear(
+        self.mod_y = tf.nn.softmax(
             tf.add(tf.matmul(self.input_data, self.W_), self.b_))
 
         self.cost = self.loss.compile(self.mod_y, self.input_labels)
@@ -111,5 +111,7 @@ class LogisticRegression(SupervisedModel):
             if validation_set is not None:
                 feed = {self.input_data: validation_set,
                         self.input_labels: validation_labels}
-                acc = self._run_validation_error_and_summaries(i, feed)
+                acc = tf_utils.run_summaries(
+                    self.tf_session, self.tf_merged_summaries,
+                    self.tf_summary_writer, i, feed, self.accuracy)
                 pbar.set_description("Accuracy: %s" % (acc))

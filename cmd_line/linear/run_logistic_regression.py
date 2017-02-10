@@ -24,7 +24,6 @@ flags.DEFINE_string('loss_func', 'cross_entropy', 'Loss function. ["mean_squared
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
-flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous model corresponding to model name.')
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
@@ -83,7 +82,7 @@ if __name__ == '__main__':
         batch_size=FLAGS.batch_size)
 
     # Fit the model
-    l.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
+    l.fit(trX, trY, vlX, vlY)
 
     # Test the model
     print('Test set accuracy: {}'.format(l.score(teX, teY)))

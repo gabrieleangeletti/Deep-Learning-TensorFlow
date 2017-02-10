@@ -6,67 +6,70 @@ from __future__ import print_function
 import tensorflow as tf
 
 from yadlt.core.model import Model
+from yadlt.utils import tf_utils
 
 
 class SupervisedModel(Model):
-    """Supervised Model scheleton."""
+    """Supervised Model scheleton.
+
+    The interface of the class is sklearn-like.
+
+    Methods
+    -------
+
+    * fit(): model training procedure.
+    * predict(): model inference procedure (predict labels).
+    * score(): model scoring procedure (mean accuracy).
+    """
 
     def __init__(self, name):
         """Constructor."""
         Model.__init__(self, name)
 
-    def fit(self, train_set, train_labels, validation_set=None,
-            validation_labels=None, restore_previous_model=False, graph=None):
+    def fit(self, train_X, train_Y, val_X=None, val_Y=None, graph=None):
         """Fit the model to the data.
 
-        :param train_set: Training data. shape(n_samples, n_features)
-        :param train_labels: Training labels. shape(n_samples, n_classes)
-        :param validation_set: optional, default None. Validation data.
-            shape(nval_samples, n_features)
-        :param validation_labels: optional, default None. Validation labels.
-            shape(nval_samples, n_classes)
-        :param restore_previous_model:
-                    if true, a previous trained model
-                    with the same name of this model is restored from disk
-                    to continue training.
-        :param graph: tensorflow graph object
-        :return: self
+        Parameters
+        ----------
+
+        train_X : array_like, shape (n_samples, n_features)
+            Training data.
+
+        train_Y : array_like, shape (n_samples, n_classes)
+            Training labels.
+
+        val_X : array_like, shape (N, n_features) optional, (default = None).
+            Validation data.
+
+        val_Y : array_like, shape (N, n_classes) optional, (default = None).
+            Validation labels.
+
+        graph : tf.Graph, optional (default = None)
+            Tensorflow Graph object.
+
+        Returns
+        -------
         """
-        if len(train_labels.shape) != 1:
-            num_classes = train_labels.shape[1]
+        if len(train_Y.shape) != 1:
+            num_classes = train_Y.shape[1]
         else:
             raise Exception("Please convert the labels with one-hot encoding.")
 
         g = graph if graph is not None else self.tf_graph
 
         with g.as_default():
-            self.build_model(train_set.shape[1], num_classes)
+            # Build model
+            self.build_model(train_X.shape[1], num_classes)
             with tf.Session() as self.tf_session:
-                self._initialize_tf_utilities_and_ops(restore_previous_model)
-                self._train_model(
-                    train_set, train_labels, validation_set, validation_labels)
+                # Initialize tf stuff
+                summary_objs = tf_utils.init_tf_ops(self.tf_session)
+                self.tf_merged_summaries = summary_objs[0]
+                self.tf_summary_writer = summary_objs[1]
+                self.tf_saver = summary_objs[2]
+                # Train model
+                self._train_model(train_X, train_Y, val_X, val_Y)
+                # Save model
                 self.tf_saver.save(self.tf_session, self.model_path)
-
-    def _run_validation_error_and_summaries(self, epoch, feed):
-        """Run the summaries and error computation on the validation set.
-
-        :param epoch: current epoch
-        :param validation_set: validation data
-        :return: self
-        """
-        try:
-            result = self.tf_session.run(
-                [self.tf_merged_summaries, self.accuracy], feed_dict=feed)
-            summary_str = result[0]
-            acc = result[1]
-            self.tf_summary_writer.add_summary(summary_str, epoch)
-        except tf.errors.InvalidArgumentError:
-            if self.tf_summary_writer_available:
-                print("Summary writer not available at the moment")
-            self.tf_summary_writer_available = False
-            acc = self.tf_session.run(self.accuracy, feed_dict=feed)
-
-        return acc
 
     def predict(self, test_X):
         """Predict the labels for the test set.
