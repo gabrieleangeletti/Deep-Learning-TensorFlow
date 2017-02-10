@@ -9,7 +9,7 @@ import tensorflow as tf
 from tqdm import tqdm
 
 from yadlt.core import SupervisedModel
-from yadlt.core import Layers, Loss, Trainer
+from yadlt.core import Evaluation, Layers, Loss, Trainer
 from yadlt.models.boltzmann import rbm
 from yadlt.utils import utilities
 
@@ -169,12 +169,12 @@ class DeepBeliefNetwork(SupervisedModel):
         self._create_variables(n_features)
 
         next_train = self._create_encoding_layers()
-        self.mod_y, _, _ = Layers.softmax(next_train, n_classes)
+        self.mod_y, _, _ = Layers.linear(next_train, n_classes)
         self.layer_nodes.append(self.mod_y)
 
         self.cost = self.loss.compile(self.mod_y, self.input_labels)
         self.train_step = self.trainer.compile(self.cost)
-        self._create_accuracy_test_node()
+        self.accuracy = Evaluation.accuracy(self.mod_y, self.input_labels)
 
     def _create_placeholders(self, n_features, n_classes):
         """Create the TensorFlow placeholders for the model.

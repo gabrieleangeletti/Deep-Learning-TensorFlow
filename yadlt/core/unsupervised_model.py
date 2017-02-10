@@ -46,14 +46,6 @@ class UnsupervisedModel(Model):
                     train_set, train_ref, validation_set, validation_ref)
                 self.tf_saver.save(self.tf_session, self.model_path)
 
-    def build_model(self, num_features):
-        """Build model method."""
-        pass
-
-    def _train_model(self, train_set, train_labels,
-                     validation_set, validation_labels):
-        pass
-
     def _run_validation_error_and_summaries(self, epoch, feed):
         """Run the summaries and error computation on the validation set.
 

@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from yadlt.core import Loss
+from yadlt.core import Evaluation, Loss
 from yadlt.core import SupervisedModel
 from yadlt.utils import utilities
 
@@ -50,13 +50,13 @@ class LogisticRegression(SupervisedModel):
         self._create_placeholders(n_features, n_classes)
         self._create_variables(n_features, n_classes)
 
-        self.mod_y = tf.nn.softmax(
+        self.mod_y = tf.nn.linear(
             tf.add(tf.matmul(self.input_data, self.W_), self.b_))
 
         self.cost = self.loss.compile(self.mod_y, self.input_labels)
         self.train_step = tf.train.GradientDescentOptimizer(
             self.learning_rate).minimize(self.cost)
-        self._create_accuracy_test_node()
+        self.accuracy = Evaluation.accuracy(self.mod_y, self.input_labels)
 
     def _create_placeholders(self, n_features, n_classes):
         """Create the TensorFlow placeholders for the model.

@@ -86,4 +86,4 @@ if __name__ == '__main__':
     l.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model
-    print('Test set accuracy: {}'.format(l.compute_accuracy(teX, teY)))
+    print('Test set accuracy: {}'.format(l.score(teX, teY)))

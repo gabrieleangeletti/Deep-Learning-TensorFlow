@@ -48,14 +48,6 @@ class SupervisedModel(Model):
                     train_set, train_labels, validation_set, validation_labels)
                 self.tf_saver.save(self.tf_session, self.model_path)
 
-    def build_model(self, num_features, num_classes):
-        """Build model method."""
-        pass
-
-    def _train_model(self, train_set, train_labels,
-                     validation_set, validation_labels):
-        pass
-
     def _run_validation_error_and_summaries(self, epoch, feed):
         """Run the summaries and error computation on the validation set.
 
@@ -77,42 +69,52 @@ class SupervisedModel(Model):
 
         return acc
 
-    def predict(self, test_set):
+    def predict(self, test_X):
         """Predict the labels for the test set.
 
-        :param test_set: Testing data. shape(n_test_samples, n_features)
-        :return: labels
+        Parameters
+        ----------
+
+        test_X : array_like, shape (n_samples, n_features)
+            Test data.
+
+        Returns
+        -------
+
+        array_like, shape (n_samples,) : predicted labels.
         """
         with self.tf_graph.as_default():
             with tf.Session() as self.tf_session:
                 self.tf_saver.restore(self.tf_session, self.model_path)
-                return self.model_predictions.eval({self.input_data: test_set,
-                                                    self.keep_prob: 1})
+                feed = {
+                    self.input_data: test_X,
+                    self.keep_prob: 1
+                }
+                return self.model_predictions.eval(feed)
 
-    def compute_accuracy(self, test_set, test_labels):
-        """Compute the accuracy over the test set.
+    def score(self, test_X, test_Y):
+        """Compute the mean accuracy over the test set.
 
-        :param test_set: Testing data. shape(n_test_samples, n_features)
-        :param test_labels: Labels for the test data.
-            shape(n_test_samples, n_classes)
-        :return: accuracy
+        Parameters
+        ----------
+
+        test_X : array_like, shape (n_samples, n_features)
+            Test data.
+
+        test_Y : array_like, shape (n_samples, n_features)
+            Test labels.
+
+        Returns
+        -------
+
+        float : mean accuracy over the test set
         """
         with self.tf_graph.as_default():
             with tf.Session() as self.tf_session:
                 self.tf_saver.restore(self.tf_session, self.model_path)
-                return self.accuracy.eval({self.input_data: test_set,
-                                           self.input_labels: test_labels,
-                                           self.keep_prob: 1})
-
-    def _create_accuracy_test_node(self):
-        """Create the supervised test node of the network.
-
-        :return: self
-        """
-        with tf.name_scope("test"):
-            self.model_predictions = tf.argmax(self.mod_y, 1)
-            correct_prediction = tf.equal(
-                self.model_predictions, tf.argmax(self.input_labels, 1))
-            self.accuracy = tf.reduce_mean(
-                tf.cast(correct_prediction, "float"))
-            tf.scalar_summary('accuracy', self.accuracy)
+                feed = {
+                    self.input_data: test_X,
+                    self.input_labels: test_Y,
+                    self.keep_prob: 1
+                }
+                return self.accuracy.eval(feed)

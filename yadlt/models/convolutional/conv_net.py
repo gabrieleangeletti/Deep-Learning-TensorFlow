@@ -9,7 +9,7 @@ import tensorflow as tf
 from tqdm import tqdm
 
 from yadlt.core import SupervisedModel
-from yadlt.core import Loss, Trainer
+from yadlt.core import Evaluation, Loss, Trainer
 from yadlt.utils import utilities
 
 
@@ -107,8 +107,7 @@ class ConvolutionalNetwork(SupervisedModel):
 
         self.cost = self.loss.compile(self.mod_y, self.input_labels)
         self.train_step = self.trainer.compile(self.cost)
-
-        self._create_accuracy_test_node()
+        self.accuracy = Evaluation.accuracy(self.mod_y, self.input_labels)
 
     def _create_placeholders(self, n_features, n_classes):
         """Create the TensorFlow placeholders for the model.

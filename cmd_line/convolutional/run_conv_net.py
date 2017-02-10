@@ -91,4 +91,4 @@ if __name__ == '__main__':
     convnet.fit(trX, trY, vlX, vlY, restore_previous_model=FLAGS.restore_previous_model)
 
     # Test the model
-    print('Test set accuracy: {}'.format(convnet.compute_accuracy(teX, teY)))
+    print('Test set accuracy: {}'.format(convnet.score(teX, teY)))
