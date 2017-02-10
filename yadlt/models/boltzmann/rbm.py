@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
+from yadlt.core import Loss
 from yadlt.core import UnsupervisedModel
 from yadlt.utils import utilities
 
@@ -37,6 +38,8 @@ class RBM(UnsupervisedModel):
             loss_func=loss_func, learning_rate=learning_rate,
             num_epochs=num_epochs, batch_size=batch_size,
             regtype=regtype, l2reg=l2reg)
+
+        self.loss = Loss(self.loss_func)
 
         self.num_hidden = num_hidden
         self.visible_unit_type = visible_unit_type
@@ -144,8 +147,7 @@ class RBM(UnsupervisedModel):
         vars = [self.W, self.bh_, self.bv_]
         regterm = self.compute_regularization(vars)
 
-        self._create_cost_function_node(vprob, self.input_data,
-                                        regterm=regterm)
+        self.cost = self.loss.compile(vprob, self.input_data, regterm=regterm)
 
     def _create_placeholders(self, n_features):
         """Create the TensorFlow placeholders for the model.

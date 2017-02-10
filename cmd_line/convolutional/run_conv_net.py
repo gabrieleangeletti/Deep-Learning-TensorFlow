@@ -35,8 +35,6 @@ flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 flags.DEFINE_float('dropout', 1, 'Dropout parameter.')
 
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
-assert FLAGS.opt in ['sgd', 'ada_grad', 'momentum', 'adam']
-assert FLAGS.loss_func in ['mean_squared', 'softmax_cross_entropy']
 
 if __name__ == '__main__':
 

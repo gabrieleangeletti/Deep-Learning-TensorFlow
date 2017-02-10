@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
+from yadlt.core import Loss
 from yadlt.core import SupervisedModel
 from yadlt.utils import utilities
 
@@ -27,6 +28,8 @@ class LogisticRegression(SupervisedModel):
 
         self._initialize_training_parameters(
             loss_func, learning_rate, num_epochs, batch_size, None)
+
+        self.loss = Loss(self.loss_func)
 
         # Computational graph nodes
         self.input_data = None
@@ -50,7 +53,7 @@ class LogisticRegression(SupervisedModel):
         self.last_out = tf.nn.softmax(
             tf.add(tf.matmul(self.input_data, self.W_), self.b_))
 
-        self._create_cost_function_node(self.last_out, self.input_labels)
+        self.cost = self.loss.compile(self.last_out, self.input_labels)
         self.train_step = tf.train.GradientDescentOptimizer(
             self.learning_rate).minimize(self.cost)
         self._create_accuracy_test_node()

@@ -62,3 +62,78 @@ class Trainer(object):
         """
         with tf.name_scope(name_scope):
             return self.opt_.minimize(cost)
+
+
+class Loss(object):
+    """Collection of loss functions."""
+
+    def __init__(self, lfunc, summary=True, name="loss"):
+        """Constructor.
+
+        Parameters
+        ----------
+
+        lfunc : str
+            Loss function type. Types supported:
+            "cross_entropy", "softmax_cross_entropy" and "mean_squared".
+
+        summary : bool, optional (default = True)
+            Whether to attach a tf scalar summary to the op.
+
+        name : str, optional (default = "loss")
+            Name for the loss op.
+        """
+        assert lfunc in ["cross_entropy",
+                         "softmax_cross_entropy",
+                         "mean_squared"]
+
+        self.lfunc = lfunc
+        self.summary = summary
+        self.name = name
+
+    def compile(self, mod_y, ref_y, regterm=None):
+        """Compute the loss function tensor.
+
+        Parameters
+        ----------
+
+        mode_y : tf.Tensor
+            model output tensor
+
+        ref_y : tf.Tensor
+            reference input tensor
+
+        regterm : tf.Tensor, optional (default = None)
+            Regularization term tensor
+
+        Returns
+        -------
+
+        Loss function tensor.
+        """
+        with tf.name_scope(self.name):
+            if self.lfunc == 'cross_entropy':
+                clip_inf = tf.clip_by_value(mod_y, 1e-10, float('inf'))
+                clip_sup = tf.clip_by_value(1 - mod_y, 1e-10, float('inf'))
+
+                cost = - tf.reduce_mean(tf.add(
+                        tf.mul(ref_y, tf.log(clip_inf)),
+                        tf.mul(tf.sub(1.0, ref_y), tf.log(clip_sup))))
+
+            elif self.lfunc == 'softmax_cross_entropy':
+                cost = tf.contrib.losses.softmax_cross_entropy(mod_y, ref_y)
+
+            elif self.lfunc == 'mean_squared':
+                cost = tf.sqrt(tf.reduce_mean(
+                    tf.square(tf.sub(ref_y, mod_y))))
+
+            else:
+                cost = None
+
+        if cost is not None:
+            cost = cost + regterm if regterm is not None else cost
+            tf.summary.scalar(self.lfunc, cost)
+        else:
+            cost = None
+
+        return cost

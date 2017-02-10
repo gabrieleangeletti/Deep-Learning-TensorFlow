@@ -77,7 +77,6 @@ assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert len(dae_layers) > 0
 assert all([af in ['sigmoid', 'tanh'] for af in dae_enc_act_func])
 assert all([af in ['sigmoid', 'tanh', 'none'] for af in dae_dec_act_func])
-assert all([lf in ['cross_entropy', 'mean_squared'] for lf in dae_loss_func])
 
 if __name__ == '__main__':
 

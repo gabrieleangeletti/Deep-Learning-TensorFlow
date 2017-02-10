@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from yadlt.core import Trainer
+from yadlt.core import Loss, Trainer
 from yadlt.core import UnsupervisedModel
 from yadlt.models.autoencoders import denoising_autoencoder
 from yadlt.utils import utilities
@@ -78,6 +78,7 @@ class DeepAutoencoder(UnsupervisedModel):
             l2reg=l2reg, regtype=finetune_regtype, dropout=finetune_dropout,
             opt=finetune_opt, momentum=momentum)
 
+        self.loss = Loss(self.loss_func)
         self.trainer = Trainer(
             finetune_opt, learning_rate=finetune_learning_rate,
             momentum=momentum)
@@ -195,7 +196,7 @@ class DeepAutoencoder(UnsupervisedModel):
         vars.extend(self.encoding_b_)
         regterm = self.compute_regularization(vars)
 
-        self._create_cost_function_node(
+        self.cost = self.loss.compile(
             self.reconstruction, self.input_labels, regterm=regterm)
         self.train_step = self.trainer.compile(self.cost)
 

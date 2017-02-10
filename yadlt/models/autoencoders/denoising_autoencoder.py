@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from yadlt.core import Trainer
+from yadlt.core import Loss, Trainer
 from yadlt.core import UnsupervisedModel
 from yadlt.utils import utilities
 
@@ -44,6 +44,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
             num_epochs=num_epochs, batch_size=batch_size,
             momentum=momentum, regtype=regtype, l2reg=l2reg)
 
+        self.loss = Loss(self.loss_func)
         self.trainer = Trainer(
             opt, learning_rate=learning_rate, momentum=momentum)
 
@@ -141,7 +142,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
         vars = [self.W_, self.bh_, self.bv_]
         regterm = self.compute_regularization(vars)
 
-        self._create_cost_function_node(
+        self.cost = self.loss.compile(
             self.reconstruction, self.input_data_orig, regterm=regterm)
         self.train_step = self.trainer.compile(self.cost)
 

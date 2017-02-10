@@ -9,7 +9,7 @@ import tensorflow as tf
 from tqdm import tqdm
 
 from yadlt.core import SupervisedModel
-from yadlt.core import Trainer
+from yadlt.core import Loss, Trainer
 from yadlt.utils import utilities
 
 
@@ -47,6 +47,7 @@ class ConvolutionalNetwork(SupervisedModel):
             loss_func, learning_rate, num_epochs, batch_size, opt,
             momentum)
 
+        self.loss = Loss(self.loss_func)
         self.trainer = Trainer(
             opt, learning_rate=learning_rate,
             momentum=momentum)
@@ -104,7 +105,7 @@ class ConvolutionalNetwork(SupervisedModel):
         self._create_placeholders(n_features, n_classes)
         self._create_layers(n_classes)
 
-        self._create_cost_function_node(self.last_out, self.input_labels)
+        self.cost = self.loss.compile(self.last_out, self.input_labels)
         self.train_step = self.trainer.compile(self.cost)
 
         self._create_accuracy_test_node()

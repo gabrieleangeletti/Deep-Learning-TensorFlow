@@ -48,7 +48,6 @@ assert FLAGS.enc_act_func in ['sigmoid', 'tanh']
 assert FLAGS.dec_act_func in ['sigmoid', 'tanh', 'none']
 assert FLAGS.corr_type in ['masking', 'salt_and_pepper', 'none']
 assert 0. <= FLAGS.corr_frac <= 1.
-assert FLAGS.loss_func in ['cross_entropy', 'mean_squared']
 
 if __name__ == '__main__':
 

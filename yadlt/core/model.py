@@ -209,43 +209,6 @@ class Model(object):
             self.last_out = last_out
             return last_out
 
-    def _create_cost_function_node(self, model_output, ref_input,
-                                   regterm=None):
-        """Create the cost function node.
-
-        :param model_output: model output node
-        :param ref_input: reference input placeholder node
-        :param regterm: regularization term
-        :return: self
-        """
-        with tf.name_scope("cost"):
-            if self.loss_func == 'cross_entropy':
-                clip_inf = tf.clip_by_value(model_output, 1e-10, float('inf'))
-                clip_sup = tf.clip_by_value(
-                    1 - model_output, 1e-10, float('inf'))
-
-                cost = - tf.reduce_mean(
-                    tf.add(
-                        tf.mul(ref_input, tf.log(clip_inf)),
-                        tf.mul(tf.sub(1.0, ref_input), tf.log(clip_sup))
-                    ))
-
-            elif self.loss_func == 'softmax_cross_entropy':
-                cost = tf.contrib.losses.softmax_cross_entropy(model_output, ref_input)
-
-            elif self.loss_func == 'mean_squared':
-                cost = tf.sqrt(tf.reduce_mean(
-                    tf.square(tf.sub(ref_input, model_output))))
-
-            else:
-                cost = None
-
-        if cost is not None:
-            self.cost = cost + regterm if regterm is not None else cost
-            tf.summary.scalar(self.loss_func, self.cost)
-        else:
-            self.cost = None
-
     def get_parameters(self, params, graph=None):
         """Get the parameters of the model.
 

@@ -9,7 +9,7 @@ import tensorflow as tf
 from tqdm import tqdm
 
 from yadlt.core import SupervisedModel
-from yadlt.core import Trainer
+from yadlt.core import Loss, Trainer
 from yadlt.models.boltzmann import rbm
 from yadlt.utils import utilities
 
@@ -54,6 +54,7 @@ class DeepBeliefNetwork(SupervisedModel):
             batch_size=finetune_batch_size, opt=finetune_opt,
             momentum=momentum)
 
+        self.loss = Loss(self.loss_func)
         self.trainer = Trainer(
             finetune_opt, learning_rate=finetune_learning_rate,
             momentum=momentum)
@@ -170,7 +171,7 @@ class DeepBeliefNetwork(SupervisedModel):
         next_train = self._create_encoding_layers()
         last_out = self._create_last_layer(next_train, n_classes)
 
-        self._create_cost_function_node(last_out, self.input_labels)
+        self.cost = self.loss.compile(last_out, self.input_labels)
         self.train_step = self.trainer.compile(self.cost)
         self._create_accuracy_test_node()
 

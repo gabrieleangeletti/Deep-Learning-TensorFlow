@@ -57,7 +57,6 @@ rbm_gibbs_k = utilities.flag_to_list(FLAGS.rbm_gibbs_k, 'int')
 # Parameters validation
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
 assert FLAGS.finetune_act_func in ['sigmoid', 'tanh', 'relu']
-assert FLAGS.finetune_loss_func in ['mean_squared', 'softmax_cross_entropy']
 assert len(rbm_layers) > 0
 
 if __name__ == '__main__':

@@ -28,7 +28,6 @@ flags.DEFINE_boolean('restore_previous_model', False, 'If true, restore previous
 flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful for testing hyperparameters.')
 
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
-assert FLAGS.loss_func in ['cross_entropy', 'mean_squared']
 
 if __name__ == '__main__':
 
