@@ -43,7 +43,7 @@ flags.DEFINE_integer('finetune_batch_size', 20, 'Size of each mini-batch for the
 
 # Autoencoder layers specific parameters
 flags.DEFINE_string('dae_layers', '256,', 'Comma-separated values for the layers in the sdae.')
-flags.DEFINE_string('dae_l2reg', '5e-4,', 'Regularization parameter for the autoencoders. If 0, no regularization.')
+flags.DEFINE_string('dae_regcoef', '5e-4,', 'Regularization parameter for the autoencoders. If 0, no regularization.')
 flags.DEFINE_string('dae_enc_act_func', 'sigmoid,', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dae_dec_act_func', 'none,', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
 flags.DEFINE_string('dae_loss_func', 'mean_squared,', 'Loss function. ["mean_squared" or "cross_entropy"]')
@@ -61,7 +61,7 @@ dae_dec_act_func = utilities.flag_to_list(FLAGS.dae_dec_act_func, 'str')
 dae_opt = utilities.flag_to_list(FLAGS.dae_opt, 'str')
 dae_loss_func = utilities.flag_to_list(FLAGS.dae_loss_func, 'str')
 dae_learning_rate = utilities.flag_to_list(FLAGS.dae_learning_rate, 'float')
-dae_l2reg = utilities.flag_to_list(FLAGS.dae_l2reg, 'float')
+dae_regcoef = utilities.flag_to_list(FLAGS.dae_regcoef, 'float')
 dae_corr_type = utilities.flag_to_list(FLAGS.dae_corr_type, 'str')
 dae_corr_frac = utilities.flag_to_list(FLAGS.dae_corr_frac, 'float')
 dae_num_epochs = utilities.flag_to_list(FLAGS.dae_num_epochs, 'int')
@@ -152,7 +152,7 @@ if __name__ == '__main__':
         finetune_opt=FLAGS.finetune_opt, finetune_batch_size=FLAGS.finetune_batch_size,
         finetune_dropout=FLAGS.finetune_dropout,
         enc_act_func=dae_enc_act_func, dec_act_func=dae_dec_act_func,
-        corr_type=dae_corr_type, corr_frac=dae_corr_frac, l2reg=dae_l2reg,
+        corr_type=dae_corr_type, corr_frac=dae_corr_frac, regcoef=dae_regcoef,
         loss_func=dae_loss_func,
         opt=dae_opt, tied_weights=FLAGS.tied_weights,
         learning_rate=dae_learning_rate, momentum=FLAGS.momentum,

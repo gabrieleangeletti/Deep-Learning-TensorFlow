@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from yadlt.core import Loss, Trainer
+from yadlt.core import Layers, Loss, Trainer
 from yadlt.core import UnsupervisedModel
 from yadlt.models.autoencoders import denoising_autoencoder
 from yadlt.utils import utilities
@@ -28,7 +28,7 @@ class DeepAutoencoder(UnsupervisedModel):
         learning_rate=[0.01], momentum=0.5, finetune_dropout=1,
         corr_type=['none'], finetune_regtype='none', corr_frac=[0.],
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
-        tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], l2reg=[5e-4],
+        tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], regcoef=[5e-4],
         finetune_batch_size=20, do_pretrain=False,
         finetune_opt='sgd', finetune_learning_rate=0.001,
             finetune_num_epochs=10):
@@ -75,7 +75,7 @@ class DeepAutoencoder(UnsupervisedModel):
         self._initialize_training_parameters(
             loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
             num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
-            l2reg=l2reg, regtype=finetune_regtype, dropout=finetune_dropout,
+            regcoef=regcoef, regtype=finetune_regtype, dropout=finetune_dropout,
             opt=finetune_opt, momentum=momentum)
 
         self.loss = Loss(self.loss_func)
@@ -116,7 +116,7 @@ class DeepAutoencoder(UnsupervisedModel):
                     regtype=expanded_args['regtype'][l],
                     opt=expanded_args['opt'][l],
                     learning_rate=expanded_args['learning_rate'][l],
-                    l2reg=expanded_args['l2reg'],
+                    regcoef=expanded_args['regcoef'],
                     momentum=self.momentum,
                     corr_type=expanded_args['corr_type'][l],
                     corr_frac=expanded_args['corr_frac'][l],
@@ -191,10 +191,10 @@ class DeepAutoencoder(UnsupervisedModel):
         self._create_encoding_layers()
         self._create_decoding_layers()
 
-        vars = []
-        vars.extend(self.encoding_w_)
-        vars.extend(self.encoding_b_)
-        regterm = self.compute_regularization(vars)
+        variables = []
+        variables.extend(self.encoding_w_)
+        variables.extend(self.encoding_b_)
+        regterm = Layers.regularization(variables, self.regtype, self.regcoef)
 
         self.cost = self.loss.compile(
             self.reconstruction, self.input_labels, regterm=regterm)

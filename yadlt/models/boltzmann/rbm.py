@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from yadlt.core import Loss
+from yadlt.core import Layers, Loss
 from yadlt.core import UnsupervisedModel
 from yadlt.utils import utilities
 
@@ -22,7 +22,7 @@ class RBM(UnsupervisedModel):
     def __init__(
         self, num_hidden, visible_unit_type='bin',
         name='rbm', loss_func='mean_squared',
-        l2reg=5e-4, regtype='none', gibbs_sampling_steps=1, learning_rate=0.01,
+        regcoef=5e-4, regtype='none', gibbs_sampling_steps=1, learning_rate=0.01,
             batch_size=10, num_epochs=10, stddev=0.1):
         """Constructor.
 
@@ -37,7 +37,7 @@ class RBM(UnsupervisedModel):
         self._initialize_training_parameters(
             loss_func=loss_func, learning_rate=learning_rate,
             num_epochs=num_epochs, batch_size=batch_size,
-            regtype=regtype, l2reg=l2reg)
+            regtype=regtype, regcoef=regcoef)
 
         self.loss = Loss(self.loss_func)
 
@@ -144,8 +144,8 @@ class RBM(UnsupervisedModel):
         self.bv_upd8 = self.bv_.assign_add(tf.mul(self.learning_rate, tf.reduce_mean(
             tf.sub(self.input_data, vprob), 0)))
 
-        vars = [self.W, self.bh_, self.bv_]
-        regterm = self.compute_regularization(vars)
+        variables = [self.W, self.bh_, self.bv_]
+        regterm = Layers.regularization(variables, self.regtype, self.regcoef)
 
         self.cost = self.loss.compile(vprob, self.input_data, regterm=regterm)
 

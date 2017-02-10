@@ -30,7 +30,7 @@ flags.DEFINE_integer('seed', -1, 'Seed for the random generators (>= 0). Useful 
 
 # Stacked Denoising Autoencoder specific parameters
 flags.DEFINE_integer('n_components', 256, 'Number of hidden units in the dae.')
-flags.DEFINE_float('l2reg', 5e-4, 'Regularization parameter. If 0, no regularization.')
+flags.DEFINE_float('regcoef', 5e-4, 'Regularization parameter. If 0, no regularization.')
 flags.DEFINE_string('corr_type', 'none', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
 flags.DEFINE_float('corr_frac', 0., 'Fraction of the input to corrupt.')
 flags.DEFINE_string('enc_act_func', 'tanh', 'Activation function for the encoder. ["sigmoid", "tanh"]')
@@ -99,7 +99,7 @@ if __name__ == '__main__':
         name=FLAGS.name, n_components=FLAGS.n_components,
         enc_act_func=enc_act_func, dec_act_func=dec_act_func,
         corr_type=FLAGS.corr_type, corr_frac=FLAGS.corr_frac,
-        loss_func=FLAGS.loss_func, opt=FLAGS.opt, l2reg=FLAGS.l2reg,
+        loss_func=FLAGS.loss_func, opt=FLAGS.opt, regcoef=FLAGS.regcoef,
         learning_rate=FLAGS.learning_rate, momentum=FLAGS.momentum,
         num_epochs=FLAGS.num_epochs,
         batch_size=FLAGS.batch_size)

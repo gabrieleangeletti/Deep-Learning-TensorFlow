@@ -110,7 +110,7 @@ class SupervisedModel(Model):
         :return: self
         """
         with tf.name_scope("test"):
-            self.model_predictions = tf.argmax(self.last_out, 1)
+            self.model_predictions = tf.argmax(self.mod_y, 1)
             correct_prediction = tf.equal(
                 self.model_predictions, tf.argmax(self.input_labels, 1))
             self.accuracy = tf.reduce_mean(

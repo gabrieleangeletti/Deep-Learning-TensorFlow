@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from yadlt.core import Loss, Trainer
+from yadlt.core import Layers, Loss, Trainer
 from yadlt.core import UnsupervisedModel
 from yadlt.utils import utilities
 
@@ -24,7 +24,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
         enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared',
         num_epochs=10, batch_size=10, opt='sgd',
         learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0.,
-            regtype='none', l2reg=5e-4):
+            regtype='none', regcoef=5e-4):
         """Constructor.
 
         :param n_components: number of hidden units
@@ -35,14 +35,14 @@ class DenoisingAutoencoder(UnsupervisedModel):
         :param corr_type: Type of input corruption.
             ["none", "masking", "salt_and_pepper"]
         :param corr_frac: Fraction of the input to corrupt.
-        :param l2reg: Regularization parameter. If 0, no regularization.
+        :param regcoef: Regularization parameter. If 0, no regularization.
         """
         UnsupervisedModel.__init__(self, name)
 
         self._initialize_training_parameters(
             loss_func=loss_func, learning_rate=learning_rate, opt=opt,
             num_epochs=num_epochs, batch_size=batch_size,
-            momentum=momentum, regtype=regtype, l2reg=l2reg)
+            momentum=momentum, regtype=regtype, regcoef=regcoef)
 
         self.loss = Loss(self.loss_func)
         self.trainer = Trainer(
@@ -119,8 +119,8 @@ class DenoisingAutoencoder(UnsupervisedModel):
         self._create_encode_layer()
         self._create_decode_layer()
 
-        vars = [self.W_, self.bh_, self.bv_]
-        regterm = self.compute_regularization(vars)
+        variables = [self.W_, self.bh_, self.bv_]
+        regterm = Layers.regularization(variables, self.regtype, self.regcoef)
 
         self.cost = self.loss.compile(
             self.reconstruction, self.input_data_orig, regterm=regterm)

@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from yadlt.core import Loss, Trainer
+from yadlt.core import Layers, Loss, Trainer
 from yadlt.core import UnsupervisedModel
 from yadlt.models.boltzmann import rbm
 from yadlt.utils import utilities
@@ -27,7 +27,7 @@ class DeepAutoencoder(UnsupervisedModel):
         momentum=0.5, finetune_dropout=1,
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
         finetune_dec_act_func=[tf.nn.sigmoid], finetune_opt='sgd',
-        finetune_learning_rate=0.001, l2reg=5e-4, finetune_num_epochs=10,
+        finetune_learning_rate=0.001, regcoef=5e-4, finetune_num_epochs=10,
         noise=['gauss'], stddev=0.1, finetune_batch_size=20, do_pretrain=False,
             tied_weights=False, regtype=['none'], finetune_reg_type='none'):
         """Constructor.
@@ -62,7 +62,7 @@ class DeepAutoencoder(UnsupervisedModel):
         self._initialize_training_parameters(
             loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
             regtype=finetune_reg_type, num_epochs=finetune_num_epochs,
-            batch_size=finetune_batch_size, l2reg=l2reg,
+            batch_size=finetune_batch_size, regcoef=regcoef,
             dropout=finetune_dropout, opt=finetune_opt,
             momentum=momentum)
 
@@ -174,10 +174,10 @@ class DeepAutoencoder(UnsupervisedModel):
         self._create_encoding_layers()
         self._create_decoding_layers()
 
-        vars = []
-        vars.extend(self.encoding_w_)
-        vars.extend(self.encoding_b_)
-        regterm = self.compute_regularization(vars)
+        variables = []
+        variables.extend(self.encoding_w_)
+        variables.extend(self.encoding_b_)
+        regterm = Layers.regularization(variables, self.regtype, self.regcoef)
 
         self.cost = self.loss.compile(
             self.reconstruction, self.input_labels, regterm=regterm)

@@ -50,10 +50,10 @@ class LogisticRegression(SupervisedModel):
         self._create_placeholders(n_features, n_classes)
         self._create_variables(n_features, n_classes)
 
-        self.last_out = tf.nn.softmax(
+        self.mod_y = tf.nn.softmax(
             tf.add(tf.matmul(self.input_data, self.W_), self.b_))
 
-        self.cost = self.loss.compile(self.last_out, self.input_labels)
+        self.cost = self.loss.compile(self.mod_y, self.input_labels)
         self.train_step = tf.train.GradientDescentOptimizer(
             self.learning_rate).minimize(self.cost)
         self._create_accuracy_test_node()

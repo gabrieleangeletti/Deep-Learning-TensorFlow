@@ -26,10 +26,8 @@ class Model(object):
         self.input_labels = None
         self.keep_prob = None
         self.layer_nodes = []  # list of layers of the final network
-        self.last_out = None
         self.train_step = None
         self.cost = None
-        self.verbose = 0
 
         # tensorflow objects
         self.tf_graph = tf.Graph()
@@ -76,7 +74,7 @@ class Model(object):
     def _initialize_training_parameters(
         self, loss_func, learning_rate, num_epochs, batch_size,
         opt='sgd', dropout=1, momentum=None, regtype='none',
-            l2reg=None):
+            regcoef=None):
         """Initialize training parameters common to all models.
 
         :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
@@ -87,7 +85,7 @@ class Model(object):
             ['sgd', 'momentum', 'ada_grad']
         :param dropout: Dropout parameter
         :param momentum: Momentum parameter
-        :param l2reg: regularization parameter
+        :param regcoef: regularization parameter
         :return: self
         """
         self.loss_func = loss_func
@@ -98,28 +96,7 @@ class Model(object):
         self.opt = opt
         self.momentum = momentum
         self.regtype = regtype
-        self.l2reg = l2reg
-
-    def compute_regularization(self, vars):
-        """Compute the regularization tensor.
-
-        :param vars: list of model variables
-        :return:
-        """
-        if self.regtype != 'none':
-
-            regularizers = tf.constant(0.0)
-
-            for v in vars:
-                if self.regtype == 'l2':
-                    regularizers = tf.add(regularizers, tf.nn.l2_loss(v))
-                elif self.regtype == 'l1':
-                    regularizers = tf.add(
-                        regularizers, tf.reduce_sum(tf.abs(v)))
-
-            return tf.mul(self.l2reg, regularizers)
-        else:
-            return None
+        self.regcoef = regcoef
 
     def pretrain_procedure(self, layer_objs, layer_graphs, set_params_func,
                            train_set, validation_set=None):
@@ -189,25 +166,6 @@ class Model(object):
             raise Exception("This method is not implemented for this model")
         else:
             return layers_out
-
-    def _create_last_layer(self, last_layer, n_classes):
-        """Create the last layer for finetuning.
-
-        :param last_layer: last layer output node
-        :param n_classes: number of classes
-        :return: self
-        """
-        with tf.name_scope("last_layer"):
-            self.last_W = tf.Variable(
-                tf.truncated_normal(
-                    [last_layer.get_shape()[1].value, n_classes], stddev=0.1),
-                name='sm-weigths')
-            self.last_b = tf.Variable(tf.constant(
-                0.1, shape=[n_classes]), name='sm-biases')
-            last_out = tf.add(tf.matmul(last_layer, self.last_W), self.last_b)
-            self.layer_nodes.append(last_out)
-            self.last_out = last_out
-            return last_out
 
     def get_parameters(self, params, graph=None):
         """Get the parameters of the model.

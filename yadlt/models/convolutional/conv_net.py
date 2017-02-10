@@ -105,7 +105,7 @@ class ConvolutionalNetwork(SupervisedModel):
         self._create_placeholders(n_features, n_classes)
         self._create_layers(n_classes)
 
-        self.cost = self.loss.compile(self.last_out, self.input_labels)
+        self.cost = self.loss.compile(self.mod_y, self.input_labels)
         self.train_step = self.trainer.compile(self.cost)
 
         self._create_accuracy_test_node()
@@ -251,7 +251,7 @@ class ConvolutionalNetwork(SupervisedModel):
                 self.W_vars.append(W_sm)
                 self.B_vars.append(b_sm)
 
-                self.last_out = tf.add(tf.matmul(next_layer_feed, W_sm), b_sm)
+                self.mod_y = tf.add(tf.matmul(next_layer_feed, W_sm), b_sm)
 
     @staticmethod
     def weight_variable(shape):

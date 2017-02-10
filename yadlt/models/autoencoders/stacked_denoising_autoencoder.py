@@ -9,7 +9,7 @@ import tensorflow as tf
 from tqdm import tqdm
 
 from yadlt.core import SupervisedModel
-from yadlt.core import Loss, Trainer
+from yadlt.core import Layers, Loss, Trainer
 from yadlt.models.autoencoders import denoising_autoencoder
 from yadlt.utils import utilities
 
@@ -24,7 +24,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         self, layers, name='sdae',
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
-        opt=['sgd'], l2reg=[5e-4], learning_rate=[0.01], momentum=0.5,
+        opt=['sgd'], regcoef=[5e-4], learning_rate=[0.01], momentum=0.5,
         finetune_dropout=1, corr_type=['none'], corr_frac=[0.],
         finetune_loss_func='softmax_cross_entropy',
         finetune_act_func=tf.nn.relu, finetune_opt='sgd',
@@ -98,7 +98,7 @@ class StackedDenoisingAutoencoder(SupervisedModel):
                     enc_act_func=expanded_args['enc_act_func'][l],
                     dec_act_func=expanded_args['dec_act_func'][l],
                     loss_func=expanded_args['loss_func'][l],
-                    opt=expanded_args['opt'][l], l2reg=expanded_args['l2reg'],
+                    opt=expanded_args['opt'][l], regcoef=expanded_args['regcoef'],
                     learning_rate=expanded_args['learning_rate'][l],
                     momentum=self.momentum,
                     corr_type=expanded_args['corr_type'][l],
@@ -170,9 +170,10 @@ class StackedDenoisingAutoencoder(SupervisedModel):
         self._create_variables(n_features)
 
         next_train = self._create_encoding_layers()
-        last_out = self._create_last_layer(next_train, n_classes)
+        self.mod_y, _, _ = Layers.softmax(next_train, n_classes)
+        self.layer_nodes.append(self.mod_y)
 
-        self.cost = self.loss.compile(last_out, self.input_labels)
+        self.cost = self.loss.compile(self.mod_y, self.input_labels)
         self.train_step = self.trainer.compile(self.cost)
         self._create_accuracy_test_node()
 
