@@ -23,6 +23,26 @@ def sample_prob(probs, rand):
     return tf.nn.relu(tf.sign(probs - rand))
 
 
+def corrupt_input(data, sess, corrtype, corrfrac):
+    """Corrupt a fraction of data according to the chosen noise method.
+
+    :return: corrupted data
+    """
+    corruption_ratio = np.round(corrfrac * data.shape[1]).astype(np.int)
+
+    if corrtype == 'none':
+        return np.copy(data)
+
+    if corrfrac > 0.0:
+        if corrtype == 'masking':
+            return masking_noise(data, sess, corrfrac)
+
+        elif corrtype == 'salt_and_pepper':
+            return salt_and_pepper_noise(data, corruption_ratio)
+    else:
+        return np.copy(data)
+
+
 def xavier_init(fan_in, fan_out, const=1):
     """Xavier initialization of network weights.
 

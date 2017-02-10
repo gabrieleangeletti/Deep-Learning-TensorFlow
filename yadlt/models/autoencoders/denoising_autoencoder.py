@@ -89,7 +89,8 @@ class DenoisingAutoencoder(UnsupervisedModel):
         :param train_set: training set
         :return: self
         """
-        x_corrupted = self._corrupt_input(train_set)
+        x_corrupted = utilities.corrupt_input(
+            train_set, self.tf_session, self.corr_type, self.corr_frac)
 
         shuff = list(zip(train_set, x_corrupted))
         np.random.shuffle(shuff)
@@ -101,27 +102,6 @@ class DenoisingAutoencoder(UnsupervisedModel):
             tr_feed = {self.input_data_orig: x_batch,
                        self.input_data: x_corr_batch}
             self.tf_session.run(self.train_step, feed_dict=tr_feed)
-
-    def _corrupt_input(self, data):
-        """Corrupt a fraction of data according to the chosen noise method.
-
-        :return: corrupted data
-        """
-        corruption_ratio = np.round(
-            self.corr_frac * data.shape[1]).astype(np.int)
-
-        if self.corr_type == 'none':
-            return np.copy(data)
-
-        if self.corr_frac > 0.0:
-            if self.corr_type == 'masking':
-                return utilities.masking_noise(
-                    data, self.tf_session, self.corr_frac)
-
-            elif self.corr_type == 'salt_and_pepper':
-                return utilities.salt_and_pepper_noise(data, corruption_ratio)
-        else:
-            return np.copy(data)
 
     def build_model(self, n_features, W_=None, bh_=None, bv_=None):
         """Create the computational graph.
