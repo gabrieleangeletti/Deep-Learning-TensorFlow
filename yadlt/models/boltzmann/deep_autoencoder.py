@@ -22,18 +22,18 @@ class DeepAutoencoder(UnsupervisedModel):
     def __init__(
         self, layers, name='srbm',
         num_epochs=[10], batch_size=[10],
-        learning_rate=[0.01], gibbs_k=[1], loss_func=['mean_squared'],
+        learning_rate=[0.01], gibbs_k=[1], loss_func=['mse'],
         momentum=0.5, finetune_dropout=1,
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
         finetune_dec_act_func=[tf.nn.sigmoid], finetune_opt='sgd',
         finetune_learning_rate=0.001, regcoef=5e-4, finetune_num_epochs=10,
         noise=['gauss'], stddev=0.1, finetune_batch_size=20, do_pretrain=False,
-            tied_weights=False, regtype=['none'], finetune_reg_type='none'):
+            tied_weights=False, regtype=['none'], finetune_regtype='none'):
         """Constructor.
 
         :param layers: list containing the hidden units for each layer
         :param finetune_loss_func: Loss function for the softmax layer.
-            string, default ['cross_entropy', 'mean_squared']
+            string, default ['cross_entropy', 'mse']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning.
             float, default 0.001
@@ -58,12 +58,15 @@ class DeepAutoencoder(UnsupervisedModel):
 
         UnsupervisedModel.__init__(self, name)
 
-        self._initialize_training_parameters(
-            loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
-            regtype=finetune_reg_type, num_epochs=finetune_num_epochs,
-            batch_size=finetune_batch_size, regcoef=regcoef,
-            dropout=finetune_dropout, opt=finetune_opt,
-            momentum=momentum)
+        self.loss_func = finetune_loss_func
+        self.learning_rate = finetune_learning_rate
+        self.opt = finetune_opt
+        self.num_epochs = finetune_num_epochs
+        self.batch_size = finetune_batch_size
+        self.momentum = momentum
+        self.dropout = finetune_dropout
+        self.regtype = finetune_regtype
+        self.regcoef = regcoef
 
         self.loss = Loss(self.loss_func)
         self.trainer = Trainer(

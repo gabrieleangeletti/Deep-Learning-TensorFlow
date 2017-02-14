@@ -23,11 +23,11 @@ class DeepAutoencoder(UnsupervisedModel):
         self, layers, name='sdae',
         enc_act_func=[tf.nn.tanh], dec_act_func=[None],
         loss_func=['cross_entropy'], num_epochs=[10], batch_size=[10],
-        opt=['sgd'], regtype=['none'],
+        opt=['sgd'], regtype=['none'], regcoef=[5e-4],
         learning_rate=[0.01], momentum=0.5, finetune_dropout=1,
         corr_type=['none'], finetune_regtype='none', corr_frac=[0.],
         finetune_loss_func='cross_entropy', finetune_enc_act_func=[tf.nn.relu],
-        tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid], regcoef=[5e-4],
+        tied_weights=True, finetune_dec_act_func=[tf.nn.sigmoid],
         finetune_batch_size=20, do_pretrain=False,
         finetune_opt='sgd', finetune_learning_rate=0.001,
             finetune_num_epochs=10):
@@ -41,7 +41,7 @@ class DeepAutoencoder(UnsupervisedModel):
         :param regtype: regularization type, can be 'l2','l1' and 'none'
         :param finetune_regtype: regularization type for finetuning
         :param finetune_loss_func: Loss function for the softmax layer.
-            string, default ['cross_entropy', 'mean_squared']
+            string, default ['cross_entropy', 'mse']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning.
             float, default 0.001
@@ -71,11 +71,15 @@ class DeepAutoencoder(UnsupervisedModel):
 
         UnsupervisedModel.__init__(self, name)
 
-        self._initialize_training_parameters(
-            loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
-            num_epochs=finetune_num_epochs, batch_size=finetune_batch_size,
-            regcoef=regcoef, regtype=finetune_regtype, dropout=finetune_dropout,
-            opt=finetune_opt, momentum=momentum)
+        self.loss_func = finetune_loss_func
+        self.learning_rate = finetune_learning_rate
+        self.opt = finetune_opt
+        self.num_epochs = finetune_num_epochs
+        self.batch_size = finetune_batch_size
+        self.momentum = momentum
+        self.dropout = finetune_dropout
+        self.regtype = finetune_regtype
+        self.regcoef = regcoef
 
         self.loss = Loss(self.loss_func)
         self.trainer = Trainer(

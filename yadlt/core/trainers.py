@@ -75,7 +75,7 @@ class Loss(object):
 
         lfunc : str
             Loss function type. Types supported:
-            "cross_entropy", "softmax_cross_entropy" and "mean_squared".
+            "cross_entropy", "softmax_cross_entropy" and "mse".
 
         summary : bool, optional (default = True)
             Whether to attach a tf scalar summary to the op.
@@ -85,7 +85,7 @@ class Loss(object):
         """
         assert lfunc in ["cross_entropy",
                          "softmax_cross_entropy",
-                         "mean_squared"]
+                         "mse"]
 
         self.lfunc = lfunc
         self.summary = summary
@@ -123,7 +123,7 @@ class Loss(object):
             elif self.lfunc == 'softmax_cross_entropy':
                 cost = tf.contrib.losses.softmax_cross_entropy(mod_y, ref_y)
 
-            elif self.lfunc == 'mean_squared':
+            elif self.lfunc == 'mse':
                 cost = tf.sqrt(tf.reduce_mean(
                     tf.square(tf.sub(ref_y, mod_y))))
 

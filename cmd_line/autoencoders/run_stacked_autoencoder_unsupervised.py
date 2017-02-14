@@ -31,7 +31,7 @@ flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
 flags.DEFINE_boolean('tied_weights', True, 'Whether to use tied weights for the decoders.')
 
 # Supervised fine tuning parameters
-flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mean_squared"]')
+flags.DEFINE_string('finetune_loss_func', 'cross_entropy', 'Last Layer Loss function.["cross_entropy", "mse"]')
 flags.DEFINE_integer('finetune_num_epochs', 30, 'Number of epochs for the fine-tuning phase.')
 flags.DEFINE_float('finetune_learning_rate', 0.001, 'Learning rate for the fine-tuning phase.')
 flags.DEFINE_string('finetune_enc_act_func', 'relu,', 'Activation function for the encoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
@@ -45,7 +45,7 @@ flags.DEFINE_string('dae_layers', '256,', 'Comma-separated values for the layers
 flags.DEFINE_string('dae_regcoef', '5e-4,', 'Regularization parameter for the autoencoders. If 0, no regularization.')
 flags.DEFINE_string('dae_enc_act_func', 'sigmoid,', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dae_dec_act_func', 'none,', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
-flags.DEFINE_string('dae_loss_func', 'mean_squared,', 'Loss function. ["mean_squared" or "cross_entropy"]')
+flags.DEFINE_string('dae_loss_func', 'mse,', 'Loss function. ["mse" or "cross_entropy"]')
 flags.DEFINE_string('dae_opt', 'sgd,', '["sgd", "ada_grad", "momentum", "adam"]')
 flags.DEFINE_string('dae_learning_rate', '0.01,', 'Initial learning rate.')
 flags.DEFINE_string('dae_num_epochs', '10,', 'Number of epochs.')

@@ -19,29 +19,71 @@ class DenoisingAutoencoder(UnsupervisedModel):
     """
 
     def __init__(
-        self, n_components, name='dae',
-        enc_act_func=tf.nn.tanh, dec_act_func=None, loss_func='mean_squared',
-        num_epochs=10, batch_size=10, opt='sgd',
-        learning_rate=0.01, momentum=0.5, corr_type='none', corr_frac=0.,
-            regtype='none', regcoef=5e-4):
+        self, n_components, name='dae', loss_func='mse',
+        enc_act_func=tf.nn.tanh, dec_act_func=None, num_epochs=10,
+        batch_size=10, opt='sgd', learning_rate=0.01, momentum=0.9,
+            corr_type='none', corr_frac=0., regtype='none', regcoef=5e-4):
         """Constructor.
 
-        :param n_components: number of hidden units
-        :param enc_act_func: Activation function for the encoder.
-            [tf.nn.tanh, tf.nn.sigmoid]
-        :param dec_act_func: Activation function for the decoder.
-            [tf.nn.tanh, tf.nn.sigmoid, None]
-        :param corr_type: Type of input corruption.
-            ["none", "masking", "salt_and_pepper"]
-        :param corr_frac: Fraction of the input to corrupt.
-        :param regcoef: Regularization parameter. If 0, no regularization.
+        Parameters
+        ----------
+
+        n_components : int
+            Number of hidden units.
+
+        name : str, optional (default = "dae")
+            Model name (used for save/load from disk).
+
+        loss_func : str, optional (default = "mse")
+            Loss function. ['mse', 'cross_entropy']
+
+        enc_act_func : tf.nn.[activation]
+            Activation function for the encoder.
+
+        dec_act_func : tf.nn.[activation]
+            Activation function for the decoder.
+
+        num_epochs : int, optional (default = 10)
+            Number of epochs.
+
+        batch_size : int, optional (default = 10)
+            Size of each mini-batch.
+
+        opt : str, optional (default = "sgd")
+            Which tensorflow optimizer to use.
+            Possible values: ['sgd', 'momentum', 'adagrad', 'adam']
+
+        learning_rate : float, optional (default = 0.01)
+            Initial learning rate.
+
+        momentum : float, optional (default = 0.9)
+            Momentum parameter (only used if opt = "momentum").
+
+        corr_type : str, optional (default = "none")
+            Type of input corruption.
+            Can be one of: ["none", "masking", "salt_and_pepper"]
+
+        corr_frac : float, optional (default = 0.0)
+            Fraction of the input to corrupt.
+
+        regtype : str, optional (default = "none")
+            Type of regularization to apply.
+            Can be one of: ["none", "l1", "l2"].
+
+        regcoef : float, optional (default = 5e-4)
+            Regularization parameter. If 0, no regularization.
+            Only considered if regtype != "none".
         """
         UnsupervisedModel.__init__(self, name)
 
-        self._initialize_training_parameters(
-            loss_func=loss_func, learning_rate=learning_rate, opt=opt,
-            num_epochs=num_epochs, batch_size=batch_size,
-            momentum=momentum, regtype=regtype, regcoef=regcoef)
+        self.loss_func = loss_func
+        self.learning_rate = learning_rate
+        self.opt = opt
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.momentum = momentum
+        self.regtype = regtype
+        self.regcoef = regcoef
 
         self.loss = Loss(self.loss_func)
         self.trainer = Trainer(
@@ -60,40 +102,63 @@ class DenoisingAutoencoder(UnsupervisedModel):
         self.bh_ = None
         self.bv_ = None
 
-    def _train_model(self, train_set, train_ref=None,
-                     validation_set=None, validation_ref=None):
+    def _train_model(self, train_X, train_Y=None, val_X=None, val_Y=None):
         """Train the model.
 
-        :param train_set: training set
-        :param train_ref: reference training data
-        :param validation_set: validation set. optional, default None
-        :param validation_ref: reference validation data
-        :return: self
+        Parameters
+        ----------
+
+        train_X : array_like
+            Training data, shape (num_samples, num_features).
+
+        train_Y : array_like, optional (default = None)
+            Reference training data, shape (num_samples, num_features).
+
+        val_X : array_like, optional, default None
+            Validation data, shape (num_val_samples, num_features).
+
+        val_Y : array_like, optional, default None
+            Reference validation data, shape (num_val_samples, num_features).
+
+        Returns
+        -------
+
+        self : trained model instance
         """
         pbar = tqdm(range(self.num_epochs))
         for i in pbar:
-            self._run_train_step(train_set)
-            if validation_set is not None:
-                feed = {self.input_data_orig: validation_set,
-                        self.input_data: validation_set}
+            self._run_train_step(train_X)
+            if val_X is not None:
+                feed = {self.input_data_orig: val_X,
+                        self.input_data: val_X}
                 err = tf_utils.run_summaries(
                     self.tf_session, self.tf_merged_summaries,
                     self.tf_summary_writer, i, feed, self.cost)
                 pbar.set_description("Reconstruction loss: %s" % (err))
+        return self
 
-    def _run_train_step(self, train_set):
+    def _run_train_step(self, train_X):
         """Run a training step.
 
         A training step is made by randomly corrupting the training set,
         randomly shuffling it,  divide it into batches and run the optimizer
         for each batch.
-        :param train_set: training set
-        :return: self
+
+        Parameters
+        ----------
+
+        train_X : array_like
+            Training data, shape (num_samples, num_features).
+
+        Returns
+        -------
+
+        self
         """
         x_corrupted = utilities.corrupt_input(
-            train_set, self.tf_session, self.corr_type, self.corr_frac)
+            train_X, self.tf_session, self.corr_type, self.corr_frac)
 
-        shuff = list(zip(train_set, x_corrupted))
+        shuff = list(zip(train_X, x_corrupted))
         np.random.shuffle(shuff)
 
         batches = [_ for _ in utilities.gen_batches(shuff, self.batch_size)]
@@ -107,12 +172,25 @@ class DenoisingAutoencoder(UnsupervisedModel):
     def build_model(self, n_features, W_=None, bh_=None, bv_=None):
         """Create the computational graph.
 
-        :param n_features: Number of features.
-        :param regtype: regularization type
-        :param W_: weight matrix np array
-        :param bh_: hidden bias np array
-        :param bv_: visible bias np array
-        :return: self
+        Parameters
+        ----------
+
+        n_features : int
+            Number of units in the input layer.
+
+        W_ : array_like, optional (default = None)
+            Weight matrix np array.
+
+        bh_ : array_like, optional (default = None)
+            Hidden bias np array.
+
+        bv_ : array_like, optional (default = None)
+            Visible bias np array.
+
+        Returns
+        -------
+
+        self
         """
         self._create_placeholders(n_features)
         self._create_variables(n_features, W_, bh_, bv_)
@@ -169,7 +247,10 @@ class DenoisingAutoencoder(UnsupervisedModel):
     def _create_encode_layer(self):
         """Create the encoding layer of the network.
 
-        :return: self
+        Returns
+        -------
+
+        self
         """
         with tf.name_scope("encoder"):
 
@@ -183,10 +264,15 @@ class DenoisingAutoencoder(UnsupervisedModel):
             else:
                 self.encode = activation
 
+            return self
+
     def _create_decode_layer(self):
         """Create the decoding layer of the network.
 
-        :return: self
+        Returns
+        -------
+
+        self
         """
         with tf.name_scope("decoder"):
 
@@ -200,11 +286,21 @@ class DenoisingAutoencoder(UnsupervisedModel):
             else:
                 self.reconstruction = activation
 
+            return self
+
     def get_parameters(self, graph=None):
         """Return the model parameters in the form of numpy arrays.
 
-        :param graph: tf graph object
-        :return: model parameters
+        Parameters
+        ----------
+
+        graph : tf.Graph, optional (default = None)
+            Tensorflow graph object.
+
+        Returns
+        -------
+
+        dict : model parameters dictionary.
         """
         g = graph if graph is not None else self.tf_graph
 

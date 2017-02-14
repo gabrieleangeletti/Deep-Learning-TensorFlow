@@ -43,7 +43,7 @@ flags.DEFINE_string('finetune_dec_act_func', 'sigmoid,', 'Activation function fo
 flags.DEFINE_integer('finetune_num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('finetune_batch_size', 10, 'Size of each mini-batch.')
 flags.DEFINE_string('finetune_opt', 'sgd', '["sgd", "ada_grad", "momentum", "adam"]')
-flags.DEFINE_string('finetune_loss_func', 'mean_squared', 'Loss function.')
+flags.DEFINE_string('finetune_loss_func', 'mse', 'Loss function.')
 flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
 
 # Conversion of Autoencoder layers parameters from string to their specific type

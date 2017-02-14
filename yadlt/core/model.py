@@ -35,33 +35,6 @@ class Model(object):
         self.tf_merged_summaries = None
         self.tf_summary_writer = None
 
-    def _initialize_training_parameters(
-        self, loss_func, learning_rate, num_epochs, batch_size,
-        opt='sgd', dropout=1, momentum=None, regtype='none',
-            regcoef=None):
-        """Initialize training parameters common to all models.
-
-        :param loss_func: Loss function. ['mean_squared', 'cross_entropy']
-        :param learning_rate: Initial learning rate
-        :param num_epochs: Number of epochs
-        :param batch_size: Size of each mini-batch
-        :param opt: Which tensorflow optimizer to use.
-            ['sgd', 'momentum', 'ada_grad']
-        :param dropout: Dropout parameter
-        :param momentum: Momentum parameter
-        :param regcoef: regularization parameter
-        :return: self
-        """
-        self.loss_func = loss_func
-        self.learning_rate = learning_rate
-        self.dropout = dropout
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
-        self.opt = opt
-        self.momentum = momentum
-        self.regtype = regtype
-        self.regcoef = regcoef
-
     def pretrain_procedure(self, layer_objs, layer_graphs, set_params_func,
                            train_set, validation_set=None):
         """Perform unsupervised pretraining of the model.

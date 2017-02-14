@@ -32,7 +32,7 @@ class DeepBeliefNetwork(SupervisedModel):
 
         :param rbm_layers: list containing the hidden units for each layer
         :param finetune_loss_func: Loss function for the softmax layer.
-            string, default ['softmax_cross_entropy', 'mean_squared']
+            string, default ['softmax_cross_entropy', 'mse']
         :param finetune_dropout: dropout parameter
         :param finetune_learning_rate: learning rate for the finetuning.
             float, default 0.001
@@ -47,11 +47,13 @@ class DeepBeliefNetwork(SupervisedModel):
         """
         SupervisedModel.__init__(self, name)
 
-        self._initialize_training_parameters(
-            loss_func=finetune_loss_func, learning_rate=finetune_learning_rate,
-            dropout=finetune_dropout, num_epochs=finetune_num_epochs,
-            batch_size=finetune_batch_size, opt=finetune_opt,
-            momentum=momentum)
+        self.loss_func = finetune_loss_func
+        self.learning_rate = finetune_learning_rate
+        self.opt = finetune_opt
+        self.num_epochs = finetune_num_epochs
+        self.batch_size = finetune_batch_size
+        self.momentum = momentum
+        self.dropout = finetune_dropout
 
         self.loss = Loss(self.loss_func)
         self.trainer = Trainer(

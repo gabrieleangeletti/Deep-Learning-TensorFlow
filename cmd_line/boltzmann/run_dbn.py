@@ -43,7 +43,7 @@ flags.DEFINE_float('finetune_momentum', 0.7, 'Momentum parameter.')
 flags.DEFINE_integer('finetune_num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('finetune_batch_size', 10, 'Size of each mini-batch.')
 flags.DEFINE_string('finetune_opt', 'sgd', '["sgd", "ada_grad", "momentum", "adam"]')
-flags.DEFINE_string('finetune_loss_func', 'softmax_cross_entropy', 'Loss function. ["mean_squared", "softmax_cross_entropy"]')
+flags.DEFINE_string('finetune_loss_func', 'softmax_cross_entropy', 'Loss function. ["mse", "softmax_cross_entropy"]')
 flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
 
 # Conversion of Autoencoder layers parameters from string to their specific type

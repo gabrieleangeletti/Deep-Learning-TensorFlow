@@ -21,8 +21,7 @@ class ConvolutionalNetwork(SupervisedModel):
     def __init__(
         self, layers, original_shape, name='convnet',
         loss_func='softmax_cross_entropy', num_epochs=10, batch_size=10,
-        opt='sgd', learning_rate=0.01,
-            momentum=0.5, dropout=0.5):
+            opt='sgd', learning_rate=0.01, momentum=0.5, dropout=0.5):
         """Constructor.
 
         :param layers: string used to build the model.
@@ -42,9 +41,12 @@ class ConvolutionalNetwork(SupervisedModel):
         """
         SupervisedModel.__init__(self, name)
 
-        self._initialize_training_parameters(
-            loss_func, learning_rate, num_epochs, batch_size, opt,
-            momentum)
+        self.loss_func = loss_func
+        self.learning_rate = learning_rate
+        self.opt = opt
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
+        self.momentum = momentum
 
         self.loss = Loss(self.loss_func)
         self.trainer = Trainer(

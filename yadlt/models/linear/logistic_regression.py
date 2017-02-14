@@ -18,15 +18,15 @@ class LogisticRegression(SupervisedModel):
     The interface of the class is sklearn-like.
     """
 
-    def __init__(
-        self, name='lr', loss_func='cross_entropy',
-        learning_rate=0.01, num_epochs=10,
-            batch_size=10):
+    def __init__(self, name='lr', loss_func='cross_entropy',
+                 learning_rate=0.01, num_epochs=10, batch_size=10):
         """Constructor."""
         SupervisedModel.__init__(self, name)
 
-        self._initialize_training_parameters(
-            loss_func, learning_rate, num_epochs, batch_size, None)
+        self.loss_func = loss_func
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.batch_size = batch_size
 
         self.loss = Loss(self.loss_func)
 

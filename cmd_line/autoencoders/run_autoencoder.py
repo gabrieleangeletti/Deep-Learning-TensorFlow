@@ -34,7 +34,7 @@ flags.DEFINE_string('corr_type', 'none', 'Type of input corruption. ["none", "ma
 flags.DEFINE_float('corr_frac', 0., 'Fraction of the input to corrupt.')
 flags.DEFINE_string('enc_act_func', 'tanh', 'Activation function for the encoder. ["sigmoid", "tanh"]')
 flags.DEFINE_string('dec_act_func', 'none', 'Activation function for the decoder. ["sigmoid", "tanh", "none"]')
-flags.DEFINE_string('loss_func', 'mean_squared', 'Loss function. ["mean_squared" or "cross_entropy"]')
+flags.DEFINE_string('loss_func', 'mse', 'Loss function. ["mse" or "cross_entropy"]')
 flags.DEFINE_string('opt', 'sgd', '["sgd", "adagrad", "momentum", "adam"]')
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_float('momentum', 0.5, 'Momentum parameter.')
