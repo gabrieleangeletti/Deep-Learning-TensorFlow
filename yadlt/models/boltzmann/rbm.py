@@ -141,11 +141,11 @@ class RBM(UnsupervisedModel):
         self.w_upd8 = self.W.assign_add(
             self.learning_rate * (positive - negative) / self.batch_size)
 
-        self.bh_upd8 = self.bh_.assign_add(tf.mul(self.learning_rate, tf.reduce_mean(
-            tf.sub(hprob0, hprob1), 0)))
+        self.bh_upd8 = self.bh_.assign_add(tf.multiply(self.learning_rate, tf.reduce_mean(
+            tf.subtract(hprob0, hprob1), 0)))
 
-        self.bv_upd8 = self.bv_.assign_add(tf.mul(self.learning_rate, tf.reduce_mean(
-            tf.sub(self.input_data, vprob), 0)))
+        self.bv_upd8 = self.bv_.assign_add(tf.multiply(self.learning_rate, tf.reduce_mean(
+            tf.subtract(self.input_data, vprob), 0)))
 
         variables = [self.W, self.bh_, self.bv_]
         regterm = Layers.regularization(variables, self.regtype, self.regcoef)
@@ -269,7 +269,7 @@ class RBM(UnsupervisedModel):
 
         self.build_model(n_features)
 
-        init_op = tf.initialize_all_variables()
+        init_op = tf.global_variables_initializer()
         self.tf_saver = tf.train.Saver()
 
         with tf.Session() as self.tf_session:

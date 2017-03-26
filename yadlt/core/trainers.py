@@ -117,15 +117,15 @@ class Loss(object):
                 clip_sup = tf.clip_by_value(1 - mod_y, 1e-10, float('inf'))
 
                 cost = - tf.reduce_mean(tf.add(
-                        tf.mul(ref_y, tf.log(clip_inf)),
-                        tf.mul(tf.sub(1.0, ref_y), tf.log(clip_sup))))
+                        tf.multiply(ref_y, tf.log(clip_inf)),
+                        tf.multiply(tf.subtract(1.0, ref_y), tf.log(clip_sup))))
 
             elif self.lfunc == 'softmax_cross_entropy':
                 cost = tf.contrib.losses.softmax_cross_entropy(mod_y, ref_y)
 
             elif self.lfunc == 'mse':
                 cost = tf.sqrt(tf.reduce_mean(
-                    tf.square(tf.sub(ref_y, mod_y))))
+                    tf.square(tf.subtract(ref_y, mod_y))))
 
             else:
                 cost = None

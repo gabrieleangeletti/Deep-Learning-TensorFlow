@@ -57,13 +57,13 @@ class LSTM(Model):
         """
         with tf.Graph().as_default(), tf.Session() as self.tf_session:
             self.build_model()
-            tf.initialize_all_variables().run()
+            tf.global_variables_initializer().run()
             third = self.num_epochs // 3
 
             for i in range(self.num_epochs):
                 lr_decay = self.lr_decay ** max(i - third, 0.0)
                 self.tf_session.run(
-                    tf.assign(self.lr_var, tf.mul(self.learning_rate, lr_decay)))
+                    tf.assign(self.lr_var, tf.multiply(self.learning_rate, lr_decay)))
 
                 train_perplexity = self._run_train_step(train_set, 'train')
                 print("Epoch: %d Train Perplexity: %.3f"
@@ -139,11 +139,11 @@ class LSTM(Model):
     def _create_rnn_architecture(self):
         """Create the training architecture and the last layer of the LSTM."""
         self.inputs = [tf.squeeze(i, [1]) for i in tf.split(
-            1, self.num_steps, self.inputs)]
+            axis=1, num_or_size_splits=self.num_steps, value=self.inputs)]
         outputs, state = tf.nn.rnn(
             self.cell, self.inputs, initial_state=self._init_state)
 
-        output = tf.reshape(tf.concat(1, outputs), [-1, self.num_hidden])
+        output = tf.reshape(tf.concat(axis=1, values=outputs), [-1, self.num_hidden])
         softmax_w = tf.get_variable(
             "softmax_w", [self.num_hidden, self.vocab_size])
         softmax_b = tf.get_variable("softmax_b", [self.vocab_size])

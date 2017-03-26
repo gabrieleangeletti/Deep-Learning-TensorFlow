@@ -68,7 +68,7 @@ class Layers(object):
                     elif regtype == 'l1':
                         regs = tf.add(regs, tf.reduce_sum(tf.abs(v)))
 
-                return tf.mul(regcoef, regs)
+                return tf.multiply(regcoef, regs)
             else:
                 return None
 

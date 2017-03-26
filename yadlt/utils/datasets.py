@@ -5,7 +5,6 @@ from __future__ import division
 from __future__ import print_function
 
 from tensorflow.examples.tutorials.mnist import input_data
-from tensorflow.models.rnn.ptb import reader
 
 try:
     import cPickle as pickle
@@ -94,16 +93,3 @@ def load_cifar10_dataset(cifar_dir, mode='supervised'):
     elif mode == 'unsupervised':
         return trX, teX
 
-
-def load_ptb_dataset(data_path):
-    """Load the PTB dataset.
-
-    You can download the PTB dataset from here:
-    http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz
-
-    :param data_path: path to the data/ dir of the PTB dataset.
-    :return: train, validation, test data
-    """
-    raw_data = reader.ptb_raw_data(data_path)
-    trX, vlX, teX, _ = raw_data
-    return trX, vlX, teX
