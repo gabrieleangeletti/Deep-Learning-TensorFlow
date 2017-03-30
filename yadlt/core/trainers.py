@@ -121,7 +121,7 @@ class Loss(object):
                         tf.multiply(tf.subtract(1.0, ref_y), tf.log(clip_sup))))
 
             elif self.lfunc == 'softmax_cross_entropy':
-                cost = tf.contrib.losses.softmax_cross_entropy(mod_y, ref_y)
+                cost = tf.losses.softmax_cross_entropy(ref_y, mod_y)
 
             elif self.lfunc == 'mse':
                 cost = tf.sqrt(tf.reduce_mean(
