@@ -27,7 +27,7 @@ class Trainer(object):
         assert optimizer in ["sgd", "adagrad", "adam", "momentum"]
 
         def d(k, other=None):
-            if other:
+            if other is not None:
                 return kw[k] if k in kw else other
             else:
                 return kw[k]
