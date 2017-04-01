@@ -28,10 +28,10 @@ flags.DEFINE_integer('num_hidden', 250, 'Number of hidden units.')
 flags.DEFINE_string('visible_unit_type', 'bin', 'Type of visible units. ["bin", "gauss"]')
 flags.DEFINE_string('name', 'rbm_model', 'Name for the model.')
 flags.DEFINE_integer('gibbs_sampling_steps', 1, 'Number of gibbs sampling steps in Contrastive Divergence.')
-flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
+flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 flags.DEFINE_float('stddev', 0.1, 'Standard deviation for the Gaussian visible units.')
 flags.DEFINE_integer('num_epochs', 10, 'Number of epochs.')
-flags.DEFINE_integer('batch_size', 10, 'Size of each mini-batch.')
+flags.DEFINE_integer('batch_size', 32, 'Size of each mini-batch.')
 flags.DEFINE_integer('transform_gibbs_sampling_steps', 10, 'Gibbs sampling steps for the transformation of data.')
 
 assert FLAGS.dataset in ['mnist', 'cifar10', 'custom']
