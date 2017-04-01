@@ -216,16 +216,23 @@ class DeepBeliefNetwork(SupervisedModel):
 
         for l, layer in enumerate(self.layers):
 
+            w_name = 'enc-w-{}'.format(l)
+            b_name = 'enc-b-{}'.format(l)
+
             if l == 0:
-                self.encoding_w_.append(tf.Variable(tf.truncated_normal(
-                    shape=[n_features, self.layers[l]], stddev=0.1)))
-                self.encoding_b_.append(tf.Variable(tf.constant(
-                    0.1, shape=[self.layers[l]])))
+                w_shape = [n_features, self.layers[l]]
             else:
-                self.encoding_w_.append(tf.Variable(tf.truncated_normal(
-                    shape=[self.layers[l-1], self.layers[l]], stddev=0.1)))
-                self.encoding_b_.append(tf.Variable(tf.constant(
-                    0.1, shape=[self.layers[l]])))
+                w_shape = [self.layers[l - 1], self.layers[l]]
+
+            w_init = tf.truncated_normal(shape=w_shape, stddev=0.1)
+            W = tf.Variable(w_init, name=w_name)
+            tf.summary.histogram(w_name, W)
+            self.encoding_w_.append(W)
+
+            b_init = tf.constant(0.1, shape=[self.layers[l]])
+            b = tf.Variable(b_init, name=b_name)
+            tf.summary.histogram(b_name, b)
+            self.encoding_b_.append(b)
 
     def _create_variables_pretrain(self):
         """Create model variables (previous unsupervised pretraining).
@@ -233,10 +240,17 @@ class DeepBeliefNetwork(SupervisedModel):
         :return: self
         """
         for l, layer in enumerate(self.layers):
+
+            w_name = 'enc-w-{}'.format(l)
+            b_name = 'enc-b-{}'.format(l)
+
             self.encoding_w_[l] = tf.Variable(
-                self.encoding_w_[l], name='enc-w-{}'.format(l))
+                self.encoding_w_[l], name=w_name)
+            tf.summary.histogram(w_name, self.encoding_w_[l])
+
             self.encoding_b_[l] = tf.Variable(
-                self.encoding_b_[l], name='enc-b-{}'.format(l))
+                self.encoding_b_[l], name=b_name)
+            tf.summary.histogram(b_name, self.encoding_w_[l])
 
     def _create_encoding_layers(self):
         """Create the encoding layers for supervised finetuning.
@@ -257,7 +271,6 @@ class DeepBeliefNetwork(SupervisedModel):
 
                 if self.finetune_act_func:
                     layer_y = self.finetune_act_func(y_act)
-
                 else:
                     layer_y = None
 

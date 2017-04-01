@@ -175,12 +175,20 @@ class RBM(UnsupervisedModel):
         :param n_features: number of features
         :return: self
         """
+        w_name = 'weights'
         self.W = tf.Variable(tf.truncated_normal(
-            shape=[n_features, self.num_hidden], stddev=0.1), name='weights')
+            shape=[n_features, self.num_hidden], stddev=0.1), name=w_name)
+        tf.summary.histogram(w_name, self.W)
+
+        bh_name = 'hidden-bias'
         self.bh_ = tf.Variable(tf.constant(0.1, shape=[self.num_hidden]),
-                               name='hidden-bias')
+                               name=bh_name)
+        tf.summary.histogram(bh_name, self.bh_)
+
+        bv_name = 'visible-bias'
         self.bv_ = tf.Variable(tf.constant(0.1, shape=[n_features]),
-                               name='visible-bias')
+                               name=bv_name)
+        tf.summary.histogram(bv_name, self.bv_)
 
     def gibbs_sampling_step(self, visible, n_features):
         """Perform one step of gibbs sampling.
