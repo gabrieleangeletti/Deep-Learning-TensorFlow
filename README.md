@@ -7,7 +7,7 @@ If you want to use the package from ipython or maybe integrate it in your code, 
 
 ### Requirements:
 
-* tensorflow >= 0.8
+* tensorflow >= 1.0
 
 ### List of available models:
 
