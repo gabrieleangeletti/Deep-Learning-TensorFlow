@@ -39,6 +39,8 @@ class ConvolutionalNetwork(SupervisedModel):
         :param original_shape: original shape of the images in the dataset
         :param dropout: Dropout parameter
         """
+        assert(layers.split(",")[-1] == "softmax")
+
         SupervisedModel.__init__(self, name)
 
         self.loss_func = loss_func
