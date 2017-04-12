@@ -42,7 +42,7 @@ flags.DEFINE_string('finetune_enc_act_func', 'relu,', 'Activation function for t
 flags.DEFINE_string('finetune_dec_act_func', 'sigmoid,', 'Activation function for the decoder fine-tuning phase. ["sigmoid, "tanh", "relu"]')
 flags.DEFINE_integer('finetune_num_epochs', 10, 'Number of epochs.')
 flags.DEFINE_integer('finetune_batch_size', 10, 'Size of each mini-batch.')
-flags.DEFINE_string('finetune_opt', 'sgd', '["sgd", "ada_grad", "momentum", "adam"]')
+flags.DEFINE_string('finetune_opt', 'sgd', '["sgd", "adagrad", "momentum", "adam"]')
 flags.DEFINE_string('finetune_loss_func', 'mse', 'Loss function.')
 flags.DEFINE_float('finetune_dropout', 1, 'Dropout parameter.')
 
