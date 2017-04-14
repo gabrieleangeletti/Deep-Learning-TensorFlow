@@ -176,7 +176,7 @@ if __name__ == '__main__':
     sdae.fit(trX, trRef, vlX, vlRef)
 
     # Compute the reconstruction loss of the model
-    print('Test set reconstruction loss: {}'.format(sdae.compute_reconstruction_loss(teX, teRef)))
+    print('Test set reconstruction loss: {}'.format(sdae.score(teX, teRef)))
 
     # Save the predictions of the model
     if FLAGS.save_reconstructions:
