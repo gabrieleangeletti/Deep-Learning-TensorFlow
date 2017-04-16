@@ -92,7 +92,7 @@ class SupervisedModel(Model):
                     self.input_data: test_X,
                     self.keep_prob: 1
                 }
-                return self.model_predictions.eval(feed)
+                return self.mod_y.eval(feed)
 
     def score(self, test_X, test_Y):
         """Compute the mean accuracy over the test set.
