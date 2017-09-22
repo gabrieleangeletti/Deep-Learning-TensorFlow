@@ -61,8 +61,8 @@ class RBM(UnsupervisedModel):
         self.hrand = None
         self.vrand = None
 
-    def _train_model(self, train_set, validation_set,
-                     train_ref=None, Validation_ref=None):
+    def _train_model(self, train_set, train_ref=None, validation_set=None,
+                      Validation_ref=None):
         """Train the model.
 
         :param train_set: training set
